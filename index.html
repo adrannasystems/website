@@ -73,7 +73,7 @@
         <div class="container mx-auto px-6">
             <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">Get in Touch</h2>
             <div class="max-w-lg mx-auto">
-                <form class="space-y-6">
+                <form id="contactForm" class="space-y-6">
                     <div>
                         <label class="block text-gray-700 mb-2" for="name">Name</label>
                         <input type="text" id="name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -97,9 +97,32 @@
         <div class="container mx-auto px-6">
             <div class="flex flex-col md:flex-row justify-between items-center">
                 <div class="text-xl font-bold mb-4 md:mb-0">Adranna Systems</div>
-                <div class="text-gray-400 text-sm">© 2024 Adranna Systems. All rights reserved.</div>
+                <div class="text-gray-400 text-sm">© 2025 Adranna Systems. All rights reserved.</div>
             </div>
         </div>
     </footer>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const form = document.getElementById('contactForm');
+  if (!form) return;
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+    const nameValue = (document.getElementById('name') || {}).value?.trim?.() || '';
+    const emailValue = (document.getElementById('email') || {}).value?.trim?.() || '';
+    const messageValue = (document.getElementById('message') || {}).value?.trim?.() || '';
+
+    const subject = 'Contact from Adranna Systems website';
+    const body = [
+      `Name: ${nameValue}`,
+      `Email: ${emailValue}`,
+      '',
+      messageValue
+    ].join('\n');
+
+    const mailtoUrl = `mailto:a.buchel@outlook.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoUrl;
+  });
+});
+</script>
 </body>
-</html> 
+</html>
