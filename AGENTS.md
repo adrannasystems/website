@@ -5,6 +5,10 @@ This file defines guardrails for agentic coding in this repo.
 ## Required Workflow
 - Always inspect the repo state before changes (`rg --files`, `ls`, or `git status`).
 - Summarize what changed.
+- Do not use raw `fetch` for backend calls. Use type-safe server functions or route loaders instead.
+- After changes, start the dev server and ensure it starts without errors.
+- If the app runs, visit all routes/pages and confirm there are no visible errors and no server-side errors logged.
+- Always run `npm run lint` after changes and fix any lint errors before reporting back.
 
 ## Safety
 - Never run destructive commands unless explicitly requested.
