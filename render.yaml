@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: adranna-systems-app
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    autoDeploy: true

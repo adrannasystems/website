@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename)
 /** @type {import('eslint/use-at-your-own-risk').FlatConfig[]} */
 const config = [
   {
-    ignores: ['dist', 'node_modules'],
+    ignores: ['dist', 'node_modules', '.output'],
   },
   {
     files: ['**/*.ts', '**/*.tsx'],
