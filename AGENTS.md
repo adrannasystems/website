@@ -17,3 +17,11 @@ This file defines guardrails for agentic coding in this repo.
 ## Communication
 - Be explicit about assumptions.
 - If blocked, propose the smallest next step to unblock.
+
+## Readability
+- Prefer clarity over cleverness.
+- Use descriptive names; avoid abbreviations unless standard.
+- Keep functions small and focused; extract helpers when logic grows.
+- Avoid deep nesting; prefer early returns.
+- Avoid complex inline conditionals; use named variables for clarity.
+- Add short comments only when intent is non-obvious.
