@@ -6,6 +6,7 @@ import {
   Scripts,
   createRootRoute,
 } from '@tanstack/react-router'
+import { ClerkProvider } from '@clerk/tanstack-react-start'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -35,7 +36,9 @@ function RootComponent() {
         <style>{"body { font-family: 'Inter', sans-serif; }"}</style>
       </head>
       <body className="bg-gray-50">
-        <Outlet />
+        <ClerkProvider signInUrl="/sign-in">
+          <Outlet />
+        </ClerkProvider>
         <Scripts />
       </body>
     </html>

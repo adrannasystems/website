@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/tanstack-react-start": "^0.29.5",
     "@notionhq/client": "^5.9.0",
     "@tanstack/react-router": "latest",
     "@tanstack/react-start": "latest",

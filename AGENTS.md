@@ -4,6 +4,7 @@ This file defines guardrails for agentic coding in this repo.
 
 ## Required Workflow
 - Always inspect the repo state before changes (`rg --files`, `ls`, or `git status`).
+- Before introducing a new dependency, external system, or platform integration, read the official docs first and implement from that source of truth.
 - Summarize what changed.
 - Do not use raw `fetch` for backend calls. Use type-safe server functions or route loaders instead.
 - After changes, start the dev server and ensure it starts without errors.
@@ -25,6 +26,7 @@ This file defines guardrails for agentic coding in this repo.
 
 ## Readability
 - Prefer clarity over cleverness.
+- Do not duplicate near-identical logic across files; extract shared helpers/components when behavior is the same.
 - Use descriptive names; avoid abbreviations unless standard.
 - Keep functions small and focused; extract helpers when logic grows.
 - Avoid deep nesting; prefer early returns.

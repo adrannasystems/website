@@ -1,4 +1,6 @@
-import { Await, createFileRoute } from '@tanstack/react-router'
+import { Await, createFileRoute, redirect } from '@tanstack/react-router'
+import { createServerFn } from '@tanstack/react-start'
+import { auth } from '@clerk/tanstack-react-start/server'
 import type { QueryDataSourceResponse } from '@notionhq/client/build/src/api-endpoints'
 import type { LoaderResult } from '../loader-result'
 import { getNotionConfig } from '../notion'
@@ -9,9 +11,20 @@ import {
 } from '../notion-tasks'
 
 export const Route = createFileRoute('/tasks')({
+  beforeLoad: requireUserBeforeLoad,
   loader: loadTasksDeferred,
   component: TasksPage,
 })
+
+async function requireUserBeforeLoad() {
+  const userId = await getUserId()
+  if (userId === null) {
+    throw redirect({
+      to: '/sign-in',
+      search: { redirect_url: '/tasks' },
+    })
+  }
+}
 
 function TasksPage() {
   const { taskResultPromise } = Route.useLoaderData()
@@ -36,6 +49,11 @@ function loadTasksDeferred() {
     taskResultPromise: loadTasks(),
   }
 }
+
+const getUserId = createServerFn({ method: 'GET' }).handler(async () => {
+  const authState = await auth()
+  return authState.userId
+})
 
 function TasksContent(props: { taskResult: LoaderResult<TaskItem[]> }) {
   if (props.taskResult.isError) {
