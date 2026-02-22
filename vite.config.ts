@@ -14,5 +14,5 @@ export default defineConfig({
     nitro() as PluginOption,
     // react's vite plugin must come after start's vite plugin
     viteReact(),
-  ] as PluginOption[],
+  ],
 })

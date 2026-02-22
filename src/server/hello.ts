@@ -1,12 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { z } from 'zod'
 
-const inputSchema = z.object({
-  name: z.string().optional(),
-})
-
 export const hello = createServerFn({ method: 'POST' })
-  .inputValidator(inputSchema)
+  .inputValidator(
+    z.object({
+      name: z.string().optional(),
+    }),
+  )
   .handler(({ data }) => {
     const trimmedName = data.name?.trim()
     const safeName =
