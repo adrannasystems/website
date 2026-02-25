@@ -75,13 +75,64 @@ function RootComponent() {
 }
 
 function SiteHeader() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
+
   return (
     <header className="bg-white shadow-sm fixed w-full z-10">
       <nav className="container mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <a href="/" className="text-2xl font-bold text-gray-800">
             Adranna Systems
           </a>
+          <div className="flex items-center gap-3">
+            <div className="md:hidden">
+              <SignedOut>
+                <div className="flex items-center gap-3">
+                  <SignInButton>
+                    <button
+                      type="button"
+                      className="cursor-pointer border-0 bg-transparent p-0 text-sm font-medium text-gray-600 hover:text-gray-900"
+                    >
+                      Sign In
+                    </button>
+                  </SignInButton>
+                  <SignUpButton>
+                    <button
+                      type="button"
+                      className="cursor-pointer rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                    >
+                      Sign Up
+                    </button>
+                  </SignUpButton>
+                </div>
+              </SignedOut>
+              <SignedIn>
+                <UserButton />
+              </SignedIn>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsMobileMenuOpen((currentValue) => !currentValue)
+              }}
+              className="md:hidden inline-flex items-center justify-center rounded-md border border-gray-300 p-2 text-gray-700"
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-navigation"
+              aria-label="Toggle menu"
+            >
+              <svg
+                aria-hidden="true"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="h-5 w-5"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
           <div className="hidden md:flex items-center gap-8">
             <a href="/#services" className="text-gray-600 hover:text-gray-900">
               Services
@@ -122,6 +173,52 @@ function SiteHeader() {
             </SignedIn>
           </div>
         </div>
+        {isMobileMenuOpen ? (
+          <div id="mobile-navigation" className="md:hidden mt-4 border-t border-gray-200 pt-4">
+            <div className="flex flex-col gap-3">
+              <a
+                href="/#services"
+                className="text-gray-600 hover:text-gray-900"
+                onClick={() => {
+                  setIsMobileMenuOpen(false)
+                }}
+              >
+                Services
+              </a>
+              <a
+                href="/#about"
+                className="text-gray-600 hover:text-gray-900"
+                onClick={() => {
+                  setIsMobileMenuOpen(false)
+                }}
+              >
+                About
+              </a>
+              <a
+                href="/#contact"
+                className="text-gray-600 hover:text-gray-900"
+                onClick={() => {
+                  setIsMobileMenuOpen(false)
+                }}
+              >
+                Contact
+              </a>
+              <SignedIn>
+                <div className="flex items-center justify-between gap-4 pt-1">
+                  <Link
+                    to="/tasks"
+                    className="text-gray-600 hover:text-gray-900"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false)
+                    }}
+                  >
+                    Tasks
+                  </Link>
+                </div>
+              </SignedIn>
+            </div>
+          </div>
+        ) : null}
       </nav>
     </header>
   )
