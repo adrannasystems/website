@@ -2,11 +2,21 @@
 
 import {
   HeadContent,
+  Link,
   Outlet,
   Scripts,
   createRootRoute,
 } from '@tanstack/react-router'
-import { ClerkProvider } from '@clerk/tanstack-react-start'
+import { createServerFn } from '@tanstack/react-start'
+import {
+  ClerkProvider,
+  SignedIn,
+  SignedOut,
+  SignInButton,
+  SignUpButton,
+  UserButton,
+} from '@clerk/tanstack-react-start'
+import { auth } from '@clerk/tanstack-react-start/server'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -24,7 +34,17 @@ export const Route = createRootRoute({
       },
     ],
   }),
+  beforeLoad: async () => {
+    return {
+      currentUserId: await getCurrentUserId(),
+    }
+  },
   component: RootComponent,
+})
+
+const getCurrentUserId = createServerFn({ method: 'GET' }).handler(async () => {
+  const authState = await auth()
+  return authState.userId
 })
 
 function RootComponent() {
@@ -37,10 +57,64 @@ function RootComponent() {
       </head>
       <body className="bg-gray-50">
         <ClerkProvider signInUrl="/sign-in">
+          <SiteHeader />
           <Outlet />
         </ClerkProvider>
         <Scripts />
       </body>
     </html>
+  )
+}
+
+function SiteHeader() {
+  return (
+    <header className="bg-white shadow-sm fixed w-full z-10">
+      <nav className="container mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
+          <a href="/" className="text-2xl font-bold text-gray-800">
+            Adranna Systems
+          </a>
+          <div className="hidden md:flex items-center gap-8">
+            <a href="/#services" className="text-gray-600 hover:text-gray-900">
+              Services
+            </a>
+            <a href="/#about" className="text-gray-600 hover:text-gray-900">
+              About
+            </a>
+            <a href="/#contact" className="text-gray-600 hover:text-gray-900">
+              Contact
+            </a>
+            <SignedOut>
+              <div className="flex items-center gap-4">
+                <SignInButton>
+                  <button
+                    type="button"
+                    className="cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-gray-600 hover:text-gray-900"
+                  >
+                    Sign In
+                  </button>
+                </SignInButton>
+                <SignUpButton>
+                  <button
+                    type="button"
+                    className="cursor-pointer rounded-lg bg-blue-600 px-4 py-2 font-[inherit] text-white hover:bg-blue-700"
+                  >
+                    Sign Up
+                  </button>
+                </SignUpButton>
+              </div>
+            </SignedOut>
+            <SignedIn>
+              <div className="flex items-center gap-4">
+                <Link to="/tasks" className="text-gray-600 hover:text-gray-900">
+                  Tasks
+                </Link>
+                <UserButton />
+              </div>
+            </SignedIn>
+          </div>
+        </div>
+      </nav>
+    </header>
   )
 }

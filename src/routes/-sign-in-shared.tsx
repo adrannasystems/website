@@ -1,7 +1,5 @@
 import { SignIn } from '@clerk/tanstack-react-start'
-import { auth } from '@clerk/tanstack-react-start/server'
 import { redirect } from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
 
 export type SignInSearch = { redirect_url?: string }
 
@@ -14,9 +12,14 @@ export function validateSignInSearch(search: Record<string, unknown>): SignInSea
   return { redirect_url: redirectUrl }
 }
 
-export async function redirectSignedInUsers() {
-  const userId = await getUserId()
-  if (userId !== null) {
+export function redirectSignedInUsers({
+  context,
+}: {
+  context: {
+    currentUserId: string | null
+  }
+}) {
+  if (context.currentUserId !== null) {
     throw redirect({ to: '/tasks' })
   }
 }
@@ -30,8 +33,3 @@ export function SignInRoutePage(props: { redirectUrl?: string }) {
     </main>
   )
 }
-
-const getUserId = createServerFn({ method: 'GET' }).handler(async () => {
-  const authState = await auth()
-  return authState.userId
-})
