@@ -25,25 +25,22 @@ export function mapTasks(
   ) 
 }
 
-export function getTaskPropertyNames() {
-  return {
-    task: 'Task',
-    done: 'done',
-    dueDate: 'due date',
-  }
+export const taskPropertyNames = {
+  task:  'Task',
+  done: 'done',
+  dueDate: 'due date',
 }
 
 function mapTask(page: PageObjectResponse): Result<TaskItem, Error> {
   const properties = page.properties
-  const names = getTaskPropertyNames()
 
-  const taskProperty = properties[names.task]
-  const doneProperty = properties[names.done]
-  const dueDateProperty = properties[names.dueDate]
+  const taskProperty = properties[taskPropertyNames.task]
+  const doneProperty = properties[taskPropertyNames.done]
+  const dueDateProperty = properties[taskPropertyNames.dueDate]
 
   if (taskProperty?.type !== 'select') {
     return err(new Error(
-      `Invalid Notion property '${names.task}' on page '${page.id}': expected select`,
+      `Invalid Notion property '${taskPropertyNames.task}' on page '${page.id}': expected select`,
     ))
   }
   if (
@@ -51,19 +48,19 @@ function mapTask(page: PageObjectResponse): Result<TaskItem, Error> {
     taskProperty.select.name === ''
   ) {
     return err(new Error(
-      `Invalid Notion property '${names.task}' on page '${page.id}': missing selected value`,
+      `Invalid Notion property '${taskPropertyNames.task}' on page '${page.id}': missing selected value`,
     ))
   }
 
   if (doneProperty?.type !== 'checkbox') {
     return err(new Error(
-      `Invalid Notion property '${names.done}' on page '${page.id}': expected checkbox`,
+      `Invalid Notion property '${taskPropertyNames.done}' on page '${page.id}': expected checkbox`,
     ))
   }
 
   if (dueDateProperty?.type !== 'date') {
     return err(new Error(
-      `Invalid Notion property '${names.dueDate}' on page '${page.id}': expected date`,
+      `Invalid Notion property '${taskPropertyNames.dueDate}' on page '${page.id}': expected date`,
     ))
   }
   if (
@@ -71,7 +68,7 @@ function mapTask(page: PageObjectResponse): Result<TaskItem, Error> {
     dueDateProperty.date.start === ''
   ) {
     return err(new Error(
-      `Invalid Notion property '${names.dueDate}' on page '${page.id}': missing date`,
+      `Invalid Notion property '${taskPropertyNames.dueDate}' on page '${page.id}': missing date`,
     ))
   }
 

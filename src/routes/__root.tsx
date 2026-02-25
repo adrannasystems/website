@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 
+import * as React from 'react'
 import {
   HeadContent,
   Link,
@@ -8,6 +9,8 @@ import {
   createRootRoute,
 } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import {
   ClerkProvider,
   SignedIn,
@@ -48,6 +51,8 @@ const getCurrentUserId = createServerFn({ method: 'GET' }).handler(async () => {
 })
 
 function RootComponent() {
+  const [queryClient] = React.useState(() => new QueryClient())
+
   return (
     <html lang="en">
       <head>
@@ -56,10 +61,13 @@ function RootComponent() {
         <style>{"body { font-family: 'Inter', sans-serif; }"}</style>
       </head>
       <body className="bg-gray-50">
-        <ClerkProvider signInUrl="/sign-in">
-          <SiteHeader />
-          <Outlet />
-        </ClerkProvider>
+        <QueryClientProvider client={queryClient}>
+          <ClerkProvider signInUrl="/sign-in">
+            <SiteHeader />
+            <Outlet />
+          </ClerkProvider>
+          {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
+        </QueryClientProvider>
         <Scripts />
       </body>
     </html>

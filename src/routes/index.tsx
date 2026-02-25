@@ -29,36 +29,6 @@ function HomePage() {
 
   return (
     <div>
-      <header className="bg-white shadow-sm fixed w-full z-10">
-        <nav className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="text-2xl font-bold text-gray-800">
-              Adranna Systems
-            </div>
-            <div className="hidden md:flex space-x-8">
-              <a
-                href="#services"
-                className="text-gray-600 hover:text-gray-900"
-              >
-                Services
-              </a>
-              <a
-                href="#about"
-                className="text-gray-600 hover:text-gray-900"
-              >
-                About
-              </a>
-              <a
-                href="#contact"
-                className="text-gray-600 hover:text-gray-900"
-              >
-                Contact
-              </a>
-            </div>
-          </div>
-        </nav>
-      </header>
-
       <section className="pt-32 pb-20 bg-gradient-to-br from-blue-50 to-indigo-50">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">

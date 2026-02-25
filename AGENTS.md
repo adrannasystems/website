@@ -27,6 +27,7 @@ This file defines guardrails for agentic coding in this repo.
 ## Readability
 - Prefer clarity over cleverness.
 - Do not duplicate near-identical logic across files; extract shared helpers/components when behavior is the same.
+- Do not extract a component into a separate file when it is used only once; keep it local to the usage file (as a non-exported helper component if needed for readability).
 - Use descriptive names; avoid abbreviations unless standard.
 - Keep functions small and focused; extract helpers when logic grows.
 - Avoid deep nesting; prefer early returns.
