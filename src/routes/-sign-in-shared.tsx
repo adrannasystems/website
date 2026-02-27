@@ -5,11 +5,9 @@ export type SignInSearch = { redirect_url?: string }
 
 export function validateSignInSearch(search: Record<string, unknown>): SignInSearch {
   const redirectUrl = search.redirect_url
-  if (typeof redirectUrl !== 'string' || redirectUrl === '') {
-    return {}
-  }
-
-  return { redirect_url: redirectUrl }
+  return typeof redirectUrl === 'string' && redirectUrl !== ''
+    ? { redirect_url: redirectUrl }
+    : {}
 }
 
 export function redirectSignedInUsers({

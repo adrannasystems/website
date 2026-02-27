@@ -6,3 +6,16 @@ services:
     buildCommand: npm ci && npm run build
     startCommand: npm run start
     autoDeploy: true
+  - type: cron
+    name: notion-task-reminders
+    runtime: node
+    schedule: "0 * * * *"
+    buildCommand: npm ci
+    startCommand: node --experimental-strip-types scripts/send-task-reminders.ts
+    envVars:
+      - key: NOTION_TOKEN
+        sync: false
+      - key: NOTION_DATABASE_ID
+        sync: false
+      - key: NTFY_TOPIC
+        sync: false

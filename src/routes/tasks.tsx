@@ -3,11 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { auth } from "@clerk/tanstack-react-start/server";
 import * as React from "react";
-import type { QueryDataSourceResponse } from "@notionhq/client/build/src/api-endpoints";
 import { z } from "zod";
 import type { LoaderResult } from "../loader-result";
-import { getNotionConfig } from "../notion";
-import { taskPropertyNames, mapTasks, type TaskItem } from "../notion-tasks";
+import { markTaskDone as markTaskDoneInNotion } from "../notion-mark-task-done";
+import { queryOpenTasks } from "../notion-open-tasks";
+import type { TaskItem } from "../TaskItem";
 
 const tasksQueryKey = ["tasks"] as const;
 
@@ -54,23 +54,19 @@ function TasksPage() {
       queryClient.setQueryData<LoaderResult<TaskItem[]>>(
         tasksQueryKey,
         (currentTaskResult) => {
-          if (currentTaskResult === undefined || currentTaskResult.isError) {
-            return currentTaskResult;
-          }
-
-          return {
-            isError: false,
-            data: currentTaskResult.data.map((task) => {
-              if (task.id !== taskId) {
-                return task;
-              }
-
-              return {
-                ...task,
-                done: true,
+          return currentTaskResult === undefined || currentTaskResult.isError
+            ? currentTaskResult
+            : {
+                isError: false,
+                data: currentTaskResult.data.map((task) => {
+                  return task.id === taskId
+                    ? {
+                        ...task,
+                        done: true,
+                      }
+                    : task;
+                }),
               };
-            }),
-          };
         },
       );
 
@@ -104,10 +100,7 @@ function TasksPage() {
         </div>
       </main>
     );
-  }
-
-  const taskResult = taskQuery.data;
-  if (taskResult === undefined || taskResult.isError) {
+  } else if (taskQuery.data === undefined || taskQuery.data.isError) {
     return (
       <main className="min-h-screen bg-gray-50 px-6 py-20">
         <div className="max-w-3xl mx-auto">
@@ -118,24 +111,24 @@ function TasksPage() {
         </div>
       </main>
     );
+  } else {
+    return (
+      <main className="min-h-screen bg-gray-50 px-6 py-20">
+        <div className="max-w-3xl mx-auto">
+          <h1 className="text-3xl font-semibold text-gray-900 mb-8">Tasks</h1>
+          <TasksContent
+            tasks={taskQuery.data.data}
+            pendingTaskIds={pendingTaskIds}
+            toastMessage={toastMessage}
+            onDismissToast={() => {
+              setToastMessage(null);
+            }}
+            onMarkDone={handleMarkDone}
+          />
+        </div>
+      </main>
+    );
   }
-
-  return (
-    <main className="min-h-screen bg-gray-50 px-6 py-20">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl font-semibold text-gray-900 mb-8">Tasks</h1>
-        <TasksContent
-          tasks={taskResult.data}
-          pendingTaskIds={pendingTaskIds}
-          toastMessage={toastMessage}
-          onDismissToast={() => {
-            setToastMessage(null);
-          }}
-          onMarkDone={handleMarkDone}
-        />
-      </div>
-    </main>
-  );
 }
 
 function TasksContent(props: {
@@ -221,22 +214,8 @@ function TasksContent(props: {
 
 const loadTasks = createServerFn({ method: "GET" }).handler(async () => {
   try {
-    const { client, databaseId } = getNotionConfig();
-    const response: QueryDataSourceResponse = await client.dataSources.query({
-      data_source_id: databaseId,
-      filter: {
-        property: taskPropertyNames.done,
-        checkbox: { equals: false },
-      },
-      sorts: [{ property: taskPropertyNames.dueDate, direction: "descending" }],
-    });
-
-    const mappedTasks = mapTasks(response.results);
-    if (mappedTasks.isErr()) {
-      return { isError: true };
-    }
-
-    return { isError: false, data: mappedTasks.value };
+    const tasks = await queryOpenTasks("descending");
+    return { isError: false, data: tasks };
   } catch {
     return { isError: true };
   }
@@ -254,21 +233,12 @@ const markTaskDone = createServerFn({ method: "POST" })
     const authState = await auth();
     if (authState.userId === null) {
       return { isError: true };
-    }
-
-    try {
-      const { client } = getNotionConfig();
-      await client.pages.update({
-        page_id: taskId,
-        properties: {
-          [taskPropertyNames.done]: {
-            checkbox: true,
-          },
-        },
-      });
-
-      return { isError: false };
-    } catch {
-      return { isError: true };
+    } else {
+      try {
+        await markTaskDoneInNotion(taskId);
+        return { isError: false };
+      } catch {
+        return { isError: true };
+      }
     }
   });
