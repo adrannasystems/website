@@ -8,7 +8,7 @@ import { type Client } from "@notionhq/client";
 export type SortDirection = "ascending" | "descending";
 
 export async function queryTasksForReminders(): Promise<TaskItem[]> {
-  const allOpenTasks = await queryTasks("ascending", {
+  const allOpenTasks = await queryTasks({
     property: taskPropertyNames.done,
     checkbox: { equals: false },
   });
@@ -16,11 +16,10 @@ export async function queryTasksForReminders(): Promise<TaskItem[]> {
 }
 
 export async function queryTasksForPage() {
-  return queryTasks("ascending");
+  return queryTasks();
 }
 
 async function queryTasks(
-  sortDirection: SortDirection,
   filter?: Parameters<Client["dataSources"]["query"]>[0]["filter"],
 ): Promise<TaskItem[]> {
   const client = getNotionClient();
@@ -36,7 +35,7 @@ async function queryTasks(
       //   property: taskPropertyNames.done,
       //   checkbox: { equals: false },
       // },
-      sorts: [{ property: taskPropertyNames.dueDate, direction: sortDirection }],
+      sorts: [{ property: taskPropertyNames.dueDate, direction: "descending" }],
       ...(nextCursor === null ? {} : { start_cursor: nextCursor }),
       ...(filter === undefined ? {} : { filter }),
     });

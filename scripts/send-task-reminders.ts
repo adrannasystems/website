@@ -1,4 +1,4 @@
-import { queryTasksForReminders } from "../src/notion-tasks-for-page.server";
+import { queryTasksForReminders } from "../src/notion-task-queries";
 
 async function main() {
   const ntfyTopic = requireEnv("NTFY_TOPIC");
