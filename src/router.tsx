@@ -9,9 +9,3 @@ export function getRouter() {
 
   return router
 }
-
-declare module '@tanstack/react-router' {
-  type Register = {
-    router: ReturnType<typeof getRouter>
-  }
-}

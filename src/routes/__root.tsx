@@ -20,6 +20,7 @@ import {
   UserButton,
 } from '@clerk/tanstack-react-start'
 import { auth } from '@clerk/tanstack-react-start/server'
+import '../styles.css'
 
 export const Route = createRootRoute({
   head: () => ({
@@ -57,8 +58,6 @@ function RootComponent() {
     <html lang="en">
       <head>
         <HeadContent />
-        <script src="https://cdn.tailwindcss.com"></script>
-        <style>{"body { font-family: 'Inter', sans-serif; }"}</style>
       </head>
       <body className="bg-gray-50">
         <QueryClientProvider client={queryClient}>

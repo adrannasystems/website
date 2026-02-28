@@ -3,4 +3,5 @@ export type TaskItem = {
   task: string;
   done: boolean;
   dueDate: string;
+  doneAt?: string;
 };

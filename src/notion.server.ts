@@ -1,9 +1,12 @@
-/// <reference types="node" />
-
 import { Client } from '@notionhq/client'
 
+function getEnvironmentVariable(name: string): string | undefined {
+  const processObject = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process
+  return processObject?.env?.[name]
+}
+
 export function getNotionClient(): Client {
-  const notionToken = process.env['NOTION_TOKEN']
+  const notionToken = getEnvironmentVariable('NOTION_TOKEN')
 
   if (notionToken === undefined || notionToken === '') {
     throw new Error('Missing NOTION_TOKEN environment variable')
@@ -13,7 +16,7 @@ export function getNotionClient(): Client {
 }
 
 export function getNotionTaskDatabaseId(): string {
-  const databaseId = process.env['NOTION_DATABASE_ID']
+  const databaseId = getEnvironmentVariable('NOTION_DATABASE_ID')
 
   if (databaseId === undefined || databaseId === '') {
     throw new Error('Missing NOTION_DATABASE_ID environment variable')

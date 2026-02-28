@@ -4,7 +4,7 @@ import { redirect } from '@tanstack/react-router'
 export type SignInSearch = { redirect_url?: string }
 
 export function validateSignInSearch(search: Record<string, unknown>): SignInSearch {
-  const redirectUrl = search.redirect_url
+  const redirectUrl = search['redirect_url']
   return typeof redirectUrl === 'string' && redirectUrl !== ''
     ? { redirect_url: redirectUrl }
     : {}

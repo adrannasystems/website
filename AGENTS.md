@@ -7,6 +7,7 @@ This file defines guardrails for agentic coding in this repo.
 - Before introducing a new dependency, external system, or platform integration, read the official docs first and implement from that source of truth.
 - Summarize what changed.
 - Do not use raw `fetch` for backend calls. Use type-safe server functions or route loaders instead.
+- Use TanStack Start environment file conventions: server-only code in `*.server.ts(x)` and client-only code in `*.client.ts(x)`.
 - For API queries, check whether results are paginated. If pagination is possible, ask the user how to handle it before implementing.
 - Before pushing, run `npm run lint` and `npm run typecheck`, plus any relevant tests, and fix any failures.
 

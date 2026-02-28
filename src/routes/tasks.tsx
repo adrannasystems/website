@@ -1,13 +1,21 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createServerFn } from "@tanstack/react-start";
-import { auth } from "@clerk/tanstack-react-start/server";
 import * as React from "react";
-import { z } from "zod";
+import { markTaskDone } from "../server-actions/mark-task-done";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import type { LoaderResult } from "../loader-result";
-import { markTaskDone as markTaskDoneInNotion } from "../notion-mark-task-done";
-import { queryOpenTasks } from "../notion-open-tasks";
 import type { TaskItem } from "../TaskItem";
+import { loadTasks } from "../server-actions/loadTasks";
 
 const tasksQueryKey = ["tasks"] as const;
 
@@ -29,6 +37,10 @@ function TasksPage() {
     () => new Set(),
   );
   const [toastMessage, setToastMessage] = React.useState<string | null>(null);
+  const [doneAtPickerTaskId, setDoneAtPickerTaskId] = React.useState<string | null>(null);
+  const [doneAtPickerValue, setDoneAtPickerValue] = React.useState<string>(
+    getNowDateTimeLocalValue(),
+  );
 
   const taskQuery = useQuery({
     queryKey: tasksQueryKey,
@@ -39,8 +51,8 @@ function TasksPage() {
     mutationFn: markTaskDone,
   });
 
-  const handleMarkDone = React.useCallback(
-    async (taskId: string) => {
+  const handleSetDone = React.useCallback(
+    async (taskId: string, done: boolean, doneAt?: string) => {
       setPendingTaskIds((prev) => {
         const next = new Set(prev);
         next.add(taskId);
@@ -56,14 +68,23 @@ function TasksPage() {
         (currentTaskResult) => {
           return currentTaskResult === undefined || currentTaskResult.isError
             ? currentTaskResult
-            : {
-                isError: false,
-                data: currentTaskResult.data.map((task) => {
-                  return task.id === taskId
-                    ? {
-                        ...task,
-                        done: true,
-                      }
+              : {
+                  isError: false,
+                  data: currentTaskResult.data.map((task) => {
+                    const doneAtValue = doneAt ?? new Date().toISOString();
+                    return task.id === taskId
+                      ? done
+                          ? {
+                              ...task,
+                              done: true,
+                              doneAt: doneAtValue,
+                            }
+                          : {
+                              id: task.id,
+                          task: task.task,
+                          done: false,
+                          dueDate: task.dueDate,
+                        }
                     : task;
                 }),
               };
@@ -71,14 +92,16 @@ function TasksPage() {
       );
 
       try {
-        const result = await markTaskDoneMutation.mutateAsync({ data: { taskId } });
+        const mutationInput =
+          doneAt === undefined ? { taskId, done } : { taskId, done, doneAt };
+        const result = await markTaskDoneMutation.mutateAsync({ data: mutationInput });
         if (result.isError) {
           queryClient.setQueryData(tasksQueryKey, previousTaskResult);
-          setToastMessage("Unable to mark this task as done.");
+          setToastMessage("Unable to update this task.");
         }
       } catch {
         queryClient.setQueryData(tasksQueryKey, previousTaskResult);
-        setToastMessage("Unable to mark this task as done.");
+        setToastMessage("Unable to update this task.");
       } finally {
         await queryClient.invalidateQueries({ queryKey: tasksQueryKey });
         setPendingTaskIds((prev) => {
@@ -90,6 +113,32 @@ function TasksPage() {
     },
     [markTaskDoneMutation, queryClient],
   );
+
+  const handleRequestSetDone = React.useCallback((taskId: string) => {
+    setDoneAtPickerTaskId(taskId);
+    setDoneAtPickerValue(getNowDateTimeLocalValue());
+  }, []);
+
+  const handleCloseDoneAtPicker = React.useCallback(() => {
+    setDoneAtPickerTaskId(null);
+  }, []);
+
+  const handleConfirmSetDone = React.useCallback(async () => {
+    if (doneAtPickerTaskId === null) {
+      return;
+    } else {
+      const selectedDate = new Date(doneAtPickerValue);
+      if (Number.isNaN(selectedDate.getTime())) {
+        setToastMessage("Please select a valid date and time.");
+      } else {
+        await handleSetDone(doneAtPickerTaskId, true, selectedDate.toISOString());
+        setDoneAtPickerTaskId(null);
+      }
+    }
+  }, [doneAtPickerTaskId, doneAtPickerValue, handleSetDone]);
+
+  const isSavingDoneAt =
+    doneAtPickerTaskId === null ? false : pendingTaskIds.has(doneAtPickerTaskId);
 
   if (taskQuery.isPending) {
     return (
@@ -123,8 +172,54 @@ function TasksPage() {
             onDismissToast={() => {
               setToastMessage(null);
             }}
-            onMarkDone={handleMarkDone}
+            onSetUndone={async (taskId) => {
+              await handleSetDone(taskId, false);
+            }}
+            onRequestSetDone={handleRequestSetDone}
           />
+          <Dialog
+            open={doneAtPickerTaskId !== null}
+            onOpenChange={(nextOpen) => {
+              if (nextOpen) {
+                return;
+              } else {
+                handleCloseDoneAtPicker();
+              }
+            }}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Set done date and time</DialogTitle>
+                <DialogDescription>
+                  Choose when this task should be marked as done.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-2">
+                <Label htmlFor="done-at">Done at</Label>
+                <Input
+                  id="done-at"
+                  type="datetime-local"
+                  value={doneAtPickerValue}
+                  onChange={(event) => {
+                    setDoneAtPickerValue(event.target.value);
+                  }}
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCloseDoneAtPicker}
+                  disabled={isSavingDoneAt}
+                >
+                  Cancel
+                </Button>
+                <Button type="button" onClick={() => void handleConfirmSetDone()} disabled={isSavingDoneAt}>
+                  {isSavingDoneAt ? "Saving..." : "Save"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </main>
     );
@@ -136,7 +231,8 @@ function TasksContent(props: {
   pendingTaskIds: Set<string>;
   toastMessage: string | null;
   onDismissToast: () => void;
-  onMarkDone: (taskId: string) => Promise<void>;
+  onSetUndone: (taskId: string) => Promise<void>;
+  onRequestSetDone: (taskId: string) => void;
 }) {
   return (
     <div>
@@ -172,31 +268,29 @@ function TasksContent(props: {
                   {task.dueDate !== "" ? (
                     <div className="text-sm text-gray-500">Due: {task.dueDate}</div>
                   ) : null}
+                  {task.doneAt !== undefined && task.doneAt !== "" ? (
+                    <div className="text-sm text-gray-500">Done At: {task.doneAt}</div>
+                  ) : null}
                 </div>
                 <div className="flex items-center">
-                  <span
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (task.done) {
+                        void props.onSetUndone(task.id);
+                      } else {
+                        props.onRequestSetDone(task.id);
+                      }
+                    }}
+                    disabled={isPending}
                     className={
                       task.done
-                        ? "text-green-700 bg-green-50 border border-green-200"
-                        : "text-gray-600 bg-gray-100 border border-gray-200"
+                        ? "rounded-full border border-green-200 bg-green-50 px-3 py-1 text-sm font-medium text-green-700 hover:bg-green-100 disabled:cursor-not-allowed disabled:opacity-60"
+                        : "rounded-full border border-gray-200 bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-60"
                     }
                   >
-                    <span className="text-sm font-medium px-3 py-1 rounded-full border inline-flex">
-                      {task.done ? "Done" : "Open"}
-                    </span>
-                  </span>
-                  {!task.done ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void props.onMarkDone(task.id);
-                      }}
-                      disabled={isPending}
-                      className="ml-3 rounded-md border border-gray-300 bg-white px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {isPending ? "Marking..." : "Mark done"}
-                    </button>
-                  ) : null}
+                    {isPending ? "Saving..." : task.done ? "Done" : "Undone"}
+                  </button>
                 </div>
               </div>
             );
@@ -212,33 +306,15 @@ function TasksContent(props: {
   );
 }
 
-const loadTasks = createServerFn({ method: "GET" }).handler(async () => {
-  try {
-    const tasks = await queryOpenTasks("descending");
-    return { isError: false, data: tasks };
-  } catch {
-    return { isError: true };
-  }
-});
 
-const markTaskDoneInput = z.object({
-  taskId: z.string().trim().min(1),
-});
 
-const markTaskDone = createServerFn({ method: "POST" })
-  .inputValidator(markTaskDoneInput)
-  .handler(async ({ data }) => {
-    const taskId = data.taskId;
+function getNowDateTimeLocalValue(): string {
+  const now = new Date();
+  const year = String(now.getFullYear());
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hour = String(now.getHours()).padStart(2, "0");
+  const minute = String(now.getMinutes()).padStart(2, "0");
 
-    const authState = await auth();
-    if (authState.userId === null) {
-      return { isError: true };
-    } else {
-      try {
-        await markTaskDoneInNotion(taskId);
-        return { isError: false };
-      } catch {
-        return { isError: true };
-      }
-    }
-  });
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+}

@@ -14,5 +14,7 @@ export const Route = createFileRoute('/sign-in')({
 function SignInPage() {
   const search = Route.useSearch()
 
-  return <SignInRoutePage redirectUrl={search.redirect_url} />
+  return search.redirect_url === undefined
+    ? <SignInRoutePage />
+    : <SignInRoutePage redirectUrl={search.redirect_url} />
 }
