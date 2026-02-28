@@ -11,11 +11,10 @@ async function main() {
       const body = `Task: ${task.task}\nDue: ${dueDateText}`;
       await sendNtfyNotification(ntfyTopic, "Task still open", body);
     }
-
-    console.log(
-      `Sent ${String(tasksDueToday.length)} reminder notification(s) for tasks due today`,
-    );
   }
+  console.log(
+    `Sent ${String(tasksDueToday.length)} reminder notification(s) for tasks due today`,
+  );
 }
 
 function requireEnv(name: string): string {

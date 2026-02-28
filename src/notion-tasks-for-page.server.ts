@@ -7,17 +7,12 @@ import { type Client } from "@notionhq/client";
 
 export type SortDirection = "ascending" | "descending";
 
-const REMINDER_TIME_ZONE = "Europe/Zurich";
-
 export async function queryTasksForReminders(): Promise<TaskItem[]> {
   const allOpenTasks = await queryTasks("ascending", {
     property: taskPropertyNames.done,
     checkbox: { equals: false },
   });
-  const localDate = formatDateInTimeZone(new Date(), REMINDER_TIME_ZONE);
-  return allOpenTasks.filter((task) =>
-    isDueOnDate(task.dueDate, localDate, REMINDER_TIME_ZONE),
-  );
+  return allOpenTasks
 }
 
 export async function queryTasksForPage() {
@@ -132,33 +127,4 @@ function isPageObject(response: unknown): response is PageObjectResponse {
   return (
     typeof response === 'object' && response !== null && 'properties' in response
   )
-}
-
-function formatDateInTimeZone(date: Date, timeZone: string): string {
-  const formatter = new Intl.DateTimeFormat('de-CH', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
-
-  return formatter.format(date);
-}
-
-function isDueOnDate(
-  dueDateValue: string,
-  expectedDate: string,
-  timeZone: string,
-): boolean {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(dueDateValue)) {
-    return dueDateValue === expectedDate;
-  } else {
-    const dueDate = new Date(dueDateValue);
-
-    if (Number.isNaN(dueDate.getTime())) {
-      throw new Error(`Invalid due date value '${dueDateValue}'`);
-    } else {
-      return formatDateInTimeZone(dueDate, timeZone) === expectedDate;
-    }
-  }
 }

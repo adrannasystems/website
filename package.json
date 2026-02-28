@@ -8,6 +8,7 @@
     "start": "node .output/server/index.mjs",
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
+    "reminders": "node --env-file=.env --env-file=.env.local --import tsx scripts/send-task-reminders.ts",
     "preview": "vite preview",
     "precommit": "npm run lint && npm run typecheck && npm run build"
   },
