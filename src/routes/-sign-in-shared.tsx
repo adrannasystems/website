@@ -18,7 +18,7 @@ export function redirectSignedInUsers({
   }
 }) {
   if (context.currentUserId !== null) {
-    throw redirect({ to: '/tasks' })
+    throw redirect({ to: '/' })
   }
 }
 

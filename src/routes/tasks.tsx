@@ -37,7 +37,9 @@ function TasksPage() {
     () => new Set(),
   );
   const [toastMessage, setToastMessage] = React.useState<string | null>(null);
-  const [doneAtPickerTaskId, setDoneAtPickerTaskId] = React.useState<string | null>(null);
+  const [doneAtPickerTaskId, setDoneAtPickerTaskId] = React.useState<
+    string | null
+  >(null);
   const [doneAtPickerValue, setDoneAtPickerValue] = React.useState<string>(
     getNowDateTimeLocalValue(),
   );
@@ -59,28 +61,27 @@ function TasksPage() {
         return next;
       });
 
-      const previousTaskResult = queryClient.getQueryData<LoaderResult<TaskItem[]>>(
-        tasksQueryKey,
-      );
+      const previousTaskResult =
+        queryClient.getQueryData<LoaderResult<TaskItem[]>>(tasksQueryKey);
 
       queryClient.setQueryData<LoaderResult<TaskItem[]>>(
         tasksQueryKey,
         (currentTaskResult) => {
           return currentTaskResult === undefined || currentTaskResult.isError
             ? currentTaskResult
-              : {
-                  isError: false,
-                  data: currentTaskResult.data.map((task) => {
-                    const doneAtValue = doneAt ?? new Date().toISOString();
-                    return task.id === taskId
-                      ? done
-                          ? {
-                              ...task,
-                              done: true,
-                              doneAt: doneAtValue,
-                            }
-                          : {
-                              id: task.id,
+            : {
+                isError: false,
+                data: currentTaskResult.data.map((task) => {
+                  const doneAtValue = doneAt ?? new Date().toISOString();
+                  return task.id === taskId
+                    ? done
+                      ? {
+                          ...task,
+                          done: true,
+                          doneAt: doneAtValue,
+                        }
+                      : {
+                          id: task.id,
                           task: task.task,
                           done: false,
                           dueDate: task.dueDate,
@@ -94,7 +95,9 @@ function TasksPage() {
       try {
         const mutationInput =
           doneAt === undefined ? { taskId, done } : { taskId, done, doneAt };
-        const result = await markTaskDoneMutation.mutateAsync({ data: mutationInput });
+        const result = await markTaskDoneMutation.mutateAsync({
+          data: mutationInput,
+        });
         if (result.isError) {
           queryClient.setQueryData(tasksQueryKey, previousTaskResult);
           setToastMessage("Unable to update this task.");
@@ -131,14 +134,20 @@ function TasksPage() {
       if (Number.isNaN(selectedDate.getTime())) {
         setToastMessage("Please select a valid date and time.");
       } else {
-        await handleSetDone(doneAtPickerTaskId, true, selectedDate.toISOString());
+        await handleSetDone(
+          doneAtPickerTaskId,
+          true,
+          selectedDate.toISOString(),
+        );
         setDoneAtPickerTaskId(null);
       }
     }
   }, [doneAtPickerTaskId, doneAtPickerValue, handleSetDone]);
 
   const isSavingDoneAt =
-    doneAtPickerTaskId === null ? false : pendingTaskIds.has(doneAtPickerTaskId);
+    doneAtPickerTaskId === null
+      ? false
+      : pendingTaskIds.has(doneAtPickerTaskId);
 
   if (taskQuery.isPending) {
     return (
@@ -214,7 +223,11 @@ function TasksPage() {
                 >
                   Cancel
                 </Button>
-                <Button type="button" onClick={() => void handleConfirmSetDone()} disabled={isSavingDoneAt}>
+                <Button
+                  type="button"
+                  onClick={() => void handleConfirmSetDone()}
+                  disabled={isSavingDoneAt}
+                >
                   {isSavingDoneAt ? "Saving..." : "Save"}
                 </Button>
               </DialogFooter>
@@ -250,7 +263,9 @@ function TasksContent(props: {
           </div>
         </div>
       ) : null}
-      <div className="text-sm text-gray-500 mb-4">{props.tasks.length} items</div>
+      <div className="text-sm text-gray-500 mb-4">
+        {props.tasks.length} items
+      </div>
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
         <div className="divide-y divide-gray-200">
           {props.tasks.map((task) => {
@@ -266,10 +281,14 @@ function TasksContent(props: {
                     {task.task}
                   </div>
                   {task.dueDate !== "" ? (
-                    <div className="text-sm text-gray-500">Due: {task.dueDate}</div>
+                    <div className="text-sm text-gray-500">
+                      Due: {task.dueDate}
+                    </div>
                   ) : null}
                   {task.doneAt !== undefined && task.doneAt !== "" ? (
-                    <div className="text-sm text-gray-500">Done At: {task.doneAt}</div>
+                    <div className="text-sm text-gray-500">
+                      Done At: {task.doneAt}
+                    </div>
                   ) : null}
                 </div>
                 <div className="flex items-center">
@@ -305,8 +324,6 @@ function TasksContent(props: {
     </div>
   );
 }
-
-
 
 function getNowDateTimeLocalValue(): string {
   const now = new Date();

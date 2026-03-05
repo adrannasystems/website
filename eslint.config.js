@@ -13,7 +13,7 @@ const __dirname = path.dirname(__filename)
 /** @type {import('eslint/use-at-your-own-risk').FlatConfig[]} */
 const config = [
   {
-    ignores: ['dist', 'node_modules', '.output'],
+    ignores: ['dist', 'node_modules', '.output', 'convex/_generated'],
   },
   {
     files: ['**/*.ts', '**/*.tsx'],
@@ -91,6 +91,12 @@ const config = [
       'react/jsx-uses-vars': 'error',
       'react-hooks/rules-of-hooks': 'error',
       'react-hooks/exhaustive-deps': 'error',
+    },
+  },
+  {
+    files: ['**/*.d.ts'],
+    rules: {
+      '@typescript-eslint/consistent-type-definitions': 'off',
     },
   },
 ]

@@ -1,16 +1,17 @@
 /// <reference types="vite/client" />
 
-import * as React from 'react'
+import * as React from "react";
 import {
   HeadContent,
   Link,
   Outlet,
   Scripts,
   createRootRoute,
-} from '@tanstack/react-router'
-import { createServerFn } from '@tanstack/react-start'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+} from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ConvexProviderWithClerk } from "convex/react-clerk";
 import {
   ClerkProvider,
   SignedIn,
@@ -18,41 +19,43 @@ import {
   SignInButton,
   SignUpButton,
   UserButton,
-} from '@clerk/tanstack-react-start'
-import { auth } from '@clerk/tanstack-react-start/server'
-import '../styles.css'
+  useAuth,
+} from "@clerk/tanstack-react-start";
+import { auth } from "@clerk/tanstack-react-start/server";
+import { convexClient } from "../convex-client";
+import "../styles.css";
 
 export const Route = createRootRoute({
   head: () => ({
     meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+      { charSet: "utf-8" },
+      { name: "viewport", content: "width=device-width, initial-scale=1" },
       {
-        title: 'Adranna Systems - IT Development & Management Consulting',
+        title: "Adranna Systems - IT Development & Management Consulting",
       },
     ],
     links: [
       {
-        rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap',
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
       },
     ],
   }),
   beforeLoad: async () => {
     return {
       currentUserId: await getCurrentUserId(),
-    }
+    };
   },
   component: RootComponent,
-})
+});
 
-const getCurrentUserId = createServerFn({ method: 'GET' }).handler(async () => {
-  const authState = await auth()
-  return authState.userId
-})
+const getCurrentUserId = createServerFn({ method: "GET" }).handler(async () => {
+  const authState = await auth();
+  return authState.userId;
+});
 
 function RootComponent() {
-  const [queryClient] = React.useState(() => new QueryClient())
+  const [queryClient] = React.useState(() => new QueryClient());
 
   return (
     <html lang="en">
@@ -60,21 +63,25 @@ function RootComponent() {
         <HeadContent />
       </head>
       <body className="bg-gray-50">
-        <QueryClientProvider client={queryClient}>
-          <ClerkProvider signInUrl="/sign-in">
-            <SiteHeader />
-            <Outlet />
-          </ClerkProvider>
-          {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
-        </QueryClientProvider>
+        <ClerkProvider signInUrl="/sign-in">
+          <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
+            <QueryClientProvider client={queryClient}>
+              <SiteHeader />
+              <Outlet />
+              {import.meta.env.DEV ? (
+                <ReactQueryDevtools initialIsOpen={false} />
+              ) : null}
+            </QueryClientProvider>
+          </ConvexProviderWithClerk>
+        </ClerkProvider>
         <Scripts />
       </body>
     </html>
-  )
+  );
 }
 
 function SiteHeader() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   return (
     <header className="bg-white shadow-sm fixed w-full z-10">
@@ -112,7 +119,7 @@ function SiteHeader() {
             <button
               type="button"
               onClick={() => {
-                setIsMobileMenuOpen((currentValue) => !currentValue)
+                setIsMobileMenuOpen((currentValue) => !currentValue);
               }}
               className="md:hidden inline-flex items-center justify-center rounded-md border border-gray-300 p-2 text-gray-700"
               aria-expanded={isMobileMenuOpen}
@@ -128,7 +135,11 @@ function SiteHeader() {
                 strokeWidth="2"
                 className="h-5 w-5"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           </div>
@@ -167,19 +178,28 @@ function SiteHeader() {
                 <Link to="/tasks" className="text-gray-600 hover:text-gray-900">
                   Tasks
                 </Link>
+                <Link
+                  to="/mtasks"
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  MTasks
+                </Link>
                 <UserButton />
               </div>
             </SignedIn>
           </div>
         </div>
         {isMobileMenuOpen ? (
-          <div id="mobile-navigation" className="md:hidden mt-4 border-t border-gray-200 pt-4">
+          <div
+            id="mobile-navigation"
+            className="md:hidden mt-4 border-t border-gray-200 pt-4"
+          >
             <div className="flex flex-col gap-3">
               <a
                 href="/#services"
                 className="text-gray-600 hover:text-gray-900"
                 onClick={() => {
-                  setIsMobileMenuOpen(false)
+                  setIsMobileMenuOpen(false);
                 }}
               >
                 Services
@@ -188,7 +208,7 @@ function SiteHeader() {
                 href="/#about"
                 className="text-gray-600 hover:text-gray-900"
                 onClick={() => {
-                  setIsMobileMenuOpen(false)
+                  setIsMobileMenuOpen(false);
                 }}
               >
                 About
@@ -197,7 +217,7 @@ function SiteHeader() {
                 href="/#contact"
                 className="text-gray-600 hover:text-gray-900"
                 onClick={() => {
-                  setIsMobileMenuOpen(false)
+                  setIsMobileMenuOpen(false);
                 }}
               >
                 Contact
@@ -208,10 +228,19 @@ function SiteHeader() {
                     to="/tasks"
                     className="text-gray-600 hover:text-gray-900"
                     onClick={() => {
-                      setIsMobileMenuOpen(false)
+                      setIsMobileMenuOpen(false);
                     }}
                   >
                     Tasks
+                  </Link>
+                  <Link
+                    to="/mtasks"
+                    className="text-gray-600 hover:text-gray-900"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                    }}
+                  >
+                    MTasks
                   </Link>
                 </div>
               </SignedIn>
@@ -220,5 +249,5 @@ function SiteHeader() {
         ) : null}
       </nav>
     </header>
-  )
+  );
 }

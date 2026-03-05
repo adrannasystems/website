@@ -23,6 +23,7 @@ This file defines guardrails for agentic coding in this repo.
 ## Communication
 - Be explicit about assumptions.
 - If blocked, propose the smallest next step to unblock.
+- Before deciding frontend formatting conventions (dates, numbers, currencies, etc.), ask the user for the preferred format.
 
 ## Readability
 - Prefer clarity over cleverness.
