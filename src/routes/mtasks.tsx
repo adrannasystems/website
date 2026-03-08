@@ -1,6 +1,12 @@
 import * as React from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
+import {
+  Authenticated,
+  AuthLoading,
+  Unauthenticated,
+  useMutation,
+  useQuery,
+} from "convex/react";
 import type { Id } from "../../convex/_generated/dataModel";
 import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
@@ -42,15 +48,31 @@ export const Route = createFileRoute("/mtasks")({
 });
 
 function MaintenanceTasksPage() {
-  const tasksResult = useQuery(
-    api.maintenanceTasks.findAllTasksByDueDateDesc,
-    {},
+  return (
+    <>
+      <AuthLoading>
+        <MaintenanceTasksLoadingState />
+      </AuthLoading>
+      <Authenticated>
+        <MaintenanceTasksContent />
+      </Authenticated>
+      <Unauthenticated>
+        <MaintenanceTasksUnauthorizedState />
+      </Unauthenticated>
+    </>
   );
+}
+
+function MaintenanceTasksContent() {
   const createTask = useMutation(api.maintenanceTasks.createTask);
   const [createName, setCreateName] = React.useState("");
   const [createPeriodHours, setCreatePeriodHours] = React.useState("24");
   const [isCreating, setIsCreating] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const visibleTasksResult = useQuery(
+    api.maintenanceTasks.listTasksForMaintenanceOverview,
+    {},
+  );
 
   const handleCreateTask = React.useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -87,10 +109,10 @@ function MaintenanceTasksPage() {
     [createName, createPeriodHours, createTask],
   );
 
-  if (tasksResult === undefined) {
+  if (visibleTasksResult === undefined) {
     return <MaintenanceTasksLoadingState />;
   } else {
-    const tasks = tasksResult as MaintenanceTask[];
+    const tasks = visibleTasksResult as MaintenanceTask[];
 
     return (
       <main className="min-h-screen bg-gray-50 px-6 py-20">
@@ -177,6 +199,22 @@ function MaintenanceTasksLoadingState() {
           Maintenance Tasks
         </h1>
         <div className="text-sm text-gray-500">Loading...</div>
+      </div>
+    </main>
+  );
+}
+
+function MaintenanceTasksUnauthorizedState() {
+  return (
+    <main className="min-h-screen bg-gray-50 px-6 py-20">
+      <div className="mx-auto max-w-4xl">
+        <h1 className="mb-8 text-3xl font-semibold text-gray-900">
+          Maintenance Tasks
+        </h1>
+        <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Your session is not authenticated for Convex yet. Please refresh the
+          page.
+        </div>
       </div>
     </main>
   );

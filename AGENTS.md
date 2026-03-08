@@ -15,6 +15,7 @@ This file defines guardrails for agentic coding in this repo.
 - Never run destructive commands unless explicitly requested.
 - Ask before installing new dependencies or modifying global config.
 - Never hard-code secrets (API keys, tokens). Always use environment variables.
+- Read required environment variables via named constants and explicit Zod parsing, e.g. `const envVarName = 'X'; const value = z.string({ message: \`${envVarName} is required\` }).nonempty().parse(process.env[envVarName])`.
 - Never log secrets or include them in error messages.
 - Never silently default missing/invalid data to a "sensible" value.
 - For missing/invalid input or API data, explicitly choose: fail parsing or return `undefined`.
