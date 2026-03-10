@@ -1,14 +1,24 @@
 import { internal } from "./_generated/api";
 import { z } from "zod";
-import { internalAction } from "./_generated/server";
+import { internalAction, internalQuery } from "./_generated/server";
+import type { MaintenanceTaskState } from "./MaintenanceTaskModel";
+import { MaintenanceTaskModelImpl } from "./MaintenanceTaskModel";
+
+export type MaintenanceTaskForNotification = {
+  name: string;
+  state: MaintenanceTaskState;
+  periodsDue: number;
+  periodHours: number;
+  lastExecutedAt: number | null;
+}
 
 export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
   args: {},
   handler: async (ctx) => {
     const ntfyBaseUrl = "https://ntfy.sh";
 
-    const dueOrOverdueTasks = await ctx.runQuery(
-      internal.maintenanceTasks.listDueOrMoreUrgentTasksForNotifications,
+    const dueOrOverdueTasks: MaintenanceTaskForNotification[] = await ctx.runQuery(
+      internal.maintenanceTaskNotifications.listDueOrMoreUrgentTasksForNotifications,
       {},
     );
 
@@ -77,3 +87,37 @@ const ntfyTopic = z
 function trimTrailingSlash(value: string) {
   return value.endsWith("/") ? value.slice(0, -1) : value;
 }
+
+export const listDueOrMoreUrgentTasksForNotifications = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const taskDbos = await ctx.db
+      .query("maintenanceTasks")
+      .filter((q) =>
+        q.or(
+          q.eq(q.field("deletedAt"), null),
+          q.eq(q.field("deletedAt"), undefined),
+        ),
+      )
+      .collect();
+
+    const dueOrOverdueTasks: MaintenanceTaskForNotification[] = [];
+    await Promise.all(
+      taskDbos.map(async (dbo) => {
+        const task = new MaintenanceTaskModelImpl(ctx, dbo);
+        const state = await task.state();
+        if (state === "Due" || state === "Overdue") {
+          dueOrOverdueTasks.push({
+            name: task.name,
+            state,
+            periodsDue: await task.periodsDue(),
+            periodHours: task.periodHours,
+            lastExecutedAt: await task.lastExecutedAt(),
+          } satisfies MaintenanceTaskForNotification);
+        }
+      }),
+    );
+
+    return dueOrOverdueTasks;
+  },
+});

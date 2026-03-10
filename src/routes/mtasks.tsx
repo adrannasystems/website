@@ -69,8 +69,12 @@ function MaintenanceTasksContent() {
   const [createPeriodHours, setCreatePeriodHours] = React.useState("24");
   const [isCreating, setIsCreating] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-  const visibleTasksResult = useQuery(
+  const activeTasksResult = useQuery(
     api.maintenanceTasks.listTasksForMaintenanceOverview,
+    {},
+  );
+  const deletedTasksResult = useQuery(
+    api.maintenanceTasks.listDeletedTasksForMaintenanceOverview,
     {},
   );
 
@@ -109,10 +113,11 @@ function MaintenanceTasksContent() {
     [createName, createPeriodHours, createTask],
   );
 
-  if (visibleTasksResult === undefined) {
+  if (activeTasksResult === undefined || deletedTasksResult === undefined) {
     return <MaintenanceTasksLoadingState />;
   } else {
-    const tasks = visibleTasksResult as MaintenanceTask[];
+    const activeTasks = activeTasksResult as MaintenanceTask[];
+    const deletedTasks = deletedTasksResult as MaintenanceTask[];
 
     return (
       <main className="min-h-screen bg-gray-50 px-6 py-20">
@@ -167,24 +172,53 @@ function MaintenanceTasksContent() {
             </div>
           )}
 
-          <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-            <div className="divide-y divide-gray-200">
-              {tasks.map((task) => {
-                return (
-                  <MaintenanceTaskRow
-                    key={task.id}
-                    task={task}
-                    onError={setErrorMessage}
-                  />
-                );
-              })}
-              {tasks.length === 0 ? (
-                <div className="px-6 py-10 text-center text-sm text-gray-500">
-                  No maintenance tasks yet.
-                </div>
-              ) : null}
+          <section className="mb-8">
+            <h2 className="mb-3 text-lg font-medium text-gray-900">
+              Active tasks
+            </h2>
+            <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="divide-y divide-gray-200">
+                {activeTasks.map((task) => {
+                  return (
+                    <MaintenanceTaskRow
+                      key={task.id}
+                      task={task}
+                      onError={setErrorMessage}
+                    />
+                  );
+                })}
+                {activeTasks.length === 0 ? (
+                  <div className="px-6 py-10 text-center text-sm text-gray-500">
+                    No maintenance tasks yet.
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-lg font-medium text-gray-900">
+              Deleted tasks
+            </h2>
+            <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+              <div className="divide-y divide-gray-200">
+                {deletedTasks.map((task) => {
+                  return (
+                    <DeletedMaintenanceTaskRow
+                      key={task.id}
+                      task={task}
+                      onError={setErrorMessage}
+                    />
+                  );
+                })}
+                {deletedTasks.length === 0 ? (
+                  <div className="px-6 py-10 text-center text-sm text-gray-500">
+                    No deleted maintenance tasks.
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </section>
         </div>
       </main>
     );
@@ -568,6 +602,53 @@ function MaintenanceTaskRow(props: {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function DeletedMaintenanceTaskRow(props: {
+  task: MaintenanceTask;
+  onError: (message: string) => void;
+}) {
+  const undeleteTask = useMutation(api.maintenanceTasks.undeleteTask);
+  const [isUndeletingTask, setIsUndeletingTask] = React.useState(false);
+
+  const handleUndeleteTask = React.useCallback(async () => {
+    setIsUndeletingTask(true);
+
+    try {
+      await undeleteTask({ taskId: props.task.id });
+    } catch {
+      props.onError("Unable to restore maintenance task.");
+    } finally {
+      setIsUndeletingTask(false);
+    }
+  }, [props, undeleteTask]);
+
+  return (
+    <div className="flex flex-col gap-3 px-6 py-4 md:flex-row md:items-start md:justify-between">
+      <div>
+        <div className="text-lg font-medium text-gray-900">{props.task.name}</div>
+        <div className="text-sm text-gray-500">
+          Period: {props.task.periodHours} hours
+        </div>
+        <div className="text-sm text-gray-500">
+          Last execution:{" "}
+          {props.task.lastExecutedAt === null
+            ? "Never"
+            : formatDateTime(props.task.lastExecutedAt)}
+        </div>
+      </div>
+      <div>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => void handleUndeleteTask()}
+          disabled={isUndeletingTask}
+        >
+          {isUndeletingTask ? "Restoring..." : "Restore"}
+        </Button>
+      </div>
     </div>
   );
 }

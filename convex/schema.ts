@@ -6,6 +6,7 @@ export default defineSchema({
     name: v.string(),
     periodHours: v.number(),
     lastExecutedAt: v.optional(v.union(v.number(), v.null())),
+    deletedAt: v.optional(v.union(v.number(), v.null())),
   }),
   maintenanceExecutions: defineTable({
     taskId: v.id('maintenanceTasks'),
