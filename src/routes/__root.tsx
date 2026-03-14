@@ -20,10 +20,12 @@ import {
   SignUpButton,
   UserButton,
   useAuth,
+  useUser,
 } from "@clerk/tanstack-react-start";
 import { auth } from "@clerk/tanstack-react-start/server";
+import { z } from "zod";
+import { PostHogProvider, usePostHog } from "posthog-js/react";
 import { convexClient } from "../convex-client";
-import { PostHogProvider } from "../components/PostHogProvider";
 import "../styles.css";
 
 export const Route = createRootRoute({
@@ -65,7 +67,11 @@ function RootComponent() {
       </head>
       <body className="bg-gray-50">
         <ClerkProvider signInUrl="/sign-in">
-          <PostHogProvider>
+          <PostHogProvider
+            apiKey={getPostHogApiKey()}
+            options={{ api_host: getPostHogHost(), defaults: "2026-01-30" }}
+          >
+            <PostHogUserSync />
             <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
               <QueryClientProvider client={queryClient}>
                 <SiteHeader />
@@ -81,6 +87,34 @@ function RootComponent() {
       </body>
     </html>
   );
+}
+
+function getPostHogApiKey() {
+  const key = "VITE_PUBLIC_POSTHOG_KEY";
+  return z.string({ message: `${key} is required` }).nonempty().parse(import.meta.env[key]);
+}
+
+function getPostHogHost() {
+  const key = "VITE_PUBLIC_POSTHOG_HOST";
+  return z.string({ message: `${key} is required` }).nonempty().parse(import.meta.env[key]);
+}
+
+function PostHogUserSync() {
+  const { user } = useUser();
+  const posthog = usePostHog();
+
+  React.useEffect(() => {
+    if (user !== null && user !== undefined) {
+      posthog.identify(user.id, {
+        email: user.primaryEmailAddress?.emailAddress,
+        name: user.fullName ?? undefined,
+      });
+    } else {
+      posthog.reset();
+    }
+  }, [posthog, user]);
+
+  return null;
 }
 
 function SiteHeader() {
