@@ -235,7 +235,7 @@ function MTasksLandingPage() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="bg-linear-to-br from-blue-50 to-indigo-50 pt-24 pb-20 px-6">
+      <section className="bg-linear-to-br from-blue-50 to-indigo-50 pt-12 pb-20 px-6">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
             Never Miss a Maintenance Task

@@ -27,6 +27,46 @@ This file defines guardrails for agentic coding in this repo.
 - If blocked, propose the smallest next step to unblock.
 - Before deciding frontend formatting conventions (dates, numbers, currencies, etc.), ask the user for the preferred format.
 
+## Browser Visual Inspection
+
+A Playwright MCP server is configured in `.mcp.json` at the project root. This gives agents browser
+automation tools for visually inspecting the app during development.
+
+### Setup
+
+The MCP server starts automatically when Claude Code loads the project. On first use it will prompt
+for approval. Accept it. The server runs `@playwright/mcp@latest` via `npx` — no manual install
+needed. If Playwright's browser binaries are missing, run:
+
+```sh
+npx playwright install chromium
+```
+
+The default viewport is **375×812px** (iPhone-sized), matching the mobile-first design target.
+
+### Workflow for visual changes
+
+1. Start the dev server: `npm run dev` (the MCP server does not start it automatically).
+2. Make your HTML/CSS change.
+3. Use the Playwright MCP tool to navigate to the relevant page, e.g. `http://localhost:3000`.
+4. Take a screenshot to verify the layout looks correct at 375px width.
+5. If layout issues are visible, fix them and repeat from step 3.
+6. To check a wider breakpoint (tablet/desktop), take an additional screenshot after resizing the
+   viewport with the `browser_resize` tool.
+
+### Key tools available
+
+- `browser_navigate` — go to a URL
+- `browser_screenshot` — capture the current viewport as an image
+- `browser_resize` — change the viewport dimensions (e.g. `1280x800` for desktop)
+- `browser_snapshot` — get the accessibility tree (useful for confirming rendered content)
+
+### Mobile-first checklist
+
+- Default screenshots should be at the configured 375px width (no extra steps needed).
+- Check that text is readable, tap targets are large enough, and nothing overflows horizontally.
+- Verify responsive breakpoints at 768px (tablet) and 1280px (desktop) when relevant.
+
 ## Readability
 - Prefer clarity over cleverness.
 - Do not duplicate near-identical logic across files; extract shared helpers/components when behavior is the same.

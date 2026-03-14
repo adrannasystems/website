@@ -75,7 +75,9 @@ function RootComponent() {
             <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
               <QueryClientProvider client={queryClient}>
                 <SiteHeader />
-                <Outlet />
+                <div className="pt-16">
+                  <Outlet />
+                </div>
                 {import.meta.env.DEV ? (
                   <ReactQueryDevtools initialIsOpen={false} />
                 ) : null}

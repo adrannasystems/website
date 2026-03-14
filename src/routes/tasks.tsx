@@ -151,7 +151,7 @@ function TasksPage() {
 
   if (taskQuery.isPending) {
     return (
-      <main className="min-h-screen bg-gray-50 px-6 py-20">
+      <main className="min-h-screen bg-gray-50 px-6 pt-12 pb-20">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-semibold text-gray-900 mb-8">Tasks</h1>
           <div className="text-sm text-gray-500">Loading...</div>
@@ -160,7 +160,7 @@ function TasksPage() {
     );
   } else if (taskQuery.data === undefined || taskQuery.data.isError) {
     return (
-      <main className="min-h-screen bg-gray-50 px-6 py-20">
+      <main className="min-h-screen bg-gray-50 px-6 pt-12 pb-20">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-semibold text-gray-900 mb-8">Tasks</h1>
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -171,7 +171,7 @@ function TasksPage() {
     );
   } else {
     return (
-      <main className="min-h-screen bg-gray-50 px-6 py-20">
+      <main className="min-h-screen bg-gray-50 px-6 pt-12 pb-20">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-semibold text-gray-900 mb-8">Tasks</h1>
           <TasksContent
