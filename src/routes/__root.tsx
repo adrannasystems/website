@@ -23,6 +23,7 @@ import {
 } from "@clerk/tanstack-react-start";
 import { auth } from "@clerk/tanstack-react-start/server";
 import { convexClient } from "../convex-client";
+import { PostHogProvider } from "../components/PostHogProvider";
 import "../styles.css";
 
 export const Route = createRootRoute({
@@ -64,15 +65,17 @@ function RootComponent() {
       </head>
       <body className="bg-gray-50">
         <ClerkProvider signInUrl="/sign-in">
-          <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
-            <QueryClientProvider client={queryClient}>
-              <SiteHeader />
-              <Outlet />
-              {import.meta.env.DEV ? (
-                <ReactQueryDevtools initialIsOpen={false} />
-              ) : null}
-            </QueryClientProvider>
-          </ConvexProviderWithClerk>
+          <PostHogProvider>
+            <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
+              <QueryClientProvider client={queryClient}>
+                <SiteHeader />
+                <Outlet />
+                {import.meta.env.DEV ? (
+                  <ReactQueryDevtools initialIsOpen={false} />
+                ) : null}
+              </QueryClientProvider>
+            </ConvexProviderWithClerk>
+          </PostHogProvider>
         </ClerkProvider>
         <Scripts />
       </body>
@@ -87,9 +90,9 @@ function SiteHeader() {
     <header className="bg-white shadow-sm fixed w-full z-10">
       <nav className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between gap-4">
-          <a href="/" className="text-2xl font-bold text-gray-800">
+          <Link to="/" className="text-2xl font-bold text-gray-800">
             Adranna Systems
-          </a>
+          </Link>
           <div className="flex items-center gap-3">
             <div className="md:hidden">
               <SignedOut>
@@ -144,15 +147,18 @@ function SiteHeader() {
             </button>
           </div>
           <div className="hidden md:flex items-center gap-8">
-            <a href="/#services" className="text-gray-600 hover:text-gray-900">
+            <Link to="/" hash="services" className="text-gray-600 hover:text-gray-900">
               Services
-            </a>
-            <a href="/#about" className="text-gray-600 hover:text-gray-900">
+            </Link>
+            <Link to="/" hash="about" className="text-gray-600 hover:text-gray-900">
               About
-            </a>
-            <a href="/#contact" className="text-gray-600 hover:text-gray-900">
+            </Link>
+            <Link to="/" hash="contact" className="text-gray-600 hover:text-gray-900">
               Contact
-            </a>
+            </Link>
+            <Link to="/mtasks" className="text-gray-600 hover:text-gray-900">
+              MTasks
+            </Link>
             <SignedOut>
               <div className="flex items-center gap-4">
                 <SignInButton>
@@ -178,12 +184,6 @@ function SiteHeader() {
                 <Link to="/tasks" className="text-gray-600 hover:text-gray-900">
                   Tasks
                 </Link>
-                <Link
-                  to="/mtasks"
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  MTasks
-                </Link>
                 <UserButton />
               </div>
             </SignedIn>
@@ -195,54 +195,55 @@ function SiteHeader() {
             className="md:hidden mt-4 border-t border-gray-200 pt-4"
           >
             <div className="flex flex-col gap-3">
-              <a
-                href="/#services"
+              <Link
+                to="/"
+                hash="services"
                 className="text-gray-600 hover:text-gray-900"
                 onClick={() => {
                   setIsMobileMenuOpen(false);
                 }}
               >
                 Services
-              </a>
-              <a
-                href="/#about"
+              </Link>
+              <Link
+                to="/"
+                hash="about"
                 className="text-gray-600 hover:text-gray-900"
                 onClick={() => {
                   setIsMobileMenuOpen(false);
                 }}
               >
                 About
-              </a>
-              <a
-                href="/#contact"
+              </Link>
+              <Link
+                to="/"
+                hash="contact"
                 className="text-gray-600 hover:text-gray-900"
                 onClick={() => {
                   setIsMobileMenuOpen(false);
                 }}
               >
                 Contact
-              </a>
+              </Link>
+              <Link
+                to="/mtasks"
+                className="text-gray-600 hover:text-gray-900"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                }}
+              >
+                MTasks
+              </Link>
               <SignedIn>
-                <div className="flex items-center justify-between gap-4 pt-1">
-                  <Link
-                    to="/tasks"
-                    className="text-gray-600 hover:text-gray-900"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    Tasks
-                  </Link>
-                  <Link
-                    to="/mtasks"
-                    className="text-gray-600 hover:text-gray-900"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false);
-                    }}
-                  >
-                    MTasks
-                  </Link>
-                </div>
+                <Link
+                  to="/tasks"
+                  className="text-gray-600 hover:text-gray-900"
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                  }}
+                >
+                  Tasks
+                </Link>
               </SignedIn>
             </div>
           </div>

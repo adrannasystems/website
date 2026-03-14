@@ -10,6 +10,7 @@ This file defines guardrails for agentic coding in this repo.
 - Use TanStack Start environment file conventions: server-only code in `*.server.ts(x)` and client-only code in `*.client.ts(x)`.
 - For API queries, check whether results are paginated. If pagination is possible, ask the user how to handle it before implementing.
 - Before pushing, run `npm run lint` and `npm run typecheck`, plus any relevant tests, and fix any failures.
+- Before telling the user a task is done, always run `npm run lint` and `npm run typecheck` and fix all failures.
 
 ## Safety
 - Never run destructive commands unless explicitly requested.

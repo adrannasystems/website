@@ -1,5 +1,5 @@
 import * as React from "react";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Authenticated,
   AuthLoading,
@@ -10,6 +10,7 @@ import {
 import type { Id } from "../../convex/_generated/dataModel";
 import { api } from "../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
+import { CheckCircle2, Clock, Bell } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -36,14 +37,6 @@ type MaintenanceExecution = {
 };
 
 export const Route = createFileRoute("/mtasks")({
-  beforeLoad: ({ context }) => {
-    if (context.currentUserId === null) {
-      throw redirect({
-        to: "/sign-in",
-        search: { redirect_url: "/mtasks" },
-      });
-    }
-  },
   component: MaintenanceTasksPage,
 });
 
@@ -57,7 +50,7 @@ function MaintenanceTasksPage() {
         <MaintenanceTasksContent />
       </Authenticated>
       <Unauthenticated>
-        <MaintenanceTasksUnauthorizedState />
+        <MTasksLandingPage />
       </Unauthenticated>
     </>
   );
@@ -238,19 +231,63 @@ function MaintenanceTasksLoadingState() {
   );
 }
 
-function MaintenanceTasksUnauthorizedState() {
+function MTasksLandingPage() {
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-20">
-      <div className="mx-auto max-w-4xl">
-        <h1 className="mb-8 text-3xl font-semibold text-gray-900">
-          Maintenance Tasks
-        </h1>
-        <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Your session is not authenticated for Convex yet. Please refresh the
-          page.
+    <div className="flex flex-col">
+      {/* Hero */}
+      <section className="bg-linear-to-br from-blue-50 to-indigo-50 pt-24 pb-20 px-6">
+        <div className="mx-auto max-w-3xl text-center">
+          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+            Never Miss a Maintenance Task
+          </h1>
+          <p className="text-xl text-gray-600 mb-10">
+            Track recurring maintenance work, stay on top of what's overdue,
+            and keep a full history of every execution.
+          </p>
+          <Link to="/sign-in" search={{ redirect_url: "/mtasks" }}>
+            <Button size="lg" className="px-8 py-3 text-base">
+              Go to app
+            </Button>
+          </Link>
         </div>
-      </div>
-    </main>
+      </section>
+
+      {/* Features */}
+      <section className="py-20 px-6 bg-white">
+        <div className="mx-auto max-w-4xl grid md:grid-cols-3 gap-8">
+          <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
+            <Clock className="h-8 w-8 text-blue-600 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Recurring Schedules
+            </h3>
+            <p className="text-gray-600 text-sm">
+              Define tasks with a period in hours. The app always knows what's
+              due and how overdue it is.
+            </p>
+          </div>
+          <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
+            <CheckCircle2 className="h-8 w-8 text-blue-600 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Execution History
+            </h3>
+            <p className="text-gray-600 text-sm">
+              Log each time a task is completed — with the exact timestamp —
+              so you always have a clear audit trail.
+            </p>
+          </div>
+          <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
+            <Bell className="h-8 w-8 text-blue-600 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Overdue Alerts
+            </h3>
+            <p className="text-gray-600 text-sm">
+              Tasks are clearly flagged as overdue, due, or all good — so
+              nothing slips through the cracks.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
 
