@@ -91,28 +91,36 @@ function RootComponent() {
 
 function getPostHogApiKey() {
   const key = "VITE_PUBLIC_POSTHOG_KEY";
-  return z.string({ message: `${key} is required` }).nonempty().parse(import.meta.env[key]);
+  return z
+    .string({ message: `${key} is required` })
+    .nonempty()
+    .parse(import.meta.env[key]);
 }
 
 function getPostHogHost() {
   const key = "VITE_PUBLIC_POSTHOG_HOST";
-  return z.string({ message: `${key} is required` }).nonempty().parse(import.meta.env[key]);
+  return z
+    .string({ message: `${key} is required` })
+    .nonempty()
+    .parse(import.meta.env[key]);
 }
 
 function PostHogUserSync() {
-  const { user } = useUser();
+  const { isLoaded, user } = useUser();
   const posthog = usePostHog();
 
   React.useEffect(() => {
-    if (user !== null && user !== undefined) {
-      posthog.identify(user.id, {
-        email: user.primaryEmailAddress?.emailAddress,
-        name: user.fullName ?? undefined,
-      });
-    } else {
-      posthog.reset();
+    if (isLoaded) {
+      if (user !== null) {
+        posthog.identify(user.id, {
+          email: user.primaryEmailAddress?.emailAddress,
+          name: user.fullName ?? undefined,
+        });
+      } else {
+        posthog.reset();
+      }
     }
-  }, [posthog, user]);
+  }, [isLoaded, posthog, user]);
 
   return null;
 }
@@ -181,13 +189,25 @@ function SiteHeader() {
             </button>
           </div>
           <div className="hidden md:flex items-center gap-8">
-            <Link to="/" hash="services" className="text-gray-600 hover:text-gray-900">
+            <Link
+              to="/"
+              hash="services"
+              className="text-gray-600 hover:text-gray-900"
+            >
               Services
             </Link>
-            <Link to="/" hash="about" className="text-gray-600 hover:text-gray-900">
+            <Link
+              to="/"
+              hash="about"
+              className="text-gray-600 hover:text-gray-900"
+            >
               About
             </Link>
-            <Link to="/" hash="contact" className="text-gray-600 hover:text-gray-900">
+            <Link
+              to="/"
+              hash="contact"
+              className="text-gray-600 hover:text-gray-900"
+            >
               Contact
             </Link>
             <Link to="/mtasks" className="text-gray-600 hover:text-gray-900">
