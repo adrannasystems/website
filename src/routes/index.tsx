@@ -155,7 +155,7 @@ function HomePage() {
               Adranna Systems
             </div>
             <div className="text-gray-400 text-sm">
-              © 2024-2025 Adranna Systems. All rights reserved.
+              © 2024-{new Date().getFullYear()} Adranna Systems. All rights reserved.
             </div>
           </div>
         </div>
