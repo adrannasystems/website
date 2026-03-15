@@ -23,7 +23,7 @@ export function redirectSignedInUsers({
 }
 
 export function SignInRoutePage(props: { redirectUrl?: string }) {
-  const fallbackRedirectUrl = props.redirectUrl ?? '/tasks'
+  const fallbackRedirectUrl = props.redirectUrl ?? '/'
 
   return (
     <main className="min-h-screen bg-gray-50 flex items-center justify-center px-6 py-20">

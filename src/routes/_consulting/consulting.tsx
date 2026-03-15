@@ -1,31 +1,35 @@
-import { createFileRoute } from '@tanstack/react-router'
-import * as React from 'react'
+import * as React from "react";
+import { createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute('/')({
-  component: HomePage,
-})
+export const Route = createFileRoute("/_consulting/consulting")({
+  component: ConsultingPage,
+});
 
-function HomePage() {
+function ConsultingPage() {
+  return <ConsultingLandingPage />;
+}
+
+export function ConsultingLandingPage() {
   const handleSubmit = React.useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault()
-      const formData = new FormData(event.currentTarget)
-      const subjectValue = String(formData.get('subject') ?? '').trim()
-      const messageValue = String(formData.get('message') ?? '').trim()
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      const subjectValue = String(formData.get("subject") ?? "").trim();
+      const messageValue = String(formData.get("message") ?? "").trim();
 
       const subject =
-        subjectValue !== ''
+        subjectValue !== ""
           ? subjectValue
-          : 'Contact from Adranna Systems website'
-      const body = messageValue
+          : "Contact from Adranna Systems website";
+      const body = messageValue;
 
       const mailtoUrl = `mailto:a.buchel@outlook.com?subject=${encodeURIComponent(
         subject,
-      )}&body=${encodeURIComponent(body)}`
-      window.location.href = mailtoUrl
+      )}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailtoUrl;
     },
     [],
-  )
+  );
 
   return (
     <div>
@@ -78,8 +82,8 @@ function HomePage() {
                 Cyber Security
               </h3>
               <p className="text-gray-600">
-                Comprehensive security assessments, threat prevention, and robust
-                protection strategies for your digital assets.
+                Comprehensive security assessments, threat prevention, and
+                robust protection strategies for your digital assets.
               </p>
             </div>
           </div>
@@ -100,9 +104,9 @@ function HomePage() {
             </p>
             <p className="text-gray-600">
               Our team brings together extensive experience in software
-              development, IT management, and cyber security, ensuring that every
-              project benefits from both technical excellence and security-first
-              thinking.
+              development, IT management, and cyber security, ensuring that
+              every project benefits from both technical excellence and
+              security-first thinking.
             </p>
           </div>
         </div>
@@ -114,7 +118,11 @@ function HomePage() {
             Get in Touch
           </h2>
           <div className="max-w-lg mx-auto">
-            <form id="contactForm" className="space-y-6" onSubmit={handleSubmit}>
+            <form
+              id="contactForm"
+              className="space-y-6"
+              onSubmit={handleSubmit}
+            >
               <div>
                 <label className="block text-gray-700 mb-2" htmlFor="subject">
                   Subject
@@ -155,11 +163,12 @@ function HomePage() {
               Adranna Systems
             </div>
             <div className="text-gray-400 text-sm">
-              © 2024-{new Date().getFullYear()} Adranna Systems. All rights reserved.
+              © 2024-{new Date().getFullYear()} Adranna Systems. All rights
+              reserved.
             </div>
           </div>
         </div>
       </footer>
     </div>
-  )
+  );
 }

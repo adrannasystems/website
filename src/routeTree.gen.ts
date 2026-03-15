@@ -9,131 +9,189 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TasksRouteImport } from './routes/tasks'
-import { Route as SignInRouteImport } from './routes/sign-in'
-import { Route as MtasksRouteImport } from './routes/mtasks'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as SignInSplatRouteImport } from './routes/sign-in.$'
+import { Route as TaskologistRouteImport } from './routes/_taskologist'
+import { Route as ConsultingRouteImport } from './routes/_consulting'
+import { Route as TaskologistIndexRouteImport } from './routes/_taskologist/index'
+import { Route as TaskologistTasksRouteImport } from './routes/_taskologist/tasks'
+import { Route as TaskologistSignInRouteImport } from './routes/_taskologist/sign-in'
+import { Route as ConsultingConsultingRouteImport } from './routes/_consulting/consulting'
+import { Route as TaskologistSignInSplatRouteImport } from './routes/_taskologist/sign-in.$'
 
-const TasksRoute = TasksRouteImport.update({
-  id: '/tasks',
-  path: '/tasks',
+const TaskologistRoute = TaskologistRouteImport.update({
+  id: '/_taskologist',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SignInRoute = SignInRouteImport.update({
-  id: '/sign-in',
-  path: '/sign-in',
+const ConsultingRoute = ConsultingRouteImport.update({
+  id: '/_consulting',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MtasksRoute = MtasksRouteImport.update({
-  id: '/mtasks',
-  path: '/mtasks',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
+const TaskologistIndexRoute = TaskologistIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => TaskologistRoute,
 } as any)
-const SignInSplatRoute = SignInSplatRouteImport.update({
+const TaskologistTasksRoute = TaskologistTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => TaskologistRoute,
+} as any)
+const TaskologistSignInRoute = TaskologistSignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => TaskologistRoute,
+} as any)
+const ConsultingConsultingRoute = ConsultingConsultingRouteImport.update({
+  id: '/consulting',
+  path: '/consulting',
+  getParentRoute: () => ConsultingRoute,
+} as any)
+const TaskologistSignInSplatRoute = TaskologistSignInSplatRouteImport.update({
   id: '/$',
   path: '/$',
-  getParentRoute: () => SignInRoute,
+  getParentRoute: () => TaskologistSignInRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/mtasks': typeof MtasksRoute
-  '/sign-in': typeof SignInRouteWithChildren
-  '/tasks': typeof TasksRoute
-  '/sign-in/$': typeof SignInSplatRoute
+  '/': typeof TaskologistIndexRoute
+  '/consulting': typeof ConsultingConsultingRoute
+  '/sign-in': typeof TaskologistSignInRouteWithChildren
+  '/tasks': typeof TaskologistTasksRoute
+  '/sign-in/$': typeof TaskologistSignInSplatRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/mtasks': typeof MtasksRoute
-  '/sign-in': typeof SignInRouteWithChildren
-  '/tasks': typeof TasksRoute
-  '/sign-in/$': typeof SignInSplatRoute
+  '/': typeof TaskologistIndexRoute
+  '/consulting': typeof ConsultingConsultingRoute
+  '/sign-in': typeof TaskologistSignInRouteWithChildren
+  '/tasks': typeof TaskologistTasksRoute
+  '/sign-in/$': typeof TaskologistSignInSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/mtasks': typeof MtasksRoute
-  '/sign-in': typeof SignInRouteWithChildren
-  '/tasks': typeof TasksRoute
-  '/sign-in/$': typeof SignInSplatRoute
+  '/_consulting': typeof ConsultingRouteWithChildren
+  '/_taskologist': typeof TaskologistRouteWithChildren
+  '/_consulting/consulting': typeof ConsultingConsultingRoute
+  '/_taskologist/sign-in': typeof TaskologistSignInRouteWithChildren
+  '/_taskologist/tasks': typeof TaskologistTasksRoute
+  '/_taskologist/': typeof TaskologistIndexRoute
+  '/_taskologist/sign-in/$': typeof TaskologistSignInSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/mtasks' | '/sign-in' | '/tasks' | '/sign-in/$'
+  fullPaths: '/' | '/consulting' | '/sign-in' | '/tasks' | '/sign-in/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/mtasks' | '/sign-in' | '/tasks' | '/sign-in/$'
-  id: '__root__' | '/' | '/mtasks' | '/sign-in' | '/tasks' | '/sign-in/$'
+  to: '/' | '/consulting' | '/sign-in' | '/tasks' | '/sign-in/$'
+  id:
+    | '__root__'
+    | '/_consulting'
+    | '/_taskologist'
+    | '/_consulting/consulting'
+    | '/_taskologist/sign-in'
+    | '/_taskologist/tasks'
+    | '/_taskologist/'
+    | '/_taskologist/sign-in/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  MtasksRoute: typeof MtasksRoute
-  SignInRoute: typeof SignInRouteWithChildren
-  TasksRoute: typeof TasksRoute
+  ConsultingRoute: typeof ConsultingRouteWithChildren
+  TaskologistRoute: typeof TaskologistRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/tasks': {
-      id: '/tasks'
-      path: '/tasks'
-      fullPath: '/tasks'
-      preLoaderRoute: typeof TasksRouteImport
+    '/_taskologist': {
+      id: '/_taskologist'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof TaskologistRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/sign-in': {
-      id: '/sign-in'
-      path: '/sign-in'
-      fullPath: '/sign-in'
-      preLoaderRoute: typeof SignInRouteImport
+    '/_consulting': {
+      id: '/_consulting'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ConsultingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/mtasks': {
-      id: '/mtasks'
-      path: '/mtasks'
-      fullPath: '/mtasks'
-      preLoaderRoute: typeof MtasksRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
+    '/_taskologist/': {
+      id: '/_taskologist/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof TaskologistIndexRouteImport
+      parentRoute: typeof TaskologistRoute
     }
-    '/sign-in/$': {
-      id: '/sign-in/$'
+    '/_taskologist/tasks': {
+      id: '/_taskologist/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TaskologistTasksRouteImport
+      parentRoute: typeof TaskologistRoute
+    }
+    '/_taskologist/sign-in': {
+      id: '/_taskologist/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof TaskologistSignInRouteImport
+      parentRoute: typeof TaskologistRoute
+    }
+    '/_consulting/consulting': {
+      id: '/_consulting/consulting'
+      path: '/consulting'
+      fullPath: '/consulting'
+      preLoaderRoute: typeof ConsultingConsultingRouteImport
+      parentRoute: typeof ConsultingRoute
+    }
+    '/_taskologist/sign-in/$': {
+      id: '/_taskologist/sign-in/$'
       path: '/$'
       fullPath: '/sign-in/$'
-      preLoaderRoute: typeof SignInSplatRouteImport
-      parentRoute: typeof SignInRoute
+      preLoaderRoute: typeof TaskologistSignInSplatRouteImport
+      parentRoute: typeof TaskologistSignInRoute
     }
   }
 }
 
-interface SignInRouteChildren {
-  SignInSplatRoute: typeof SignInSplatRoute
+interface ConsultingRouteChildren {
+  ConsultingConsultingRoute: typeof ConsultingConsultingRoute
 }
 
-const SignInRouteChildren: SignInRouteChildren = {
-  SignInSplatRoute: SignInSplatRoute,
+const ConsultingRouteChildren: ConsultingRouteChildren = {
+  ConsultingConsultingRoute: ConsultingConsultingRoute,
 }
 
-const SignInRouteWithChildren =
-  SignInRoute._addFileChildren(SignInRouteChildren)
+const ConsultingRouteWithChildren = ConsultingRoute._addFileChildren(
+  ConsultingRouteChildren,
+)
+
+interface TaskologistSignInRouteChildren {
+  TaskologistSignInSplatRoute: typeof TaskologistSignInSplatRoute
+}
+
+const TaskologistSignInRouteChildren: TaskologistSignInRouteChildren = {
+  TaskologistSignInSplatRoute: TaskologistSignInSplatRoute,
+}
+
+const TaskologistSignInRouteWithChildren =
+  TaskologistSignInRoute._addFileChildren(TaskologistSignInRouteChildren)
+
+interface TaskologistRouteChildren {
+  TaskologistSignInRoute: typeof TaskologistSignInRouteWithChildren
+  TaskologistTasksRoute: typeof TaskologistTasksRoute
+  TaskologistIndexRoute: typeof TaskologistIndexRoute
+}
+
+const TaskologistRouteChildren: TaskologistRouteChildren = {
+  TaskologistSignInRoute: TaskologistSignInRouteWithChildren,
+  TaskologistTasksRoute: TaskologistTasksRoute,
+  TaskologistIndexRoute: TaskologistIndexRoute,
+}
+
+const TaskologistRouteWithChildren = TaskologistRoute._addFileChildren(
+  TaskologistRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  MtasksRoute: MtasksRoute,
-  SignInRoute: SignInRouteWithChildren,
-  TasksRoute: TasksRoute,
+  ConsultingRoute: ConsultingRouteWithChildren,
+  TaskologistRoute: TaskologistRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

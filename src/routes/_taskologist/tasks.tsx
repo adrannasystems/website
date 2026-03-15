@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as React from "react";
-import { markTaskDone } from "../server-actions/mark-task-done";
+import { markTaskDone } from "../../server-actions/mark-task-done";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,13 +13,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { LoaderResult } from "../loader-result";
-import type { TaskItem } from "../TaskItem";
-import { loadTasks } from "../server-actions/loadTasks";
+import type { LoaderResult } from "../../loader-result";
+import type { TaskItem } from "../../TaskItem";
+import { loadTasks } from "../../server-actions/loadTasks";
 
 const tasksQueryKey = ["tasks"] as const;
 
-export const Route = createFileRoute("/tasks")({
+export const Route = createFileRoute("/_taskologist/tasks")({
   beforeLoad: ({ context }) => {
     if (context.currentUserId === null) {
       throw redirect({

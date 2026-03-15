@@ -7,8 +7,8 @@ import {
   useMutation,
   useQuery,
 } from "convex/react";
-import type { Id } from "../../convex/_generated/dataModel";
-import { api } from "../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Clock, Bell } from "lucide-react";
 import {
@@ -36,11 +36,11 @@ type MaintenanceExecution = {
   executedAt: number;
 };
 
-export const Route = createFileRoute("/mtasks")({
-  component: MaintenanceTasksPage,
+export const Route = createFileRoute("/_taskologist/")({
+  component: IndexPage,
 });
 
-function MaintenanceTasksPage() {
+function IndexPage() {
   return (
     <>
       <AuthLoading>
@@ -50,9 +50,69 @@ function MaintenanceTasksPage() {
         <MaintenanceTasksContent />
       </Authenticated>
       <Unauthenticated>
-        <MTasksLandingPage />
+        <TaskologistLandingPage />
       </Unauthenticated>
     </>
+  );
+}
+
+function TaskologistLandingPage() {
+  return (
+    <div className="flex flex-col">
+      {/* Hero */}
+      <section className="bg-linear-to-br from-blue-50 to-indigo-50 pt-12 pb-20 px-6">
+        <div className="mx-auto max-w-3xl text-center">
+          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+            Never Miss a Maintenance Task
+          </h1>
+          <p className="text-xl text-gray-600 mb-10">
+            Track recurring maintenance work, stay on top of what's overdue,
+            and keep a full history of every execution.
+          </p>
+          <Link to="/sign-in" search={{ redirect_url: "/" }}>
+            <Button size="lg" className="px-8 py-3 text-base">
+              Go to app
+            </Button>
+          </Link>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="py-20 px-6 bg-white">
+        <div className="mx-auto max-w-4xl grid md:grid-cols-3 gap-8">
+          <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
+            <Clock className="h-8 w-8 text-blue-600 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Recurring Schedules
+            </h3>
+            <p className="text-gray-600 text-sm">
+              Define tasks with a period in hours. The app always knows what's
+              due and how overdue it is.
+            </p>
+          </div>
+          <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
+            <CheckCircle2 className="h-8 w-8 text-blue-600 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Execution History
+            </h3>
+            <p className="text-gray-600 text-sm">
+              Log each time a task is completed — with the exact timestamp —
+              so you always have a clear audit trail.
+            </p>
+          </div>
+          <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
+            <Bell className="h-8 w-8 text-blue-600 mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Overdue Alerts
+            </h3>
+            <p className="text-gray-600 text-sm">
+              Tasks are clearly flagged as overdue, due, or all good — so
+              nothing slips through the cracks.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -228,66 +288,6 @@ function MaintenanceTasksLoadingState() {
         <div className="text-sm text-gray-500">Loading...</div>
       </div>
     </main>
-  );
-}
-
-function MTasksLandingPage() {
-  return (
-    <div className="flex flex-col">
-      {/* Hero */}
-      <section className="bg-linear-to-br from-blue-50 to-indigo-50 pt-12 pb-20 px-6">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Never Miss a Maintenance Task
-          </h1>
-          <p className="text-xl text-gray-600 mb-10">
-            Track recurring maintenance work, stay on top of what's overdue,
-            and keep a full history of every execution.
-          </p>
-          <Link to="/sign-in" search={{ redirect_url: "/mtasks" }}>
-            <Button size="lg" className="px-8 py-3 text-base">
-              Go to app
-            </Button>
-          </Link>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-20 px-6 bg-white">
-        <div className="mx-auto max-w-4xl grid md:grid-cols-3 gap-8">
-          <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
-            <Clock className="h-8 w-8 text-blue-600 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Recurring Schedules
-            </h3>
-            <p className="text-gray-600 text-sm">
-              Define tasks with a period in hours. The app always knows what's
-              due and how overdue it is.
-            </p>
-          </div>
-          <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
-            <CheckCircle2 className="h-8 w-8 text-blue-600 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Execution History
-            </h3>
-            <p className="text-gray-600 text-sm">
-              Log each time a task is completed — with the exact timestamp —
-              so you always have a clear audit trail.
-            </p>
-          </div>
-          <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
-            <Bell className="h-8 w-8 text-blue-600 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Overdue Alerts
-            </h3>
-            <p className="text-gray-600 text-sm">
-              Tasks are clearly flagged as overdue, due, or all good — so
-              nothing slips through the cracks.
-            </p>
-          </div>
-        </div>
-      </section>
-    </div>
   );
 }
 
@@ -665,7 +665,9 @@ function DeletedMaintenanceTaskRow(props: {
   return (
     <div className="flex flex-col gap-3 px-6 py-4 md:flex-row md:items-start md:justify-between">
       <div>
-        <div className="text-lg font-medium text-gray-900">{props.task.name}</div>
+        <div className="text-lg font-medium text-gray-900">
+          {props.task.name}
+        </div>
         <div className="text-sm text-gray-500">
           Period: {props.task.periodHours} hours
         </div>

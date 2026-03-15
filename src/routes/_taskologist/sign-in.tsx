@@ -5,7 +5,7 @@ import {
   validateSignInSearch,
 } from './-sign-in-shared'
 
-export const Route = createFileRoute('/sign-in')({
+export const Route = createFileRoute('/_taskologist/sign-in')({
   validateSearch: validateSignInSearch,
   beforeLoad: redirectSignedInUsers,
   component: SignInPage,
