@@ -83,3 +83,44 @@ The default viewport is **375×812px** (iPhone-sized), matching the mobile-first
 - Avoid single-use local type aliases/interfaces that are only used to annotate one function in the same file.
 - Prefer type inference for local return values and intermediate objects when the inferred type is clear.
 - Create named types only when reused, exported, or needed to document a non-obvious contract.
+
+## Cursor Cloud specific instructions
+
+### Project overview
+
+This is **Taskologist** (Adranna Systems) — a TanStack Start (React SSR) app with:
+- **Convex** cloud backend (real-time DB, auth, crons)
+- **Clerk** authentication (server middleware + client provider)
+- **PostHog** analytics (client-side)
+- **Notion API** integration for one-off tasks (`/tasks` page)
+
+All backend services are cloud-hosted SaaS — no Docker or local databases required.
+
+### Environment variables
+
+A `.env.local` file is needed at the project root. Required variables:
+
+| Variable | Format | Used by |
+|---|---|---|
+| `VITE_CONVEX_URL` | Valid URL | Client (Convex) |
+| `VITE_CLERK_PUBLISHABLE_KEY` | `pk_test_<base64>` (Clerk format) | Client (Clerk) |
+| `CLERK_SECRET_KEY` | `sk_test_...` | Server (Clerk middleware) |
+| `VITE_PUBLIC_POSTHOG_KEY` | Non-empty string | Client (PostHog) |
+| `VITE_PUBLIC_POSTHOG_HOST` | Non-empty string | Client (PostHog) |
+| `NOTION_TOKEN` | Notion API token | Server (`/tasks` route) |
+| `NOTION_DATABASE_ID` | Notion database UUID | Server (`/tasks` route) |
+| `CLERK_FRONTEND_API_URL` | Valid URL | Server (Convex auth config, used by `convex dev`) |
+
+Without real API keys, the Vite dev server starts and SSR works, but client-side hydration fails on pages using Clerk/PostHog/Convex. The `/consulting` page renders fully via SSR with placeholder keys.
+
+### Running the dev server
+
+- `npm run dev` — runs both `vite dev` (frontend) and `convex dev` (backend sync) in parallel. Requires a Convex deployment.
+- `npm run dev:frontend` — runs only the Vite dev server on port 3000. Use this when you don't have Convex credentials.
+- The Clerk publishable key must follow the format `pk_test_<base64(domain$)>` or the server returns 500 on all routes. Generate one with: `echo -n "your.clerk.accounts.dev\$" | base64`.
+
+### Checks (per AGENTS.md Required Workflow)
+
+- `npm run lint` — ESLint
+- `npm run typecheck` — TypeScript (two tsconfig passes: client + server)
+- `npm run build` — Vite + Nitro production build
