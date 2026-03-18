@@ -75,7 +75,7 @@ export const createTask = mutation({
     periodHours: v.number(),
   },
   handler: async (ctx, args) => {
-    await requireAuthenticatedUser(ctx);
+    const identity = await requireAuthenticatedUser(ctx);
 
     if (args.periodHours <= 0) {
       throw new Error("periodHours must be greater than 0");
@@ -85,6 +85,7 @@ export const createTask = mutation({
         periodHours: args.periodHours,
         lastExecutedAt: null,
         deletedAt: null,
+        userId: identity.subject,
       });
     }
   },

@@ -10,83 +10,118 @@ export type MaintenanceTaskForNotification = {
   periodsDue: number;
   periodHours: number;
   lastExecutedAt: number | null;
-}
+  userId: string | undefined;
+};
 
 export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
   args: {},
   handler: async (ctx) => {
-    const ntfyBaseUrl = "https://ntfy.sh";
+    const dueOrOverdueTasks: MaintenanceTaskForNotification[] =
+      await ctx.runQuery(
+        internal.maintenanceTaskNotifications
+          .listDueOrMoreUrgentTasksForNotifications,
+        {},
+      );
 
-    const dueOrOverdueTasks: MaintenanceTaskForNotification[] = await ctx.runQuery(
-      internal.maintenanceTaskNotifications.listDueOrMoreUrgentTasksForNotifications,
-      {},
-    );
+    const notificationPromises: Promise<void>[] = [];
+    let skippedTasksCount = 0;
+    for (const task of dueOrOverdueTasks) {
+      if (task.userId === undefined) {
+        skippedTasksCount += 1;
+      } else {
+        notificationPromises.push(
+          sendOneSignalNotification({
+            appId: oneSignalAppId,
+            restApiKey: oneSignalRestApiKey,
+            userId: task.userId,
+            title: `Task is ${task.state.toLowerCase()}: ${task.name}`,
+            body: [
+              `Task: ${task.name}`,
+              `State: ${task.state}`,
+              `Periods Due: ${task.periodsDue === Infinity ? "n/a" : task.periodsDue.toFixed(2)}`,
+              `Period [h]: ${String(task.periodHours)}`,
+              `Last Executed At: ${
+                task.lastExecutedAt === null
+                  ? "Never"
+                  : new Date(task.lastExecutedAt).toISOString()
+              }`,
+            ].join("\n"),
+          }),
+        );
+      }
+    }
 
-    const numberOfNotificationsToSend: number = dueOrOverdueTasks.length;
+    if (skippedTasksCount > 0) {
+      console.warn(
+        `Skipping ${String(skippedTasksCount)} due/overdue tasks without userId`,
+      );
+    }
 
-    await Promise.all(
-      dueOrOverdueTasks.map((task) =>
-        sendNtfyNotification({
-          baseUrl: ntfyBaseUrl,
-          topic: ntfyTopic,
-          title: `Task is ${task.state.toLowerCase()}: ${task.name}`,
-          body: [
-            `Task: ${task.name}`,
-            `State: ${task.state}`,
-            `Periods Due: ${task.periodsDue === Infinity ? "n/a" : task.periodsDue.toFixed(2)}`,
-            `Period [h]: ${String(task.periodHours)}`,
-            `Last Executed At: ${
-              task.lastExecutedAt === null
-                ? "Never"
-                : new Date(task.lastExecutedAt).toISOString()
-            }`,
-          ].join("\n"),
-        }),
-      ),
-    );
+    let notificationsSentCount = 0;
+    let notificationsFailedToSendCount = 0;
+    for (const result of await Promise.allSettled(notificationPromises)) {
+      if (result.status === "fulfilled") {
+        notificationsSentCount += 1;
+      } else {
+        notificationsFailedToSendCount += 1;
+      }
+    }
 
-    return { notificationsSent: numberOfNotificationsToSend };
+    if (notificationsFailedToSendCount > 0) {
+      console.warn(
+        `Failed to send ${String(notificationsFailedToSendCount)} notifications`,
+      );
+    }
+
+    return {
+      notificationsSent: notificationsSentCount,
+      notificationsSkippedMissingUserId: skippedTasksCount,
+      notificationsFailedToSend: notificationsFailedToSendCount,
+    };
   },
 });
 
-async function sendNtfyNotification(input: {
-  baseUrl: string;
-  topic: string;
+async function sendOneSignalNotification(input: {
+  appId: string;
+  restApiKey: string;
+  userId: string;
   title: string;
   body: string;
 }) {
-  const endpoint = `${trimTrailingSlash(input.baseUrl)}/${encodeURIComponent(
-    input.topic,
-  )}`;
-
-  const response = await fetch(endpoint, {
+  const response = await fetch("https://api.onesignal.com/notifications", {
     method: "POST",
     headers: {
-      Title: input.title,
-      Tags: "warning",
+      "Content-Type": "application/json",
+      Authorization: `Key ${input.restApiKey}`,
     },
-    body: input.body,
+    body: JSON.stringify({
+      app_id: input.appId,
+      include_aliases: { external_id: [input.userId] },
+      target_channel: "push",
+      headings: { en: input.title },
+      contents: { en: input.body },
+    }),
   });
 
-  if (response.ok) {
-    return undefined;
-  } else {
+  if (!response.ok) {
     const errorBody = await response.text();
     throw new Error(
-      `ntfy request failed (${String(response.status)} ${response.statusText}): ${errorBody}`,
+      `OneSignal request failed (${String(response.status)} ${response.statusText}): ${errorBody}`,
     );
   }
 }
 
-const ntfyTopicEnvVarName = "NTFY_TOPIC";
-const ntfyTopic = z
-  .string({ message: `${ntfyTopicEnvVarName} is required` })
+const oneSignalAppIdEnvVarName = "ONESIGNAL_APP_ID";
+const oneSignalAppId = z
+  .string({ message: `${oneSignalAppIdEnvVarName} is required` })
   .nonempty()
-  .parse(process.env[ntfyTopicEnvVarName]);
+  .parse(process.env[oneSignalAppIdEnvVarName]);
 
-function trimTrailingSlash(value: string) {
-  return value.endsWith("/") ? value.slice(0, -1) : value;
-}
+const oneSignalRestApiKeyEnvVarName = "ONESIGNAL_REST_API_KEY";
+const oneSignalRestApiKey = z
+  .string({ message: `${oneSignalRestApiKeyEnvVarName} is required` })
+  .nonempty()
+  .parse(process.env[oneSignalRestApiKeyEnvVarName]);
 
 export const listDueOrMoreUrgentTasksForNotifications = internalQuery({
   args: {},
@@ -106,13 +141,14 @@ export const listDueOrMoreUrgentTasksForNotifications = internalQuery({
       taskDbos.map(async (dbo) => {
         const task = new MaintenanceTaskModelImpl(ctx, dbo);
         const state = await task.state();
-        if (state === "Due" || state === "Overdue") {
+        if (state === "Due" || state === "Overdue" || state === "Never Done") {
           dueOrOverdueTasks.push({
             name: task.name,
             state,
             periodsDue: await task.periodsDue(),
             periodHours: task.periodHours,
             lastExecutedAt: await task.lastExecutedAt(),
+            userId: dbo.userId,
           } satisfies MaintenanceTaskForNotification);
         }
       }),

@@ -1,9 +1,26 @@
+import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import {
   internalMutation,
   type QueryCtx,
   type MutationCtx,
 } from "./_generated/server";
+
+export const backfillUserIdOnAllTasks = internalMutation({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const tasks = await ctx.db
+      .query("maintenanceTasks")
+      .filter((q) => q.eq(q.field("userId"), undefined))
+      .collect();
+
+    await Promise.all(
+      tasks.map((task) => ctx.db.patch(task._id, { userId: args.userId })),
+    );
+
+    return { updatedCount: tasks.length };
+  },
+});
 
 export const backfillMissingLastExecutedAtOnAllTasks = internalMutation({
   args: {},

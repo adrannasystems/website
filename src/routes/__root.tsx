@@ -19,6 +19,7 @@ import {
 import { auth } from "@clerk/tanstack-react-start/server";
 import { z } from "zod";
 import { PostHogProvider, usePostHog } from "posthog-js/react";
+import { OneSignalSync } from "../components/OneSignalSync";
 import { convexClient } from "../convex-client";
 import "../styles.css";
 
@@ -66,6 +67,7 @@ function RootComponent() {
             options={{ api_host: getPostHogHost(), defaults: "2026-01-30" }}
           >
             <PostHogUserSync />
+            <OneSignalSync />
             <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
               <QueryClientProvider client={queryClient}>
                 <Outlet />
