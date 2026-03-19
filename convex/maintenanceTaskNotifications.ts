@@ -1,10 +1,12 @@
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import { z } from "zod";
 import { internalAction, internalQuery } from "./_generated/server";
 import type { MaintenanceTaskState } from "./MaintenanceTaskModel";
 import { MaintenanceTaskModelImpl } from "./MaintenanceTaskModel";
 
 export type MaintenanceTaskForNotification = {
+  id: Id<"maintenanceTasks">;
   name: string;
   state: MaintenanceTaskState;
   periodsDue: number;
@@ -34,6 +36,7 @@ export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
             appId: oneSignalAppId,
             restApiKey: oneSignalRestApiKey,
             userId: task.userId,
+            webPushTopic: `task-${task.id}-state`,
             title: `Task is ${task.state.toLowerCase()}: ${task.name}`,
             body: [
               `Task: ${task.name}`,
@@ -85,6 +88,7 @@ async function sendOneSignalNotification(input: {
   appId: string;
   restApiKey: string;
   userId: string;
+  webPushTopic: string;
   title: string;
   body: string;
 }) {
@@ -98,6 +102,7 @@ async function sendOneSignalNotification(input: {
       app_id: input.appId,
       include_aliases: { external_id: [input.userId] },
       target_channel: "push",
+      web_push_topic: input.webPushTopic,
       headings: { en: input.title },
       contents: { en: input.body },
     }),
@@ -143,6 +148,7 @@ export const listDueOrMoreUrgentTasksForNotifications = internalQuery({
         const state = await task.state();
         if (state === "Due" || state === "Overdue" || state === "Never Done") {
           dueOrOverdueTasks.push({
+            id: task.id,
             name: task.name,
             state,
             periodsDue: await task.periodsDue(),
