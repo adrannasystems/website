@@ -30,12 +30,14 @@ export function OneSignalSync() {
   return null;
 }
 
-function getOneSignal() {
+export function getOneSignal() {
   // Keep init state on globalThis so StrictMode remounts and HMR reuse one init.
-  globalThis.__oneSignalReadyPromise ??= initializeOneSignal().catch((error) => {
-    globalThis.__oneSignalReadyPromise = undefined;
-    throw error;
-  });
+  globalThis.__oneSignalReadyPromise ??= initializeOneSignal().catch(
+    (error) => {
+      globalThis.__oneSignalReadyPromise = undefined;
+      throw error;
+    },
+  );
   return globalThis.__oneSignalReadyPromise;
 }
 
@@ -43,10 +45,8 @@ function initializeOneSignal() {
   return import("react-onesignal").then(({ default: OneSignal }) =>
     OneSignal.init({
       appId: getOneSignalAppId(),
+      safari_web_id: `web.onesignal.auto.${getOneSignalAppId()}`,
       allowLocalhostAsSecureOrigin: true,
-      notifyButton: { enable: true } as NonNullable<
-        Parameters<typeof OneSignal.init>[0]["notifyButton"]
-      >,
     }).then(() => OneSignal),
   );
 }

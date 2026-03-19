@@ -9,8 +9,9 @@ import {
 } from "convex/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
+import { getOneSignal } from "@/components/OneSignalSync";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Clock, Bell } from "lucide-react";
+import { Bell, BellOff, CheckCircle2, Clock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -122,6 +123,16 @@ function MaintenanceTasksContent() {
   const [createPeriodHours, setCreatePeriodHours] = React.useState("24");
   const [isCreating, setIsCreating] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [isPushOptedIn, setIsPushOptedIn] = React.useState<boolean | null>(
+    null,
+  );
+  const [isPushPreferenceAvailable, setIsPushPreferenceAvailable] =
+    React.useState(true);
+  const [isUpdatingPushPreference, setIsUpdatingPushPreference] =
+    React.useState(false);
+  const [pushPreferenceError, setPushPreferenceError] = React.useState<
+    string | null
+  >(null);
   const activeTasksResult = useQuery(
     api.maintenanceTasks.listTasksForMaintenanceOverview,
     {},
@@ -166,6 +177,86 @@ function MaintenanceTasksContent() {
     [createName, createPeriodHours, createTask],
   );
 
+  React.useEffect(() => {
+    let isMounted = true;
+    let removePushSubscriptionListener: (() => void) | undefined;
+
+    void getOneSignal()
+      .then((OneSignal) => {
+        if (!isMounted) {
+          return;
+        }
+
+        if (!OneSignal.Notifications.isPushSupported()) {
+          setIsPushPreferenceAvailable(false);
+          setIsPushOptedIn(false);
+          setPushPreferenceError(null);
+          return;
+        }
+
+        setIsPushPreferenceAvailable(true);
+        setIsPushOptedIn(Boolean(OneSignal.User.PushSubscription.optedIn));
+
+        const handlePushSubscriptionChange = () => {
+          if (isMounted) {
+            setIsPushOptedIn(Boolean(OneSignal.User.PushSubscription.optedIn));
+          }
+        };
+
+        OneSignal.User.PushSubscription.addEventListener(
+          "change",
+          handlePushSubscriptionChange,
+        );
+        removePushSubscriptionListener = () => {
+          OneSignal.User.PushSubscription.removeEventListener(
+            "change",
+            handlePushSubscriptionChange,
+          );
+        };
+      })
+      .catch(() => {
+        if (isMounted) {
+          setIsPushPreferenceAvailable(false);
+          setIsPushOptedIn(false);
+          setPushPreferenceError(null);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+      removePushSubscriptionListener?.();
+    };
+  }, []);
+
+  const handleTogglePushSubscription = React.useCallback(async () => {
+    if (
+      !isPushPreferenceAvailable ||
+      isPushOptedIn === null ||
+      isUpdatingPushPreference
+    ) {
+      return;
+    }
+
+    setIsUpdatingPushPreference(true);
+    setPushPreferenceError(null);
+
+    try {
+      const OneSignal = await getOneSignal();
+
+      if (isPushOptedIn) {
+        await OneSignal.User.PushSubscription.optOut();
+      } else {
+        await OneSignal.User.PushSubscription.optIn();
+      }
+
+      setIsPushOptedIn(Boolean(OneSignal.User.PushSubscription.optedIn));
+    } catch {
+      setPushPreferenceError("Unable to update notification preference.");
+    } finally {
+      setIsUpdatingPushPreference(false);
+    }
+  }, [isPushOptedIn, isPushPreferenceAvailable, isUpdatingPushPreference]);
+
   if (activeTasksResult === undefined || deletedTasksResult === undefined) {
     return <MaintenanceTasksLoadingState />;
   } else {
@@ -175,9 +266,48 @@ function MaintenanceTasksContent() {
     return (
       <main className="min-h-screen bg-gray-50 px-6 py-20">
         <div className="mx-auto max-w-4xl">
-          <h1 className="mb-8 text-3xl font-semibold text-gray-900">
-            Maintenance Tasks
-          </h1>
+          <div className="mb-8 flex items-center justify-between gap-3">
+            <h1 className="text-3xl font-semibold text-gray-900">
+              Maintenance Tasks
+            </h1>
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              onClick={() => void handleTogglePushSubscription()}
+              disabled={
+                !isPushPreferenceAvailable ||
+                isPushOptedIn === null ||
+                isUpdatingPushPreference
+              }
+              aria-label={getPushSubscriptionToggleLabel(
+                isPushPreferenceAvailable,
+                isPushOptedIn,
+                isUpdatingPushPreference,
+              )}
+              title={getPushSubscriptionToggleLabel(
+                isPushPreferenceAvailable,
+                isPushOptedIn,
+                isUpdatingPushPreference,
+              )}
+            >
+              {!isPushPreferenceAvailable ? (
+                <BellOff className="text-gray-300" />
+              ) : isPushOptedIn === null ? (
+                <Bell className="text-gray-400" />
+              ) : isPushOptedIn ? (
+                <Bell className="text-blue-600" />
+              ) : (
+                <BellOff className="text-gray-500" />
+              )}
+            </Button>
+          </div>
+
+          {pushPreferenceError === null || !isPushPreferenceAvailable ? null : (
+            <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              {pushPreferenceError}
+            </div>
+          )}
 
           <section className="mb-8 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
             <h2 className="mb-4 text-lg font-medium text-gray-900">
@@ -282,13 +412,37 @@ function MaintenanceTasksLoadingState() {
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-20">
       <div className="mx-auto max-w-4xl">
-        <h1 className="mb-8 text-3xl font-semibold text-gray-900">
-          Maintenance Tasks
-        </h1>
+        <div className="mb-8 flex items-center justify-between gap-3">
+          <h1 className="text-3xl font-semibold text-gray-900">
+            Maintenance Tasks
+          </h1>
+          <div
+            className="size-8 rounded-lg border border-gray-200 bg-white"
+            aria-hidden
+          />
+        </div>
         <div className="text-sm text-gray-500">Loading...</div>
       </div>
     </main>
   );
+}
+
+function getPushSubscriptionToggleLabel(
+  isPushPreferenceAvailable: boolean,
+  isPushOptedIn: boolean | null,
+  isUpdatingPushPreference: boolean,
+): string {
+  if (!isPushPreferenceAvailable) {
+    return "Push notifications are unavailable in this browser";
+  } else if (isUpdatingPushPreference) {
+    return "Updating notification preference";
+  } else if (isPushOptedIn === null) {
+    return "Loading notification preference";
+  } else if (isPushOptedIn) {
+    return "Unsubscribe from notifications";
+  } else {
+    return "Subscribe to notifications";
+  }
 }
 
 function MaintenanceTaskRow(props: {

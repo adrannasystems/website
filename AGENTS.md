@@ -12,6 +12,25 @@ This file defines guardrails for agentic coding in this repo.
 - Before pushing, run `npm run lint` and `npm run typecheck`, plus any relevant tests, and fix any failures.
 - Before telling the user a task is done, always run `npm run lint` and `npm run typecheck` and fix all failures.
 
+## Runtime Validation
+- For frontend changes that alter user-visible behavior, run the app and manually verify the affected flow before marking the task done.
+- Do not rely on static checks alone (`lint`/`typecheck`) for UI behavior changes.
+
+## External Integration Safety
+- For changes involving third-party SDKs or services, validate runtime initialization and fallback behavior.
+- Ensure core page functionality remains usable if an integration fails, is delayed, or is unavailable.
+
+## Optional Feature Degradation
+- Optional integrations must fail gracefully and must not block primary user workflows.
+- Do not introduce persistent warning/error UI for non-critical integration failures unless explicitly required.
+
+## Env + Config Preflight
+- For changes relying on environment variables or runtime configuration, define behavior for missing/invalid values and verify it during testing.
+
+## UI Definition of Done
+- Include a brief manual verification note for UI work: action performed, expected result, and observed result.
+- Confirm no new unexpected error banners/toasts appear in the affected flow.
+
 ## Documentation Freshness Policy
 - If a user request involves any library, framework, SDK, platform, hosted service, or external system (for example TanStack Start, Render, Convex, Stripe, Supabase, or GitHub APIs), do not rely on memory alone. Re-check the official documentation before implementing.
 - Verify the relevant version before implementation. If the project is pinned to a version, follow that version's docs. If the version is not pinned or is unclear, follow the latest stable docs and note the assumption.
