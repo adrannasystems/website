@@ -1,0 +1,32 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 64 64"
+  role="img"
+  aria-labelledby="faviconTitle"
+>
+  <title id="faviconTitle">Taskologist favicon</title>
+  <defs>
+    <linearGradient id="taskologistGradient" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3B82F6" />
+      <stop offset="1" stop-color="#1D4ED8" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#taskologistGradient)" />
+  <path
+    d="M19 33.5L27.5 42L45.5 24"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="6"
+  />
+  <circle cx="47.5" cy="16.5" r="9.5" fill="#BFDBFE" />
+  <path
+    d="M47.5 12.5V17.5L50.5 19.5"
+    fill="none"
+    stroke="#1E3A8A"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2.5"
+  />
+</svg>
