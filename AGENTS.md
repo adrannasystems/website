@@ -12,6 +12,12 @@ This file defines guardrails for agentic coding in this repo.
 - Before pushing, run `npm run lint` and `npm run typecheck`, plus any relevant tests, and fix any failures.
 - Before telling the user a task is done, always run `npm run lint` and `npm run typecheck` and fix all failures.
 
+## Documentation Freshness Policy
+- If a user request involves any library, framework, SDK, platform, hosted service, or external system (for example TanStack Start, Render, Convex, Stripe, Supabase, or GitHub APIs), do not rely on memory alone. Re-check the official documentation before implementing.
+- Verify the relevant version before implementation. If the project is pinned to a version, follow that version's docs. If the version is not pinned or is unclear, follow the latest stable docs and note the assumption.
+- Prefer primary sources (official docs, official migration guides, official API references, and release notes) over third-party tutorials.
+- When implementation details are version-sensitive or ambiguous, state the source and version used in your summary.
+
 ## Safety
 - Never run destructive commands unless explicitly requested.
 - Ask before installing new dependencies or modifying global config.
