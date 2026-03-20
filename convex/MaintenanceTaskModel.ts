@@ -7,8 +7,8 @@ export type MaintenanceTaskModel = {
   lastExecutedAt: () => Promise<number | null>;
   name: string;
   periodHours: number;
-  isDeleted: boolean;
-  deletedAt: number | null;
+  isArchived: boolean;
+  archivedAt: number | null;
   state: () => Promise<MaintenanceTaskState>;
   periodsDue: () => Promise<number>;
 };
@@ -46,12 +46,12 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
     return this.data.periodHours;
   }
 
-  get deletedAt(): number | null {
+  get archivedAt(): number | null {
     return this.data.deletedAt ?? null;
   }
 
-  get isDeleted(): boolean {
-    return this.deletedAt !== null;
+  get isArchived(): boolean {
+    return this.archivedAt !== null;
   }
 
   async state(): Promise<MaintenanceTaskState> {

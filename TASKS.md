@@ -13,8 +13,8 @@ Tasks for the agent loop. Use `/next-task` to process all pending tasks.
 - [ ] allow personal maintenance tasks that only the creator sees
 - [ ] alllow users to receive notifications via something more comfortable than ntfy
 - [ ] add multilanguage support, consider using [General Translation](https://soydev.link/gt)
-- [ ] fix task query data leak: `listTasksForMaintenanceOverview` and `listDeletedTasksForMaintenanceOverview` must filter by current user `userId` so authenticated users only see their own tasks
-- [ ] fix task mutation authorization: `updateTask`, `deleteTask`, and `undeleteTask` must verify `task.userId === identity.subject` before allowing any modification
+- [ ] fix task query data leak: `listTasksForMaintenanceOverview` and `listArchivedTasksForMaintenanceOverview` must filter by current user `userId` so authenticated users only see their own tasks
+- [ ] fix task mutation authorization: `updateTask`, `archiveTask`, and `unarchiveTask` must verify `task.userId === identity.subject` before allowing any modification
 - [ ] fix execution mutation authorization: `addExecution` must verify `task.userId === identity.subject` before creating execution records
 - [ ] fix execution deletion authorization: `deleteExecution` must verify the linked task belongs to `identity.subject` before deleting execution records
 - [ ] fix execution query authorization: `findTaskExecutions` must verify the task belongs to `identity.subject` before returning execution history

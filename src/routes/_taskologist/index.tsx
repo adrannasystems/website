@@ -137,8 +137,8 @@ function MaintenanceTasksContent() {
     api.maintenanceTasks.listTasksForMaintenanceOverview,
     {},
   );
-  const deletedTasksResult = useQuery(
-    api.maintenanceTasks.listDeletedTasksForMaintenanceOverview,
+  const archivedTasksResult = useQuery(
+    api.maintenanceTasks.listArchivedTasksForMaintenanceOverview,
     {},
   );
 
@@ -257,11 +257,11 @@ function MaintenanceTasksContent() {
     }
   }, [isPushOptedIn, isPushPreferenceAvailable, isUpdatingPushPreference]);
 
-  if (activeTasksResult === undefined || deletedTasksResult === undefined) {
+  if (activeTasksResult === undefined || archivedTasksResult === undefined) {
     return <MaintenanceTasksLoadingState />;
   } else {
     const activeTasks = activeTasksResult as MaintenanceTask[];
-    const deletedTasks = deletedTasksResult as MaintenanceTask[];
+    const archivedTasks = archivedTasksResult as MaintenanceTask[];
 
     return (
       <main className="min-h-screen bg-gray-50 px-6 py-20">
@@ -381,22 +381,22 @@ function MaintenanceTasksContent() {
 
           <section>
             <h2 className="mb-3 text-lg font-medium text-gray-900">
-              Deleted tasks
+              Archived tasks
             </h2>
             <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
               <div className="divide-y divide-gray-200">
-                {deletedTasks.map((task) => {
+                {archivedTasks.map((task) => {
                   return (
-                    <DeletedMaintenanceTaskRow
+                    <ArchivedMaintenanceTaskRow
                       key={task.id}
                       task={task}
                       onError={setErrorMessage}
                     />
                   );
                 })}
-                {deletedTasks.length === 0 ? (
+                {archivedTasks.length === 0 ? (
                   <div className="px-6 py-10 text-center text-sm text-gray-500">
-                    No deleted maintenance tasks.
+                    No archived maintenance tasks.
                   </div>
                 ) : null}
               </div>
@@ -450,7 +450,7 @@ function MaintenanceTaskRow(props: {
   onError: (message: string) => void;
 }) {
   const updateTask = useMutation(api.maintenanceTasks.updateTask);
-  const deleteTask = useMutation(api.maintenanceTasks.deleteTask);
+  const archiveTask = useMutation(api.maintenanceTasks.archiveTask);
   const addExecution = useMutation(api.maintenanceTasks.addExecution);
   const deleteExecution = useMutation(api.maintenanceTasks.deleteExecution);
 
@@ -463,7 +463,7 @@ function MaintenanceTaskRow(props: {
 
   const [showExecutions, setShowExecutions] = React.useState(false);
   const [isSavingExecutionNow, setIsSavingExecutionNow] = React.useState(false);
-  const [isDeletingTask, setIsDeletingTask] = React.useState(false);
+  const [isArchivingTask, setIsArchivingTask] = React.useState(false);
 
   const [executionDialogOpen, setExecutionDialogOpen] = React.useState(false);
   const [executionDialogValue, setExecutionDialogValue] = React.useState(
@@ -511,17 +511,17 @@ function MaintenanceTaskRow(props: {
     }
   }, [editName, editPeriodHours, props, updateTask]);
 
-  const handleDeleteTask = React.useCallback(async () => {
-    setIsDeletingTask(true);
+  const handleArchiveTask = React.useCallback(async () => {
+    setIsArchivingTask(true);
 
     try {
-      await deleteTask({ taskId: props.task.id });
+      await archiveTask({ taskId: props.task.id });
     } catch {
-      props.onError("Unable to delete maintenance task.");
+      props.onError("Unable to archive maintenance task.");
     } finally {
-      setIsDeletingTask(false);
+      setIsArchivingTask(false);
     }
-  }, [deleteTask, props]);
+  }, [archiveTask, props]);
 
   const handleAddExecutionNow = React.useCallback(async () => {
     setIsSavingExecutionNow(true);
@@ -700,10 +700,10 @@ function MaintenanceTaskRow(props: {
               <Button
                 type="button"
                 variant="destructive"
-                onClick={() => void handleDeleteTask()}
-                disabled={isDeletingTask}
+                onClick={() => void handleArchiveTask()}
+                disabled={isArchivingTask}
               >
-                {isDeletingTask ? "Deleting..." : "Delete"}
+                {isArchivingTask ? "Archiving..." : "Archive"}
               </Button>
             </>
           )}
@@ -797,24 +797,41 @@ function MaintenanceTaskRow(props: {
   );
 }
 
-function DeletedMaintenanceTaskRow(props: {
+function ArchivedMaintenanceTaskRow(props: {
   task: MaintenanceTask;
   onError: (message: string) => void;
 }) {
-  const undeleteTask = useMutation(api.maintenanceTasks.undeleteTask);
-  const [isUndeletingTask, setIsUndeletingTask] = React.useState(false);
+  const unarchiveTask = useMutation(api.maintenanceTasks.unarchiveTask);
+  const deleteArchivedTaskPermanently = useMutation(
+    api.maintenanceTasks.deleteArchivedTaskPermanently,
+  );
+  const [isUnarchivingTask, setIsUnarchivingTask] = React.useState(false);
+  const [isPermanentlyDeletingTask, setIsPermanentlyDeletingTask] =
+    React.useState(false);
 
-  const handleUndeleteTask = React.useCallback(async () => {
-    setIsUndeletingTask(true);
+  const handleUnarchiveTask = React.useCallback(async () => {
+    setIsUnarchivingTask(true);
 
     try {
-      await undeleteTask({ taskId: props.task.id });
+      await unarchiveTask({ taskId: props.task.id });
     } catch {
-      props.onError("Unable to restore maintenance task.");
+      props.onError("Unable to unarchive maintenance task.");
     } finally {
-      setIsUndeletingTask(false);
+      setIsUnarchivingTask(false);
     }
-  }, [props, undeleteTask]);
+  }, [props, unarchiveTask]);
+
+  const handleDeleteTaskPermanently = React.useCallback(async () => {
+    setIsPermanentlyDeletingTask(true);
+
+    try {
+      await deleteArchivedTaskPermanently({ taskId: props.task.id });
+    } catch {
+      props.onError("Unable to permanently delete archived task.");
+    } finally {
+      setIsPermanentlyDeletingTask(false);
+    }
+  }, [deleteArchivedTaskPermanently, props]);
 
   return (
     <div className="flex flex-col gap-3 px-6 py-4 md:flex-row md:items-start md:justify-between">
@@ -833,14 +850,24 @@ function DeletedMaintenanceTaskRow(props: {
         </div>
       </div>
       <div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => void handleUndeleteTask()}
-          disabled={isUndeletingTask}
-        >
-          {isUndeletingTask ? "Restoring..." : "Restore"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => void handleUnarchiveTask()}
+            disabled={isUnarchivingTask || isPermanentlyDeletingTask}
+          >
+            {isUnarchivingTask ? "Unarchiving..." : "Unarchive"}
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            onClick={() => void handleDeleteTaskPermanently()}
+            disabled={isUnarchivingTask || isPermanentlyDeletingTask}
+          >
+            {isPermanentlyDeletingTask ? "Deleting..." : "Delete Permanently"}
+          </Button>
+        </div>
       </div>
     </div>
   );
