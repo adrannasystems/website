@@ -35,6 +35,7 @@ export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
           sendOneSignalNotification({
             appId: oneSignalAppId,
             restApiKey: oneSignalRestApiKey,
+            openUrl: maintenanceTaskDeepLink(task.id),
             userId: task.userId,
             webPushTopic: `task-${task.id}-state`,
             title: `Task is ${task.state.toLowerCase()}: ${task.name}`,
@@ -87,6 +88,7 @@ export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
 async function sendOneSignalNotification(input: {
   appId: string;
   restApiKey: string;
+  openUrl: string;
   userId: string;
   webPushTopic: string;
   title: string;
@@ -103,6 +105,7 @@ async function sendOneSignalNotification(input: {
       include_aliases: { external_id: [input.userId] },
       target_channel: "push",
       web_push_topic: input.webPushTopic,
+      url: input.openUrl,
       headings: { en: input.title },
       contents: { en: input.body },
     }),
@@ -127,6 +130,20 @@ const oneSignalRestApiKey = z
   .string({ message: `${oneSignalRestApiKeyEnvVarName} is required` })
   .nonempty()
   .parse(process.env[oneSignalRestApiKeyEnvVarName]);
+
+/** Convex env: deployed web origin (e.g. https://task.example.com or http://localhost:3000). */
+const publicAppOriginEnvVarName = "PUBLIC_APP_ORIGIN";
+const publicAppOrigin = z
+  .string({ message: `${publicAppOriginEnvVarName} is required` })
+  .url()
+  .parse(process.env[publicAppOriginEnvVarName]);
+
+function maintenanceTaskDeepLink(taskId: Id<"maintenanceTasks">): string {
+  return new URL(
+    `/?task=${encodeURIComponent(taskId)}`,
+    publicAppOrigin.endsWith("/") ? publicAppOrigin : `${publicAppOrigin}/`,
+  ).toString();
+}
 
 export const listDueOrMoreUrgentTasksForNotifications = internalQuery({
   args: {},

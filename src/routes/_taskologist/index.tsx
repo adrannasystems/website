@@ -1,5 +1,5 @@
 import * as React from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import {
   Authenticated,
   AuthLoading,
@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import { z } from "zod";
 
 type MaintenanceTask = {
   id: Id<"maintenanceTasks">;
@@ -37,7 +39,25 @@ type MaintenanceExecution = {
   executedAt: number;
 };
 
+const taskologistIndexSearchSchema = z.object({
+  task: z
+    .string()
+    .trim()
+    .transform((v) => (v.length > 0 ? v : undefined))
+    .optional(),
+});
+
 export const Route = createFileRoute("/_taskologist/")({
+  validateSearch: taskologistIndexSearchSchema,
+  beforeLoad: ({ context, search }) => {
+    if (context.currentUserId === null && search.task !== undefined) {
+      const qs = new URLSearchParams({ task: search.task });
+      throw redirect({
+        to: "/sign-in",
+        search: { redirect_url: `/?${qs.toString()}` },
+      });
+    }
+  },
   component: IndexPage,
 });
 
@@ -67,10 +87,10 @@ function TaskologistLandingPage() {
             Never Miss a Maintenance Task
           </h1>
           <p className="text-xl text-gray-600 mb-10">
-            Track recurring maintenance work, stay on top of what's overdue,
-            and keep a full history of every execution.
+            Track recurring maintenance work, stay on top of what's overdue, and
+            keep a full history of every execution.
           </p>
-          <Link to="/sign-in" search={{ redirect_url: "/" }}>
+          <Link to="/sign-in">
             <Button size="lg" className="px-8 py-3 text-base">
               Go to app
             </Button>
@@ -97,8 +117,8 @@ function TaskologistLandingPage() {
               Execution History
             </h3>
             <p className="text-gray-600 text-sm">
-              Log each time a task is completed — with the exact timestamp —
-              so you always have a clear audit trail.
+              Log each time a task is completed — with the exact timestamp — so
+              you always have a clear audit trail.
             </p>
           </div>
           <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
@@ -118,6 +138,12 @@ function TaskologistLandingPage() {
 }
 
 function MaintenanceTasksContent() {
+  const { task: highlightTaskIdFromUrl } = Route.useSearch();
+  const navigate = Route.useNavigate();
+  const navigateRef = React.useRef(navigate);
+  navigateRef.current = navigate;
+  const [pulseTaskId, setPulseTaskId] = React.useState<string | null>(null);
+
   const createTask = useMutation(api.maintenanceTasks.createTask);
   const [createName, setCreateName] = React.useState("");
   const [createPeriodHours, setCreatePeriodHours] = React.useState("24");
@@ -141,6 +167,43 @@ function MaintenanceTasksContent() {
     api.maintenanceTasks.listDeletedTasksForMaintenanceOverview,
     {},
   );
+
+  React.useLayoutEffect(() => {
+    if (highlightTaskIdFromUrl === undefined) {
+      return;
+    }
+    if (activeTasksResult === undefined) {
+      return;
+    }
+    const activeTasks = activeTasksResult as MaintenanceTask[];
+    const found = activeTasks.some((t) => t.id === highlightTaskIdFromUrl);
+    if (!found) {
+      return;
+    }
+
+    setPulseTaskId(highlightTaskIdFromUrl);
+
+    const rowId = `maintenance-task-${highlightTaskIdFromUrl}`;
+    const scrollFrame = window.requestAnimationFrame(() => {
+      document
+        .getElementById(rowId)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+
+    const finishHighlightTimer = window.setTimeout(() => {
+      setPulseTaskId(null);
+      void navigateRef.current({
+        search: {},
+        replace: true,
+        resetScroll: false,
+      });
+    }, 2800);
+
+    return () => {
+      window.cancelAnimationFrame(scrollFrame);
+      window.clearTimeout(finishHighlightTimer);
+    };
+  }, [activeTasksResult, highlightTaskIdFromUrl]);
 
   const handleCreateTask = React.useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -367,6 +430,7 @@ function MaintenanceTasksContent() {
                       key={task.id}
                       task={task}
                       onError={setErrorMessage}
+                      isPulseHighlighted={pulseTaskId === task.id}
                     />
                   );
                 })}
@@ -448,6 +512,7 @@ function getPushSubscriptionToggleLabel(
 function MaintenanceTaskRow(props: {
   task: MaintenanceTask;
   onError: (message: string) => void;
+  isPulseHighlighted?: boolean;
 }) {
   const updateTask = useMutation(api.maintenanceTasks.updateTask);
   const deleteTask = useMutation(api.maintenanceTasks.deleteTask);
@@ -574,7 +639,15 @@ function MaintenanceTaskRow(props: {
   const executions = (executionsResult ?? []) as MaintenanceExecution[];
 
   return (
-    <div className="px-6 py-4">
+    <div
+      id={`maintenance-task-${props.task.id}`}
+      className={cn(
+        "px-6 py-4",
+        props.isPulseHighlighted === true
+          ? "scroll-mt-24 rounded-md border-l-4 border-sky-600 bg-sky-100 shadow-[inset_0_0_0_2px_rgba(2,132,199,0.35)] transition-colors duration-300"
+          : undefined,
+      )}
+    >
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
         <div>
           {isEditing ? (
