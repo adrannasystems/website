@@ -138,18 +138,13 @@ export const listDueOrMoreUrgentTasksForNotifications = internalQuery({
   handler: async (ctx) => {
     const taskDbos = await ctx.db
       .query("maintenanceTasks")
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("deletedAt"), null),
-          q.eq(q.field("deletedAt"), undefined),
-        ),
-      )
+      .filter((q) => q.eq(q.field("deletedAt"), null))
       .collect();
 
     const dueOrOverdueTasks: MaintenanceTaskForNotification[] = [];
     await Promise.all(
       taskDbos.map(async (dbo) => {
-        const task = new MaintenanceTaskModelImpl(ctx, dbo);
+        const task = new MaintenanceTaskModelImpl(dbo);
         const state = await task.state();
         if (state === "Due" || state === "Overdue" || state === "Never Done") {
           dueOrOverdueTasks.push({

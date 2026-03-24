@@ -2,7 +2,6 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
 import { requireAuthenticatedUser } from "./auth";
-import { fixLatestExecutionTimestamp } from "./maintenanceTaskMigrations";
 import {
   MaintenanceTaskModelImpl,
   type MaintenanceTaskState,
@@ -12,62 +11,44 @@ import {
 export const listTasksForMaintenanceOverview = query({
   args: {},
   handler: async (ctx) => {
-    await requireAuthenticatedUser(ctx);
+    const identity = await requireAuthenticatedUser(ctx);
 
     const activeTasks = await ctx.db
       .query("maintenanceTasks")
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("deletedAt"), null),
-          q.eq(q.field("deletedAt"), undefined),
-        ),
+      .withIndex("by_userId_deletedAt_name", (q) =>
+        q.eq("userId", identity.subject).eq("deletedAt", null),
       )
+      .order("asc")
       .collect();
 
-    const tasksWithState = await Promise.all(
+    return Promise.all(
       activeTasks.map((taskData) =>
-        toTaskWithState(new MaintenanceTaskModelImpl(ctx, taskData)),
+        toTaskWithState(new MaintenanceTaskModelImpl(taskData)),
       ),
     );
-    return sortedByPeriodsDueAndName(tasksWithState);
   },
 });
 
 export const listArchivedTasksForMaintenanceOverview = query({
   args: {},
   handler: async (ctx) => {
-    await requireAuthenticatedUser(ctx);
+    const identity = await requireAuthenticatedUser(ctx);
 
     const archivedTasks = await ctx.db
       .query("maintenanceTasks")
-      .filter((q) =>
-        q.and(
-          q.neq(q.field("deletedAt"), null),
-          q.neq(q.field("deletedAt"), undefined),
-        ),
+      .withIndex("by_userId_deletedAt_name", (q) =>
+        q.eq("userId", identity.subject).gt("deletedAt", null),
       )
+      .order("desc")
       .collect();
 
-    const tasksWithState = await Promise.all(
+    return Promise.all(
       archivedTasks.map((taskData) =>
-        toTaskWithState(new MaintenanceTaskModelImpl(ctx, taskData)),
+        toTaskWithState(new MaintenanceTaskModelImpl(taskData)),
       ),
     );
-    return sortedByPeriodsDueAndName(tasksWithState);
   },
 });
-
-function sortedByPeriodsDueAndName<
-  T extends { periodsDue: number; name: string },
->(tasks: T[]): T[] {
-  return [...tasks].sort((left, right) => {
-    if (left.periodsDue === right.periodsDue) {
-      return left.name.localeCompare(right.name);
-    } else {
-      return right.periodsDue - left.periodsDue;
-    }
-  });
-}
 
 export const createTask = mutation({
   args: {
@@ -98,9 +79,11 @@ export const updateTask = mutation({
     periodHours: v.number(),
   },
   handler: async (ctx, args) => {
-    await requireAuthenticatedUser(ctx);
-
-    if (args.periodHours <= 0) {
+    const identity = await requireAuthenticatedUser(ctx);
+    const task = await ctx.db.get(args.taskId);
+    if (task === null || task.userId !== identity.subject) {
+      throw new Error("Maintenance task not found");
+    } else if (args.periodHours <= 0) {
       throw new Error("periodHours must be greater than 0");
     } else {
       await ctx.db.patch(args.taskId, {
@@ -116,9 +99,9 @@ export const archiveTask = mutation({
     taskId: v.id("maintenanceTasks"),
   },
   handler: async (ctx, args) => {
-    await requireAuthenticatedUser(ctx);
+    const identity = await requireAuthenticatedUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (task === null) {
+    if (task === null || task.userId !== identity.subject) {
       throw new Error("Maintenance task not found");
     } else {
       await ctx.db.patch(args.taskId, {
@@ -133,10 +116,13 @@ export const unarchiveTask = mutation({
     taskId: v.id("maintenanceTasks"),
   },
   handler: async (ctx, args) => {
-    await requireAuthenticatedUser(ctx);
-    await ctx.db.patch(args.taskId, {
-      deletedAt: null,
-    });
+    const identity = await requireAuthenticatedUser(ctx);
+    const task = await ctx.db.get(args.taskId);
+    if (task === null || task.userId !== identity.subject) {
+      throw new Error("Maintenance task not found");
+    } else {
+      await ctx.db.patch(args.taskId, { deletedAt: null });
+    }
   },
 });
 
@@ -145,11 +131,11 @@ export const deleteArchivedTaskPermanently = mutation({
     taskId: v.id("maintenanceTasks"),
   },
   handler: async (ctx, args) => {
-    await requireAuthenticatedUser(ctx);
+    const identity = await requireAuthenticatedUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (task === null) {
+    if (task === null || task.userId !== identity.subject) {
       throw new Error("Maintenance task not found");
-    } else if (task.deletedAt === null || task.deletedAt === undefined) {
+    } else if (task.deletedAt === null) {
       throw new Error("Cannot permanently delete an active maintenance task");
     } else {
       const taskExecutions = await ctx.db
@@ -171,13 +157,13 @@ export const addExecution = mutation({
     executedAt: v.number(),
   },
   handler: async (ctx, args) => {
-    await requireAuthenticatedUser(ctx);
+    const identity = await requireAuthenticatedUser(ctx);
 
     const taskDbo = await ctx.db.get(args.taskId);
-    if (taskDbo === null) {
+    if (taskDbo === null || taskDbo.userId !== identity.subject) {
       throw new Error("Maintenance task not found");
     } else {
-      const task = new MaintenanceTaskModelImpl(ctx, taskDbo);
+      const task = new MaintenanceTaskModelImpl(taskDbo);
       if (task.isArchived) {
         throw new Error("Cannot add execution to an archived maintenance task");
       } else {
@@ -203,14 +189,27 @@ export const deleteExecution = mutation({
     executionId: v.id("maintenanceExecutions"),
   },
   handler: async (ctx, args): Promise<void> => {
-    await requireAuthenticatedUser(ctx);
+    const identity = await requireAuthenticatedUser(ctx);
     const execution = await ctx.db.get(args.executionId);
     if (execution === null) {
       throw new Error("Maintenance execution not found");
     } else {
+      const task = await ctx.db.get(execution.taskId);
+      if (task === null || task.userId !== identity.subject) {
+        throw new Error("Maintenance execution not found");
+      }
       await ctx.db.delete(args.executionId);
 
-      await fixLatestExecutionTimestamp(ctx, execution.taskId);
+      const latestExecution = await ctx.db
+        .query("maintenanceExecutions")
+        .withIndex("by_taskId_executedAt", (query) =>
+          query.eq("taskId", execution.taskId),
+        )
+        .order("desc")
+        .first();
+      await ctx.db.patch(execution.taskId, {
+        lastExecutedAt: latestExecution?.executedAt ?? null,
+      });
     }
   },
 });
@@ -228,7 +227,11 @@ export const findTaskExecutions = query({
       executedAt: number;
     }[]
   > => {
-    await requireAuthenticatedUser(ctx);
+    const identity = await requireAuthenticatedUser(ctx);
+    const task = await ctx.db.get(args.taskId);
+    if (task === null || task.userId !== identity.subject) {
+      throw new Error("Maintenance task not found");
+    }
     const executions = await ctx.db
       .query("maintenanceExecutions")
       .withIndex("by_taskId_executedAt", (query) =>

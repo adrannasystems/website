@@ -11,7 +11,6 @@
 import type * as MaintenanceTaskModel from "../MaintenanceTaskModel.js";
 import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
-import type * as maintenanceTaskMigrations from "../maintenanceTaskMigrations.js";
 import type * as maintenanceTaskNotifications from "../maintenanceTaskNotifications.js";
 import type * as maintenanceTasks from "../maintenanceTasks.js";
 
@@ -25,7 +24,6 @@ declare const fullApi: ApiFromModules<{
   MaintenanceTaskModel: typeof MaintenanceTaskModel;
   auth: typeof auth;
   crons: typeof crons;
-  maintenanceTaskMigrations: typeof maintenanceTaskMigrations;
   maintenanceTaskNotifications: typeof maintenanceTaskNotifications;
   maintenanceTasks: typeof maintenanceTasks;
 }>;

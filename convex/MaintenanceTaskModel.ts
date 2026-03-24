@@ -1,6 +1,4 @@
 import type { Id } from "./_generated/dataModel";
-import type { QueryCtx } from "./_generated/server";
-import { findLatestExecutionTimestamp } from "./maintenanceTaskMigrations";
 
 export type MaintenanceTaskModel = {
   id: Id<"maintenanceTasks">;
@@ -15,27 +13,21 @@ export type MaintenanceTaskModel = {
 
 export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
   constructor(
-    private readonly ctx: QueryCtx,
     private readonly data: {
       _id: Id<"maintenanceTasks">;
       name: string;
       periodHours: number;
-      lastExecutedAt?: number | null | undefined;
-      deletedAt?: number | null | undefined;
+      lastExecutedAt: number | null;
+      deletedAt: number | null;
     },
   ) {}
-
-  private _lastExecutedAt: Promise<number | null> | null = null;
 
   get id(): Id<"maintenanceTasks"> {
     return this.data._id;
   }
 
   async lastExecutedAt(): Promise<number | null> {
-    return this._lastExecutedAt ??=
-      this.data.lastExecutedAt !== undefined
-        ? Promise.resolve(this.data.lastExecutedAt)
-        : findLatestExecutionTimestamp(this.ctx, this.id);
+    return this.data.lastExecutedAt;
   }
 
   get name(): string {
