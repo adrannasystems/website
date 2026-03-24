@@ -33,12 +33,12 @@ export const listTasksForMaintenanceOverview = query({
   },
 });
 
-export const listDeletedTasksForMaintenanceOverview = query({
+export const listArchivedTasksForMaintenanceOverview = query({
   args: {},
   handler: async (ctx) => {
     await requireAuthenticatedUser(ctx);
 
-    const deletedTasks = await ctx.db
+    const archivedTasks = await ctx.db
       .query("maintenanceTasks")
       .filter((q) =>
         q.and(
@@ -49,7 +49,7 @@ export const listDeletedTasksForMaintenanceOverview = query({
       .collect();
 
     const tasksWithState = await Promise.all(
-      deletedTasks.map((taskData) =>
+      archivedTasks.map((taskData) =>
         toTaskWithState(new MaintenanceTaskModelImpl(ctx, taskData)),
       ),
     );
@@ -111,7 +111,7 @@ export const updateTask = mutation({
   },
 });
 
-export const deleteTask = mutation({
+export const archiveTask = mutation({
   args: {
     taskId: v.id("maintenanceTasks"),
   },
@@ -128,7 +128,7 @@ export const deleteTask = mutation({
   },
 });
 
-export const undeleteTask = mutation({
+export const unarchiveTask = mutation({
   args: {
     taskId: v.id("maintenanceTasks"),
   },
@@ -137,6 +137,31 @@ export const undeleteTask = mutation({
     await ctx.db.patch(args.taskId, {
       deletedAt: null,
     });
+  },
+});
+
+export const deleteArchivedTaskPermanently = mutation({
+  args: {
+    taskId: v.id("maintenanceTasks"),
+  },
+  handler: async (ctx, args) => {
+    await requireAuthenticatedUser(ctx);
+    const task = await ctx.db.get(args.taskId);
+    if (task === null) {
+      throw new Error("Maintenance task not found");
+    } else if (task.deletedAt === null || task.deletedAt === undefined) {
+      throw new Error("Cannot permanently delete an active maintenance task");
+    } else {
+      const taskExecutions = await ctx.db
+        .query("maintenanceExecutions")
+        .withIndex("by_taskId", (query) => query.eq("taskId", task._id))
+        .collect();
+
+      await Promise.all(
+        taskExecutions.map((execution) => ctx.db.delete(execution._id)),
+      );
+      await ctx.db.delete(task._id);
+    }
   },
 });
 
@@ -153,8 +178,8 @@ export const addExecution = mutation({
       throw new Error("Maintenance task not found");
     } else {
       const task = new MaintenanceTaskModelImpl(ctx, taskDbo);
-      if (task.isDeleted) {
-        throw new Error("Cannot add execution to a deleted maintenance task");
+      if (task.isArchived) {
+        throw new Error("Cannot add execution to an archived maintenance task");
       } else {
         const executionId = await ctx.db.insert("maintenanceExecutions", {
           taskId: task.id,
