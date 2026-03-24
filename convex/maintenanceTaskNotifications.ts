@@ -12,7 +12,7 @@ export type MaintenanceTaskForNotification = {
   periodsDue: number;
   periodHours: number;
   lastExecutedAt: number | null;
-  userId: string | undefined;
+  userId: string;
 };
 
 export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
@@ -26,38 +26,27 @@ export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
       );
 
     const notificationPromises: Promise<void>[] = [];
-    let skippedTasksCount = 0;
     for (const task of dueOrOverdueTasks) {
-      if (task.userId === undefined) {
-        skippedTasksCount += 1;
-      } else {
-        notificationPromises.push(
-          sendOneSignalNotification({
-            appId: oneSignalAppId,
-            restApiKey: oneSignalRestApiKey,
-            openUrl: maintenanceTaskDeepLink(task.id),
-            userId: task.userId,
-            webPushTopic: `task-${task.id}-state`,
-            title: `Task is ${task.state.toLowerCase()}: ${task.name}`,
-            body: [
-              `Task: ${task.name}`,
-              `State: ${task.state}`,
-              `Periods Due: ${task.periodsDue === Infinity ? "n/a" : task.periodsDue.toFixed(2)}`,
-              `Period [h]: ${String(task.periodHours)}`,
-              `Last Executed At: ${
-                task.lastExecutedAt === null
-                  ? "Never"
-                  : new Date(task.lastExecutedAt).toISOString()
-              }`,
-            ].join("\n"),
-          }),
-        );
-      }
-    }
-
-    if (skippedTasksCount > 0) {
-      console.warn(
-        `Skipping ${String(skippedTasksCount)} due/overdue tasks without userId`,
+      notificationPromises.push(
+        sendOneSignalNotification({
+          appId: oneSignalAppId,
+          restApiKey: oneSignalRestApiKey,
+          openUrl: maintenanceTaskDeepLink(task.id),
+          userId: task.userId,
+          webPushTopic: `task-${task.id}-state`,
+          title: `Task is ${task.state.toLowerCase()}: ${task.name}`,
+          body: [
+            `Task: ${task.name}`,
+            `State: ${task.state}`,
+            `Periods Due: ${task.periodsDue === Infinity ? "n/a" : task.periodsDue.toFixed(2)}`,
+            `Period [h]: ${String(task.periodHours)}`,
+            `Last Executed At: ${
+              task.lastExecutedAt === null
+                ? "Never"
+                : new Date(task.lastExecutedAt).toISOString()
+            }`,
+          ].join("\n"),
+        }),
       );
     }
 
@@ -79,7 +68,6 @@ export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
 
     return {
       notificationsSent: notificationsSentCount,
-      notificationsSkippedMissingUserId: skippedTasksCount,
       notificationsFailedToSend: notificationsFailedToSendCount,
     };
   },
