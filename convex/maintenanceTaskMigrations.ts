@@ -38,6 +38,22 @@ export const backfillMissingLastExecutedAtOnAllTasks = internalMutation({
   },
 });
 
+export const backfillMissingArchivedAtOnAllTasks = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const tasks = await ctx.db
+      .query("maintenanceTasks")
+      .filter((q) => q.eq(q.field("deletedAt"), undefined))
+      .collect();
+
+    await Promise.all(
+      tasks.map((task) => ctx.db.patch(task._id, { deletedAt: null })),
+    );
+
+    return { updatedCount: tasks.length };
+  },
+});
+
 export async function fixLatestExecutionTimestamp(
   ctx: MutationCtx,
   taskId: Id<"maintenanceTasks">,
