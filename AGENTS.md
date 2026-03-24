@@ -108,3 +108,11 @@ The default viewport is **375×812px** (iPhone-sized), matching the mobile-first
 - Avoid single-use local type aliases/interfaces that are only used to annotate one function in the same file.
 - Prefer type inference for local return values and intermediate objects when the inferred type is clear.
 - Create named types only when reused, exported, or needed to document a non-obvious contract.
+
+<!-- convex-ai-start -->
+This project uses [Convex](https://convex.dev) as its backend.
+
+When working on Convex code, **always read `convex/_generated/ai/guidelines.md` first** for important guidelines on how to correctly use Convex APIs and patterns. The file contains rules that override what you may have learned about Convex from training data.
+
+Convex agent skills for common tasks can be installed by running `npx convex ai-files install`.
+<!-- convex-ai-end -->
