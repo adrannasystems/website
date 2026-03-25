@@ -11,7 +11,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { getOneSignal } from "@/components/OneSignalSync";
 import { Button } from "@/components/ui/button";
-import { Archive, Bell, BellOff, CheckCircle2, Clock, Pencil } from "lucide-react";
+import { Archive, Bell, BellOff, CheckCircle2, Clock, Pencil, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -145,9 +145,11 @@ function MaintenanceTasksContent() {
   const [pulseTaskId, setPulseTaskId] = React.useState<string | null>(null);
 
   const createTask = useMutation(api.maintenanceTasks.createTask);
+  const [isAddTaskOpen, setIsAddTaskOpen] = React.useState(false);
   const [createName, setCreateName] = React.useState("");
   const [createPeriodHours, setCreatePeriodHours] = React.useState("24");
   const [isCreating, setIsCreating] = React.useState(false);
+  const [createErrorMessage, setCreateErrorMessage] = React.useState<string | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [isPushOptedIn, setIsPushOptedIn] = React.useState<boolean | null>(
     null,
@@ -213,15 +215,15 @@ function MaintenanceTasksContent() {
       const periodHoursNumber = Number(createPeriodHours);
 
       if (name === "") {
-        setErrorMessage("Task name is required.");
+        setCreateErrorMessage("Task name is required.");
       } else if (
         !Number.isFinite(periodHoursNumber) ||
         periodHoursNumber <= 0
       ) {
-        setErrorMessage("Period hours must be a number greater than 0.");
+        setCreateErrorMessage("Period hours must be a number greater than 0.");
       } else {
         setIsCreating(true);
-        setErrorMessage(null);
+        setCreateErrorMessage(null);
 
         try {
           await createTask({
@@ -230,8 +232,9 @@ function MaintenanceTasksContent() {
           });
           setCreateName("");
           setCreatePeriodHours("24");
+          setIsAddTaskOpen(false);
         } catch {
-          setErrorMessage("Unable to create maintenance task.");
+          setCreateErrorMessage("Unable to create maintenance task.");
         } finally {
           setIsCreating(false);
         }
@@ -330,9 +333,24 @@ function MaintenanceTasksContent() {
       <main className="min-h-screen bg-gray-50 px-6 py-20">
         <div className="mx-auto max-w-4xl">
           <div className="mb-8 flex items-center justify-between gap-3">
-            <h1 className="text-3xl font-semibold text-gray-900">
-              Maintenance Tasks
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-semibold text-gray-900">
+                Maintenance Tasks
+              </h1>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  setCreateName("");
+                  setCreatePeriodHours("24");
+                  setCreateErrorMessage(null);
+                  setIsAddTaskOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Add task
+              </Button>
+            </div>
             <Button
               type="button"
               size="icon"
@@ -372,56 +390,82 @@ function MaintenanceTasksContent() {
             </div>
           )}
 
-          <section className="mb-8 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <h2 className="mb-4 text-lg font-medium text-gray-900">
-              Create task
-            </h2>
-            <form
-              className="grid gap-4 md:grid-cols-3"
-              onSubmit={handleCreateTask}
-            >
-              <div className="md:col-span-2">
-                <Label htmlFor="mtask-name">Name</Label>
-                <Input
-                  id="mtask-name"
-                  value={createName}
-                  onChange={(event) => {
-                    setCreateName(event.target.value);
-                  }}
-                  placeholder="e.g. Check backups"
-                />
-              </div>
-              <div>
-                <Label htmlFor="mtask-period-hours">Period (hours)</Label>
-                <Input
-                  id="mtask-period-hours"
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={createPeriodHours}
-                  onChange={(event) => {
-                    setCreatePeriodHours(event.target.value);
-                  }}
-                />
-              </div>
-              <div className="md:col-span-3">
-                <Button type="submit" disabled={isCreating}>
-                  {isCreating ? "Creating..." : "Create"}
-                </Button>
-              </div>
-            </form>
-          </section>
-
           {errorMessage === null ? null : (
             <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               {errorMessage}
             </div>
           )}
 
+          <Dialog
+            open={isAddTaskOpen}
+            onOpenChange={(open) => {
+              if (!open) {
+                setIsAddTaskOpen(false);
+                setCreateErrorMessage(null);
+              }
+            }}
+          >
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add task</DialogTitle>
+                <DialogDescription>
+                  Define a new recurring maintenance task.
+                </DialogDescription>
+              </DialogHeader>
+              <form
+                className="grid gap-4"
+                onSubmit={(e) => void handleCreateTask(e)}
+              >
+                <div className="grid gap-1.5">
+                  <Label htmlFor="mtask-name">Name</Label>
+                  <Input
+                    id="mtask-name"
+                    value={createName}
+                    onChange={(event) => {
+                      setCreateName(event.target.value);
+                    }}
+                    placeholder="e.g. Check backups"
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor="mtask-period-hours">Period (hours)</Label>
+                  <Input
+                    id="mtask-period-hours"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={createPeriodHours}
+                    onChange={(event) => {
+                      setCreatePeriodHours(event.target.value);
+                    }}
+                  />
+                </div>
+                {createErrorMessage === null ? null : (
+                  <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    {createErrorMessage}
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsAddTaskOpen(false);
+                      setCreateErrorMessage(null);
+                    }}
+                    disabled={isCreating}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isCreating}>
+                    {isCreating ? "Creating..." : "Create"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+
           <section className="mb-8">
-            <h2 className="mb-3 text-lg font-medium text-gray-900">
-              Active tasks
-            </h2>
             <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
               <div className="divide-y divide-gray-200">
                 {activeTasks.map((task) => {
