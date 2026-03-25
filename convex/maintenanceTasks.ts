@@ -80,9 +80,12 @@ export const updateTask = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await requireAuthenticatedUser(ctx);
+
     const task = await ctx.db.get(args.taskId);
-    if (task === null || task.userId !== identity.subject) {
+    if (task === null) {
       throw new Error("Maintenance task not found");
+    } else if (task.userId !== identity.subject) {
+      throw new Error("Unauthorized");
     } else if (args.periodHours <= 0) {
       throw new Error("periodHours must be greater than 0");
     } else {
@@ -101,8 +104,10 @@ export const archiveTask = mutation({
   handler: async (ctx, args) => {
     const identity = await requireAuthenticatedUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (task === null || task.userId !== identity.subject) {
+    if (task === null) {
       throw new Error("Maintenance task not found");
+    } else if (task.userId !== identity.subject) {
+      throw new Error("Unauthorized");
     } else {
       await ctx.db.patch(args.taskId, {
         deletedAt: Date.now(),
@@ -118,10 +123,14 @@ export const unarchiveTask = mutation({
   handler: async (ctx, args) => {
     const identity = await requireAuthenticatedUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (task === null || task.userId !== identity.subject) {
+    if (task === null) {
       throw new Error("Maintenance task not found");
+    } else if (task.userId !== identity.subject) {
+      throw new Error("Unauthorized");
     } else {
-      await ctx.db.patch(args.taskId, { deletedAt: null });
+      await ctx.db.patch(args.taskId, {
+        deletedAt: null,
+      });
     }
   },
 });
@@ -160,8 +169,10 @@ export const addExecution = mutation({
     const identity = await requireAuthenticatedUser(ctx);
 
     const taskDbo = await ctx.db.get(args.taskId);
-    if (taskDbo === null || taskDbo.userId !== identity.subject) {
+    if (taskDbo === null) {
       throw new Error("Maintenance task not found");
+    } else if (taskDbo.userId !== identity.subject) {
+      throw new Error("Unauthorized");
     } else {
       const task = new MaintenanceTaskModelImpl(taskDbo);
       if (task.isArchived) {
