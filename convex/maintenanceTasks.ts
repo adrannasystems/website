@@ -1,7 +1,6 @@
 import { v } from "convex/values";
-import { z } from "zod";
 import type { Id } from "./_generated/dataModel";
-import { internalMutation, mutation, query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import {
   createUnauthorizedError,
   databaseUserId,
@@ -293,35 +292,3 @@ function toTaskWithState(task: MaintenanceTaskModel): {
 function createMaintenanceTaskNotFoundError() {
   return new Error("Maintenance task not found");
 }
-
-/**
- * One-time: rewrite legacy `userId` (Clerk `sub` only) to Convex `tokenIdentifier`
- * (`iss`|`sub`). Requires `CLERK_FRONTEND_API_URL` on the deployment to match JWT `iss`
- * (same as `convex/auth.config.ts`).
- *
- * Rollout: deploy then run the migration back-to-back, e.g.
- * `npx convex deploy && npx convex run internal.maintenanceTasks.migrateMaintenanceTaskUserIdsToTokenIdentifier`
- * (add `--prod` to both commands for production).
- */
-export const migrateMaintenanceTaskUserIdsToTokenIdentifier = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const issuerEnvName = "CLERK_FRONTEND_API_URL";
-    const issuer = z
-      .string({ message: `${issuerEnvName} is required` })
-      .url()
-      .parse(process.env[issuerEnvName]);
-
-    const tasks = await ctx.db.query("maintenanceTasks").collect();
-    let migrated = 0;
-    for (const task of tasks) {
-      if (!task.userId.includes("|")) {
-        await ctx.db.patch(task._id, {
-          userId: `${issuer}|${task.userId}`,
-        });
-        migrated += 1;
-      }
-    }
-    return { migrated, total: tasks.length };
-  },
-});
