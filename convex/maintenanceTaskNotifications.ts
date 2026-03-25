@@ -142,23 +142,21 @@ export const listDueOrMoreUrgentTasksForNotifications = internalQuery({
       .collect();
 
     const dueOrOverdueTasks: MaintenanceTaskForNotification[] = [];
-    await Promise.all(
-      taskDbos.map(async (dbo) => {
-        const task = new MaintenanceTaskModelImpl(dbo);
-        const state = await task.state();
-        if (state === "Due" || state === "Overdue" || state === "Never Done") {
-          dueOrOverdueTasks.push({
-            id: task.id,
-            name: task.name,
-            state,
-            periodsDue: await task.periodsDue(),
-            periodHours: task.periodHours,
-            lastExecutedAt: await task.lastExecutedAt(),
-            userId: dbo.userId,
-          } satisfies MaintenanceTaskForNotification);
-        }
-      }),
-    );
+    for (const dbo of taskDbos) {
+      const task = new MaintenanceTaskModelImpl(dbo);
+      const state = task.state();
+      if (state === "Due" || state === "Overdue" || state === "Never Done") {
+        dueOrOverdueTasks.push({
+          id: task.id,
+          name: task.name,
+          state,
+          periodsDue: task.periodsDue(),
+          periodHours: task.periodHours,
+          lastExecutedAt: task.lastExecutedAt(),
+          userId: dbo.userId,
+        } satisfies MaintenanceTaskForNotification);
+      }
+    }
 
     return dueOrOverdueTasks;
   },

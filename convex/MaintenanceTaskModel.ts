@@ -2,13 +2,13 @@ import type { Id } from "./_generated/dataModel";
 
 export type MaintenanceTaskModel = {
   id: Id<"maintenanceTasks">;
-  lastExecutedAt: () => Promise<number | null>;
+  lastExecutedAt: () => number | null;
   name: string;
   periodHours: number;
   isArchived: boolean;
   archivedAt: number | null;
-  state: () => Promise<MaintenanceTaskState>;
-  periodsDue: () => Promise<number>;
+  state: () => MaintenanceTaskState;
+  periodsDue: () => number;
 };
 
 export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
@@ -26,7 +26,7 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
     return this.data._id;
   }
 
-  async lastExecutedAt(): Promise<number | null> {
+  lastExecutedAt(): number | null {
     return this.data.lastExecutedAt;
   }
 
@@ -46,8 +46,8 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
     return this.archivedAt !== null;
   }
 
-  async state(): Promise<MaintenanceTaskState> {
-    const periodsDue = await this.periodsDue();
+  state(): MaintenanceTaskState {
+    const periodsDue = this.periodsDue();
     if (periodsDue === Number.POSITIVE_INFINITY) {
       return "Never Done";
     } else if (periodsDue < 1) {
@@ -59,8 +59,8 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
     }
   }
 
-  async periodsDue(): Promise<number> {
-    const lastExecutedAt = await this.lastExecutedAt();
+  periodsDue(): number {
+    const lastExecutedAt = this.lastExecutedAt();
     if (lastExecutedAt === null) {
       return Number.POSITIVE_INFINITY;
     } else {
@@ -70,8 +70,8 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
     }
   }
 }
+
 export type MaintenanceTaskState = "All Good" |
   "Due" |
   "Overdue" |
   "Never Done";
-

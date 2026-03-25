@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query } from "./_generated/server";
-import { requireAuthenticatedUser } from "./auth";
+import { createUnauthorizedError, requireAuthenticatedUser } from "./auth";
 import {
   MaintenanceTaskModelImpl,
   type MaintenanceTaskState,
@@ -21,10 +21,8 @@ export const listTasksForMaintenanceOverview = query({
       .order("asc")
       .collect();
 
-    return Promise.all(
-      activeTasks.map((taskData) =>
-        toTaskWithState(new MaintenanceTaskModelImpl(taskData)),
-      ),
+    return activeTasks.map((taskData) =>
+      toTaskWithState(new MaintenanceTaskModelImpl(taskData)),
     );
   },
 });
@@ -42,10 +40,8 @@ export const listArchivedTasksForMaintenanceOverview = query({
       .order("desc")
       .collect();
 
-    return Promise.all(
-      archivedTasks.map((taskData) =>
-        toTaskWithState(new MaintenanceTaskModelImpl(taskData)),
-      ),
+    return archivedTasks.map((taskData) =>
+      toTaskWithState(new MaintenanceTaskModelImpl(taskData)),
     );
   },
 });
@@ -83,9 +79,9 @@ export const updateTask = mutation({
 
     const task = await ctx.db.get(args.taskId);
     if (task === null) {
-      throw new Error("Maintenance task not found");
+      throw createMaintenanceTaskNotFoundError();
     } else if (task.userId !== identity.subject) {
-      throw new Error("Unauthorized");
+      throw createUnauthorizedError();
     } else if (args.periodHours <= 0) {
       throw new Error("periodHours must be greater than 0");
     } else {
@@ -105,9 +101,9 @@ export const archiveTask = mutation({
     const identity = await requireAuthenticatedUser(ctx);
     const task = await ctx.db.get(args.taskId);
     if (task === null) {
-      throw new Error("Maintenance task not found");
+      throw createMaintenanceTaskNotFoundError();
     } else if (task.userId !== identity.subject) {
-      throw new Error("Unauthorized");
+      throw createUnauthorizedError();
     } else {
       await ctx.db.patch(args.taskId, {
         deletedAt: Date.now(),
@@ -124,9 +120,9 @@ export const unarchiveTask = mutation({
     const identity = await requireAuthenticatedUser(ctx);
     const task = await ctx.db.get(args.taskId);
     if (task === null) {
-      throw new Error("Maintenance task not found");
+      throw createMaintenanceTaskNotFoundError();
     } else if (task.userId !== identity.subject) {
-      throw new Error("Unauthorized");
+      throw createUnauthorizedError();
     } else {
       await ctx.db.patch(args.taskId, {
         deletedAt: null,
@@ -142,8 +138,10 @@ export const deleteArchivedTaskPermanently = mutation({
   handler: async (ctx, args) => {
     const identity = await requireAuthenticatedUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (task === null || task.userId !== identity.subject) {
-      throw new Error("Maintenance task not found");
+    if (task === null) {
+      throw createMaintenanceTaskNotFoundError();
+    } else if (task.userId !== identity.subject) {
+      throw createUnauthorizedError();
     } else if (task.deletedAt === null) {
       throw new Error("Cannot permanently delete an active maintenance task");
     } else {
@@ -170,9 +168,9 @@ export const addExecution = mutation({
 
     const taskDbo = await ctx.db.get(args.taskId);
     if (taskDbo === null) {
-      throw new Error("Maintenance task not found");
+      throw createMaintenanceTaskNotFoundError();
     } else if (taskDbo.userId !== identity.subject) {
-      throw new Error("Unauthorized");
+      throw createUnauthorizedError();
     } else {
       const task = new MaintenanceTaskModelImpl(taskDbo);
       if (task.isArchived) {
@@ -183,7 +181,7 @@ export const addExecution = mutation({
           executedAt: args.executedAt,
         });
 
-        const lastExecutedAt = await task.lastExecutedAt();
+        const lastExecutedAt = task.lastExecutedAt();
 
         if (lastExecutedAt === null || args.executedAt > lastExecutedAt) {
           await ctx.db.patch(task.id, { lastExecutedAt: args.executedAt });
@@ -206,7 +204,7 @@ export const deleteExecution = mutation({
       throw new Error("Maintenance execution not found");
     } else {
       const task = await ctx.db.get(execution.taskId);
-      if (task === null || task.userId !== identity.subject) {
+      if (task?.userId !== identity.subject) {
         throw new Error("Maintenance execution not found");
       }
       await ctx.db.delete(args.executionId);
@@ -240,8 +238,8 @@ export const findTaskExecutions = query({
   > => {
     const identity = await requireAuthenticatedUser(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (task === null || task.userId !== identity.subject) {
-      throw new Error("Maintenance task not found");
+    if (task?.userId !== identity.subject) {
+      throw createMaintenanceTaskNotFoundError();
     }
     const executions = await ctx.db
       .query("maintenanceExecutions")
@@ -260,20 +258,24 @@ export const findTaskExecutions = query({
   },
 });
 
-async function toTaskWithState(task: MaintenanceTaskModel): Promise<{
+function toTaskWithState(task: MaintenanceTaskModel): {
   id: Id<"maintenanceTasks">;
   name: string;
   periodHours: number;
   lastExecutedAt: number | null;
   state: MaintenanceTaskState;
   periodsDue: number;
-}> {
+} {
   return {
     id: task.id,
     name: task.name,
     periodHours: task.periodHours,
-    lastExecutedAt: await task.lastExecutedAt(),
-    state: await task.state(),
-    periodsDue: await task.periodsDue(),
+    lastExecutedAt: task.lastExecutedAt(),
+    state: task.state(),
+    periodsDue: task.periodsDue(),
   };
+}
+
+function createMaintenanceTaskNotFoundError() {
+  return new Error("Maintenance task not found");
 }
