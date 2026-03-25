@@ -9,9 +9,12 @@ export default defineSchema({
     deletedAt: v.union(v.number(), v.null()),
     /** Convex auth: `identity.tokenIdentifier` (`issuer|subject`). */
     userId: v.string(),
+    /** When true, all authenticated users can view and interact with this task. */
+    shared: v.optional(v.boolean()),
   })
     .index('by_userId_deletedAt_name', ['userId', 'deletedAt', 'name'])
-    .index('by_deletedAt', ['deletedAt']),
+    .index('by_deletedAt', ['deletedAt'])
+    .index('by_shared_deletedAt', ['shared', 'deletedAt']),
   maintenanceExecutions: defineTable({
     taskId: v.id('maintenanceTasks'),
     executedAt: v.number(),

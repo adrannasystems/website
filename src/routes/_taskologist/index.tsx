@@ -32,6 +32,7 @@ type MaintenanceTask = {
   state: string;
   periodsDue: number | null;
   lastExecutedAt: number | null;
+  shared: boolean;
 };
 
 type MaintenanceExecution = {
@@ -148,6 +149,7 @@ function MaintenanceTasksContent() {
   const [isAddTaskOpen, setIsAddTaskOpen] = React.useState(false);
   const [createName, setCreateName] = React.useState("");
   const [createPeriodHours, setCreatePeriodHours] = React.useState("24");
+  const [createShared, setCreateShared] = React.useState(false);
   const [isCreating, setIsCreating] = React.useState(false);
   const [createErrorMessage, setCreateErrorMessage] = React.useState<string | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
@@ -229,9 +231,11 @@ function MaintenanceTasksContent() {
           await createTask({
             name,
             periodHours: periodHoursNumber,
+            shared: createShared,
           });
           setCreateName("");
           setCreatePeriodHours("24");
+          setCreateShared(false);
           setIsAddTaskOpen(false);
         } catch {
           setCreateErrorMessage("Unable to create maintenance task.");
@@ -240,7 +244,7 @@ function MaintenanceTasksContent() {
         }
       }
     },
-    [createName, createPeriodHours, createTask],
+    [createName, createPeriodHours, createShared, createTask],
   );
 
   React.useEffect(() => {
@@ -343,6 +347,7 @@ function MaintenanceTasksContent() {
                 onClick={() => {
                   setCreateName("");
                   setCreatePeriodHours("24");
+                  setCreateShared(false);
                   setCreateErrorMessage(null);
                   setIsAddTaskOpen(true);
                 }}
@@ -439,6 +444,18 @@ function MaintenanceTasksContent() {
                       setCreatePeriodHours(event.target.value);
                     }}
                   />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="mtask-shared"
+                    type="checkbox"
+                    checked={createShared}
+                    onChange={(e) => {
+                      setCreateShared(e.target.checked);
+                    }}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <Label htmlFor="mtask-shared">Shared</Label>
                 </div>
                 {createErrorMessage === null ? null : (
                   <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -568,6 +585,7 @@ function MaintenanceTaskRow(props: {
   const [editPeriodHours, setEditPeriodHours] = React.useState(
     String(props.task.periodHours),
   );
+  const [editShared, setEditShared] = React.useState(props.task.shared);
   const [isSavingEdit, setIsSavingEdit] = React.useState(false);
 
   const [showExecutions, setShowExecutions] = React.useState(false);
@@ -584,7 +602,8 @@ function MaintenanceTaskRow(props: {
   React.useEffect(() => {
     setEditName(props.task.name);
     setEditPeriodHours(String(props.task.periodHours));
-  }, [props.task.name, props.task.periodHours]);
+    setEditShared(props.task.shared);
+  }, [props.task.name, props.task.periodHours, props.task.shared]);
 
   const executionQueryArgs = showExecutions
     ? { taskId: props.task.id }
@@ -610,6 +629,7 @@ function MaintenanceTaskRow(props: {
           taskId: props.task.id,
           name,
           periodHours: periodHoursNumber,
+          shared: editShared,
         });
         setIsEditing(false);
       } catch {
@@ -618,7 +638,7 @@ function MaintenanceTaskRow(props: {
         setIsSavingEdit(false);
       }
     }
-  }, [editName, editPeriodHours, props, updateTask]);
+  }, [editName, editPeriodHours, editShared, props, updateTask]);
 
   const handleArchiveTask = React.useCallback(async () => {
     setIsArchivingTask(true);
@@ -721,6 +741,18 @@ function MaintenanceTaskRow(props: {
                   }}
                 />
               </div>
+              <div className="flex items-center gap-2 sm:col-span-2">
+                <input
+                  id={`edit-shared-${props.task.id}`}
+                  type="checkbox"
+                  checked={editShared}
+                  onChange={(e) => {
+                    setEditShared(e.target.checked);
+                  }}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor={`edit-shared-${props.task.id}`}>Shared</Label>
+              </div>
             </div>
           ) : (
             <>
@@ -742,10 +774,15 @@ function MaintenanceTaskRow(props: {
                   ? "N/A"
                   : props.task.periodsDue.toFixed(2)}
               </div>
-              <div className="mt-1">
+              <div className="mt-1 flex flex-wrap gap-2">
                 <span className={getStateClassName(props.task.state)}>
                   {props.task.state}
                 </span>
+                {props.task.shared ? (
+                  <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+                    Shared
+                  </span>
+                ) : null}
               </div>
             </>
           )}
@@ -768,6 +805,7 @@ function MaintenanceTaskRow(props: {
                   setIsEditing(false);
                   setEditName(props.task.name);
                   setEditPeriodHours(String(props.task.periodHours));
+                  setEditShared(props.task.shared);
                 }}
                 disabled={isSavingEdit}
               >
