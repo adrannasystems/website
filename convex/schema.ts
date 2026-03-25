@@ -7,9 +7,11 @@ export default defineSchema({
     periodHours: v.number(),
     lastExecutedAt: v.union(v.number(), v.null()),
     deletedAt: v.union(v.number(), v.null()),
+    /** Convex auth: `identity.tokenIdentifier` (`issuer|subject`). */
     userId: v.string(),
   })
-    .index('by_userId_deletedAt_name', ['userId', 'deletedAt', 'name']),
+    .index('by_userId_deletedAt_name', ['userId', 'deletedAt', 'name'])
+    .index('by_deletedAt', ['deletedAt']),
   maintenanceExecutions: defineTable({
     taskId: v.id('maintenanceTasks'),
     executedAt: v.number(),

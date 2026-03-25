@@ -76,8 +76,8 @@ function RootComponent() {
             options={{ api_host: getPostHogHost(), defaults: "2026-01-30" }}
           >
             <PostHogUserSync />
-            <OneSignalSync />
             <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
+              <OneSignalSync />
               <QueryClientProvider client={queryClient}>
                 <Outlet />
                 {import.meta.env.DEV ? (

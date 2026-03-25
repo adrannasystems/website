@@ -138,7 +138,7 @@ export const listDueOrMoreUrgentTasksForNotifications = internalQuery({
   handler: async (ctx) => {
     const taskDbos = await ctx.db
       .query("maintenanceTasks")
-      .filter((q) => q.eq(q.field("deletedAt"), null))
+      .withIndex("by_deletedAt", (q) => q.eq("deletedAt", null))
       .collect();
 
     const dueOrOverdueTasks: MaintenanceTaskForNotification[] = [];

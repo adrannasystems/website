@@ -1,37 +1,39 @@
 import * as React from "react";
 import type OneSignalType from "react-onesignal";
-import { useUser } from "@clerk/tanstack-react-start";
+import { useConvexAuth, useQuery } from "convex/react";
 import { z } from "zod";
+import { api } from "../../convex/_generated/api";
 
 declare global {
   var __oneSignalReadyPromise: Promise<typeof OneSignalType> | undefined;
 }
 
 export function OneSignalSync() {
-  const { isLoaded, user } = useUser();
+  const { isLoading: isAuthLoading, isAuthenticated } = useConvexAuth();
+  const tokenIdentifier = useQuery(api.auth.getMyTokenIdentifier);
 
-  // Eagerly start init on mount so it's ready before auth resolves.
   React.useEffect(() => {
     void getOneSignal();
   }, []);
 
   React.useEffect(() => {
-    if (isLoaded) {
-      void getOneSignal().then((OneSignal) => {
-        if (user !== null) {
-          void OneSignal.login(user.id);
-        } else {
+    if (!isAuthLoading) {
+      if (!isAuthenticated || tokenIdentifier === null) {
+        void getOneSignal().then((OneSignal) => {
           void OneSignal.logout();
-        }
-      });
+        });
+      } else if (tokenIdentifier !== undefined) {
+        void getOneSignal().then((OneSignal) => {
+          void OneSignal.login(tokenIdentifier);
+        });
+      }
     }
-  }, [isLoaded, user]);
+  }, [isAuthLoading, isAuthenticated, tokenIdentifier]);
 
   return null;
 }
 
 export function getOneSignal() {
-  // Keep init state on globalThis so StrictMode remounts and HMR reuse one init.
   globalThis.__oneSignalReadyPromise ??= initializeOneSignal().catch(
     (error) => {
       globalThis.__oneSignalReadyPromise = undefined;

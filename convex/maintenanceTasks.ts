@@ -1,7 +1,12 @@
 import { v } from "convex/values";
+import { z } from "zod";
 import type { Id } from "./_generated/dataModel";
-import { mutation, query } from "./_generated/server";
-import { createUnauthorizedError, requireAuthenticatedUser } from "./auth";
+import { internalMutation, mutation, query } from "./_generated/server";
+import {
+  createUnauthorizedError,
+  databaseUserId,
+  requireAuthenticatedUser,
+} from "./auth";
 import {
   MaintenanceTaskModelImpl,
   type MaintenanceTaskState,
@@ -12,11 +17,12 @@ export const listTasksForMaintenanceOverview = query({
   args: {},
   handler: async (ctx) => {
     const identity = await requireAuthenticatedUser(ctx);
+    const userId = databaseUserId(identity);
 
     const activeTasks = await ctx.db
       .query("maintenanceTasks")
       .withIndex("by_userId_deletedAt_name", (q) =>
-        q.eq("userId", identity.subject).eq("deletedAt", null),
+        q.eq("userId", userId).eq("deletedAt", null),
       )
       .order("asc")
       .collect();
@@ -31,11 +37,12 @@ export const listArchivedTasksForMaintenanceOverview = query({
   args: {},
   handler: async (ctx) => {
     const identity = await requireAuthenticatedUser(ctx);
+    const userId = databaseUserId(identity);
 
     const archivedTasks = await ctx.db
       .query("maintenanceTasks")
       .withIndex("by_userId_deletedAt_name", (q) =>
-        q.eq("userId", identity.subject).gt("deletedAt", null),
+        q.eq("userId", userId).gt("deletedAt", null),
       )
       .order("desc")
       .collect();
@@ -62,7 +69,7 @@ export const createTask = mutation({
         periodHours: args.periodHours,
         lastExecutedAt: null,
         deletedAt: null,
-        userId: identity.subject,
+        userId: databaseUserId(identity),
       });
     }
   },
@@ -76,11 +83,12 @@ export const updateTask = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await requireAuthenticatedUser(ctx);
+    const userId = databaseUserId(identity);
 
     const task = await ctx.db.get(args.taskId);
     if (task === null) {
       throw createMaintenanceTaskNotFoundError();
-    } else if (task.userId !== identity.subject) {
+    } else if (task.userId !== userId) {
       throw createUnauthorizedError();
     } else if (args.periodHours <= 0) {
       throw new Error("periodHours must be greater than 0");
@@ -99,10 +107,11 @@ export const archiveTask = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await requireAuthenticatedUser(ctx);
+    const userId = databaseUserId(identity);
     const task = await ctx.db.get(args.taskId);
     if (task === null) {
       throw createMaintenanceTaskNotFoundError();
-    } else if (task.userId !== identity.subject) {
+    } else if (task.userId !== userId) {
       throw createUnauthorizedError();
     } else {
       await ctx.db.patch(args.taskId, {
@@ -118,10 +127,11 @@ export const unarchiveTask = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await requireAuthenticatedUser(ctx);
+    const userId = databaseUserId(identity);
     const task = await ctx.db.get(args.taskId);
     if (task === null) {
       throw createMaintenanceTaskNotFoundError();
-    } else if (task.userId !== identity.subject) {
+    } else if (task.userId !== userId) {
       throw createUnauthorizedError();
     } else {
       await ctx.db.patch(args.taskId, {
@@ -137,10 +147,11 @@ export const deleteArchivedTaskPermanently = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await requireAuthenticatedUser(ctx);
+    const userId = databaseUserId(identity);
     const task = await ctx.db.get(args.taskId);
     if (task === null) {
       throw createMaintenanceTaskNotFoundError();
-    } else if (task.userId !== identity.subject) {
+    } else if (task.userId !== userId) {
       throw createUnauthorizedError();
     } else if (task.deletedAt === null) {
       throw new Error("Cannot permanently delete an active maintenance task");
@@ -165,11 +176,12 @@ export const addExecution = mutation({
   },
   handler: async (ctx, args) => {
     const identity = await requireAuthenticatedUser(ctx);
+    const userId = databaseUserId(identity);
 
     const taskDbo = await ctx.db.get(args.taskId);
     if (taskDbo === null) {
       throw createMaintenanceTaskNotFoundError();
-    } else if (taskDbo.userId !== identity.subject) {
+    } else if (taskDbo.userId !== userId) {
       throw createUnauthorizedError();
     } else {
       const task = new MaintenanceTaskModelImpl(taskDbo);
@@ -199,12 +211,13 @@ export const deleteExecution = mutation({
   },
   handler: async (ctx, args): Promise<void> => {
     const identity = await requireAuthenticatedUser(ctx);
+    const userId = databaseUserId(identity);
     const execution = await ctx.db.get(args.executionId);
     if (execution === null) {
       throw new Error("Maintenance execution not found");
     } else {
       const task = await ctx.db.get(execution.taskId);
-      if (task?.userId !== identity.subject) {
+      if (task?.userId !== userId) {
         throw new Error("Maintenance execution not found");
       }
       await ctx.db.delete(args.executionId);
@@ -237,8 +250,9 @@ export const findTaskExecutions = query({
     }[]
   > => {
     const identity = await requireAuthenticatedUser(ctx);
+    const userId = databaseUserId(identity);
     const task = await ctx.db.get(args.taskId);
-    if (task?.userId !== identity.subject) {
+    if (task?.userId !== userId) {
       throw createMaintenanceTaskNotFoundError();
     }
     const executions = await ctx.db
@@ -279,3 +293,35 @@ function toTaskWithState(task: MaintenanceTaskModel): {
 function createMaintenanceTaskNotFoundError() {
   return new Error("Maintenance task not found");
 }
+
+/**
+ * One-time: rewrite legacy `userId` (Clerk `sub` only) to Convex `tokenIdentifier`
+ * (`iss`|`sub`). Requires `CLERK_FRONTEND_API_URL` on the deployment to match JWT `iss`
+ * (same as `convex/auth.config.ts`).
+ *
+ * Rollout: deploy then run the migration back-to-back, e.g.
+ * `npx convex deploy && npx convex run internal.maintenanceTasks.migrateMaintenanceTaskUserIdsToTokenIdentifier`
+ * (add `--prod` to both commands for production).
+ */
+export const migrateMaintenanceTaskUserIdsToTokenIdentifier = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const issuerEnvName = "CLERK_FRONTEND_API_URL";
+    const issuer = z
+      .string({ message: `${issuerEnvName} is required` })
+      .url()
+      .parse(process.env[issuerEnvName]);
+
+    const tasks = await ctx.db.query("maintenanceTasks").collect();
+    let migrated = 0;
+    for (const task of tasks) {
+      if (!task.userId.includes("|")) {
+        await ctx.db.patch(task._id, {
+          userId: `${issuer}|${task.userId}`,
+        });
+        migrated += 1;
+      }
+    }
+    return { migrated, total: tasks.length };
+  },
+});
