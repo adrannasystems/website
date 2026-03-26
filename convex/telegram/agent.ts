@@ -20,24 +20,44 @@ type AnthropicResponse = {
   content: AnthropicContentBlock[];
 };
 
-const TOOLS = [
+type ToolHandler = (
+  ctx: ActionCtx,
+  chatId: string,
+  input: Record<string, unknown>,
+) => Promise<string>;
+
+const TOOLS: {
+  name: string;
+  description: string;
+  input_schema: { type: string; properties: Record<string, unknown>; required: string[] };
+  handler: ToolHandler;
+}[] = [
   {
     name: "list_tasks",
     description:
       "List all tasks visible to the user (own private tasks + all shared tasks), with their current state.",
-    input_schema: {
-      type: "object",
-      properties: {},
-      required: [],
+    input_schema: { type: "object", properties: {}, required: [] },
+    handler: async (ctx, chatId) => {
+      const tasks = await ctx.runQuery(internal.telegram.tasks.listTasks, { chatId });
+      if (tasks.length === 0) return "No tasks yet.";
+      return tasks
+        .map(
+          (t) =>
+            `• ${t.name} (every ${String(t.periodHours)}h) — ${t.state}${t.shared ? " [shared]" : ""} [id: ${t.id}]`,
+        )
+        .join("\n");
     },
   },
   {
     name: "get_due_tasks",
     description: "List tasks that are Due, Overdue, or Never Done.",
-    input_schema: {
-      type: "object",
-      properties: {},
-      required: [],
+    input_schema: { type: "object", properties: {}, required: [] },
+    handler: async (ctx, chatId) => {
+      const tasks = await ctx.runQuery(internal.telegram.tasks.getDueTasks, { chatId });
+      if (tasks.length === 0) return "Nothing due right now.";
+      return tasks
+        .map((t) => `• ${t.name} — ${t.state}${t.shared ? " [shared]" : ""} [id: ${t.id}]`)
+        .join("\n");
     },
   },
   {
@@ -55,6 +75,15 @@ const TOOLS = [
       },
       required: ["name", "periodHours"],
     },
+    handler: async (ctx, chatId, input) => {
+      const taskId = await ctx.runMutation(internal.telegram.tasks.createTask, {
+        chatId,
+        name: String(input["name"]),
+        periodHours: Number(input["periodHours"]),
+        shared: Boolean(input["shared"] ?? false),
+      });
+      return `Task created with id: ${taskId}`;
+    },
   },
   {
     name: "log_execution",
@@ -67,6 +96,18 @@ const TOOLS = [
       },
       required: ["taskId"],
     },
+    handler: async (ctx, chatId, input) => {
+      const executedAtRaw = input["executedAt"];
+      const baseArgs = {
+        chatId,
+        taskId: String(input["taskId"]) as Id<"maintenanceTasks">,
+      };
+      await ctx.runMutation(
+        internal.telegram.tasks.logExecution,
+        executedAtRaw !== undefined ? { ...baseArgs, executedAt: Number(executedAtRaw) } : baseArgs,
+      );
+      return "Execution logged.";
+    },
   },
   {
     name: "archive_task",
@@ -77,6 +118,13 @@ const TOOLS = [
         taskId: { type: "string", description: "The task ID" },
       },
       required: ["taskId"],
+    },
+    handler: async (ctx, chatId, input) => {
+      await ctx.runMutation(internal.telegram.tasks.archiveTask, {
+        chatId,
+        taskId: String(input["taskId"]) as Id<"maintenanceTasks">,
+      });
+      return "Task archived.";
     },
   },
 ];
@@ -117,7 +165,7 @@ export const processMessage = internalAction({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1024,
           system: SYSTEM_PROMPT,
-          tools: TOOLS,
+          tools: TOOLS.map(({ handler: _, ...schema }) => schema),
           messages,
         }),
       });
@@ -179,55 +227,7 @@ async function executeTool(
   name: string,
   input: Record<string, unknown>,
 ): Promise<string> {
-  if (name === "list_tasks") {
-    const tasks = await ctx.runQuery(internal.telegram.tasks.listTasks, { chatId });
-    if (tasks.length === 0) return "No tasks yet.";
-    return tasks
-      .map(
-        (t) =>
-          `• ${t.name} (every ${String(t.periodHours)}h) — ${t.state}${t.shared ? " [shared]" : ""} [id: ${t.id}]`,
-      )
-      .join("\n");
-  }
-
-  if (name === "get_due_tasks") {
-    const tasks = await ctx.runQuery(internal.telegram.tasks.getDueTasks, { chatId });
-    if (tasks.length === 0) return "Nothing due right now.";
-    return tasks
-      .map((t) => `• ${t.name} — ${t.state}${t.shared ? " [shared]" : ""} [id: ${t.id}]`)
-      .join("\n");
-  }
-
-  if (name === "create_task") {
-    const taskId = await ctx.runMutation(internal.telegram.tasks.createTask, {
-      chatId,
-      name: String(input["name"]),
-      periodHours: Number(input["periodHours"]),
-      shared: Boolean(input["shared"] ?? false),
-    });
-    return `Task created with id: ${taskId}`;
-  }
-
-  if (name === "log_execution") {
-    const executedAtRaw = input["executedAt"];
-    const baseArgs = {
-      chatId,
-      taskId: String(input["taskId"]) as Id<"maintenanceTasks">,
-    };
-    await ctx.runMutation(
-      internal.telegram.tasks.logExecution,
-      executedAtRaw !== undefined ? { ...baseArgs, executedAt: Number(executedAtRaw) } : baseArgs,
-    );
-    return "Execution logged.";
-  }
-
-  if (name === "archive_task") {
-    await ctx.runMutation(internal.telegram.tasks.archiveTask, {
-      chatId,
-      taskId: String(input["taskId"]) as Id<"maintenanceTasks">,
-    });
-    return "Task archived.";
-  }
-
-  return `Unknown tool: ${name}`;
+  const tool = TOOLS.find((t) => t.name === name);
+  if (tool === undefined) return `Unknown tool: ${name}`;
+  return tool.handler(ctx, chatId, input);
 }
