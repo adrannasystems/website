@@ -17,15 +17,15 @@ Recurring maintenance task tracking for:
 
 Names searched and confirmed to have no matching app, SaaS, or software company:
 
-| Name | Angle |
-| --- | --- |
-| **Taskologist** | task + -ologist — ✅ **CHOSEN** |
-| **Nexcron** | next + cron — signals scheduling to DevOps/sysadmin audience |
-| **Rekex** | recur + execute — short (5 chars), neutral, brandable |
-| **Periex** | periodic + execute — slightly technical |
-| **Rekion** | recur + ion — abstract, professional |
-| **Habedo** | habit + do — "your maintenance habits, done". Friendly, non-technical |
-| **Tidelo** | tidy + elo — warm and domestic. Note: "Tidely" (tidely.com) is a *different* company (cash flow software) |
+| Name            | Angle                                                                                                     |
+| --------------- | --------------------------------------------------------------------------------------------------------- |
+| **Taskologist** | task + -ologist — ✅ **CHOSEN**                                                                           |
+| **Nexcron**     | next + cron — signals scheduling to DevOps/sysadmin audience                                              |
+| **Rekex**       | recur + execute — short (5 chars), neutral, brandable                                                     |
+| **Periex**      | periodic + execute — slightly technical                                                                   |
+| **Rekion**      | recur + ion — abstract, professional                                                                      |
+| **Habedo**      | habit + do — "your maintenance habits, done". Friendly, non-technical                                     |
+| **Tidelo**      | tidy + elo — warm and domestic. Note: "Tidely" (tidely.com) is a _different_ company (cash flow software) |
 
 ## Verified-Taken Names
 

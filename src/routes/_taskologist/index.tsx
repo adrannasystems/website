@@ -1,12 +1,6 @@
 import * as React from "react";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
-import {
-  Authenticated,
-  AuthLoading,
-  Unauthenticated,
-  useMutation,
-  useQuery,
-} from "convex/react";
+import { Authenticated, AuthLoading, Unauthenticated, useMutation, useQuery } from "convex/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { getOneSignal } from "@/components/OneSignalSync";
@@ -82,14 +76,12 @@ function TaskologistLandingPage() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="bg-linear-to-br from-blue-50 to-indigo-50 pt-12 pb-20 px-6">
+      <section className="bg-linear-to-br from-blue-50 to-indigo-50 px-6 pt-12 pb-20">
         <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
-            Never Miss a Maintenance Task
-          </h1>
-          <p className="text-xl text-gray-600 mb-10">
-            Track recurring maintenance work, stay on top of what's overdue, and
-            keep a full history of every execution.
+          <h1 className="mb-6 text-5xl font-bold text-gray-900">Never Miss a Maintenance Task</h1>
+          <p className="mb-10 text-xl text-gray-600">
+            Track recurring maintenance work, stay on top of what's overdue, and keep a full history
+            of every execution.
           </p>
           <Link to="/sign-in">
             <Button size="lg" className="px-8 py-3 text-base">
@@ -100,36 +92,30 @@ function TaskologistLandingPage() {
       </section>
 
       {/* Features */}
-      <section className="py-20 px-6 bg-white">
-        <div className="mx-auto max-w-4xl grid md:grid-cols-3 gap-8">
-          <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
-            <Clock className="h-8 w-8 text-blue-600 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Recurring Schedules
-            </h3>
-            <p className="text-gray-600 text-sm">
-              Define tasks with a period in hours. The app always knows what's
-              due and how overdue it is.
+      <section className="bg-white px-6 py-20">
+        <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-3">
+          <div className="rounded-lg border border-gray-200 p-6 transition duration-300 hover:shadow-lg">
+            <Clock className="mb-4 h-8 w-8 text-blue-600" />
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Recurring Schedules</h3>
+            <p className="text-sm text-gray-600">
+              Define tasks with a period in hours. The app always knows what's due and how overdue
+              it is.
             </p>
           </div>
-          <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
-            <CheckCircle2 className="h-8 w-8 text-blue-600 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Execution History
-            </h3>
-            <p className="text-gray-600 text-sm">
-              Log each time a task is completed — with the exact timestamp — so
-              you always have a clear audit trail.
+          <div className="rounded-lg border border-gray-200 p-6 transition duration-300 hover:shadow-lg">
+            <CheckCircle2 className="mb-4 h-8 w-8 text-blue-600" />
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Execution History</h3>
+            <p className="text-sm text-gray-600">
+              Log each time a task is completed — with the exact timestamp — so you always have a
+              clear audit trail.
             </p>
           </div>
-          <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
-            <Bell className="h-8 w-8 text-blue-600 mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Overdue Alerts
-            </h3>
-            <p className="text-gray-600 text-sm">
-              Tasks are clearly flagged as overdue, due, or all good — so
-              nothing slips through the cracks.
+          <div className="rounded-lg border border-gray-200 p-6 transition duration-300 hover:shadow-lg">
+            <Bell className="mb-4 h-8 w-8 text-blue-600" />
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Overdue Alerts</h3>
+            <p className="text-sm text-gray-600">
+              Tasks are clearly flagged as overdue, due, or all good — so nothing slips through the
+              cracks.
             </p>
           </div>
         </div>
@@ -153,20 +139,11 @@ function MaintenanceTasksContent() {
   const [isCreating, setIsCreating] = React.useState(false);
   const [createErrorMessage, setCreateErrorMessage] = React.useState<string | null>(null);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
-  const [isPushOptedIn, setIsPushOptedIn] = React.useState<boolean | null>(
-    null,
-  );
-  const [isPushPreferenceAvailable, setIsPushPreferenceAvailable] =
-    React.useState(true);
-  const [isUpdatingPushPreference, setIsUpdatingPushPreference] =
-    React.useState(false);
-  const [pushPreferenceError, setPushPreferenceError] = React.useState<
-    string | null
-  >(null);
-  const activeTasksResult = useQuery(
-    api.maintenanceTasks.listTasksForMaintenanceOverview,
-    {},
-  );
+  const [isPushOptedIn, setIsPushOptedIn] = React.useState<boolean | null>(null);
+  const [isPushPreferenceAvailable, setIsPushPreferenceAvailable] = React.useState(true);
+  const [isUpdatingPushPreference, setIsUpdatingPushPreference] = React.useState(false);
+  const [pushPreferenceError, setPushPreferenceError] = React.useState<string | null>(null);
+  const activeTasksResult = useQuery(api.maintenanceTasks.listTasksForMaintenanceOverview, {});
   const archivedTasksResult = useQuery(
     api.maintenanceTasks.listArchivedTasksForMaintenanceOverview,
     {},
@@ -189,9 +166,7 @@ function MaintenanceTasksContent() {
 
     const rowId = `maintenance-task-${highlightTaskIdFromUrl}`;
     const scrollFrame = window.requestAnimationFrame(() => {
-      document
-        .getElementById(rowId)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      document.getElementById(rowId)?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
 
     const finishHighlightTimer = window.setTimeout(() => {
@@ -218,10 +193,7 @@ function MaintenanceTasksContent() {
 
       if (name === "") {
         setCreateErrorMessage("Task name is required.");
-      } else if (
-        !Number.isFinite(periodHoursNumber) ||
-        periodHoursNumber <= 0
-      ) {
+      } else if (!Number.isFinite(periodHoursNumber) || periodHoursNumber <= 0) {
         setCreateErrorMessage("Period hours must be a number greater than 0.");
       } else {
         setIsCreating(true);
@@ -273,10 +245,7 @@ function MaintenanceTasksContent() {
           }
         };
 
-        OneSignal.User.PushSubscription.addEventListener(
-          "change",
-          handlePushSubscriptionChange,
-        );
+        OneSignal.User.PushSubscription.addEventListener("change", handlePushSubscriptionChange);
         removePushSubscriptionListener = () => {
           OneSignal.User.PushSubscription.removeEventListener(
             "change",
@@ -299,11 +268,7 @@ function MaintenanceTasksContent() {
   }, []);
 
   const handleTogglePushSubscription = React.useCallback(async () => {
-    if (
-      !isPushPreferenceAvailable ||
-      isPushOptedIn === null ||
-      isUpdatingPushPreference
-    ) {
+    if (!isPushPreferenceAvailable || isPushOptedIn === null || isUpdatingPushPreference) {
       return;
     }
 
@@ -338,9 +303,7 @@ function MaintenanceTasksContent() {
         <div className="mx-auto max-w-4xl">
           <div className="mb-8 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-semibold text-gray-900">
-                Maintenance Tasks
-              </h1>
+              <h1 className="text-3xl font-semibold text-gray-900">Maintenance Tasks</h1>
               <Button
                 type="button"
                 size="sm"
@@ -362,9 +325,7 @@ function MaintenanceTasksContent() {
               variant="outline"
               onClick={() => void handleTogglePushSubscription()}
               disabled={
-                !isPushPreferenceAvailable ||
-                isPushOptedIn === null ||
-                isUpdatingPushPreference
+                !isPushPreferenceAvailable || isPushOptedIn === null || isUpdatingPushPreference
               }
               aria-label={getPushSubscriptionToggleLabel(
                 isPushPreferenceAvailable,
@@ -413,14 +374,9 @@ function MaintenanceTasksContent() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add task</DialogTitle>
-                <DialogDescription>
-                  Define a new recurring maintenance task.
-                </DialogDescription>
+                <DialogDescription>Define a new recurring maintenance task.</DialogDescription>
               </DialogHeader>
-              <form
-                className="grid gap-4"
-                onSubmit={(e) => void handleCreateTask(e)}
-              >
+              <form className="grid gap-4" onSubmit={(e) => void handleCreateTask(e)}>
                 <div className="grid gap-1.5">
                   <Label htmlFor="mtask-name">Name</Label>
                   <Input
@@ -505,9 +461,7 @@ function MaintenanceTasksContent() {
           </section>
 
           <section>
-            <h2 className="mb-3 text-lg font-medium text-gray-900">
-              Archived tasks
-            </h2>
+            <h2 className="mb-3 text-lg font-medium text-gray-900">Archived tasks</h2>
             <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
               <div className="divide-y divide-gray-200">
                 {archivedTasks.map((task) => {
@@ -538,13 +492,8 @@ function MaintenanceTasksLoadingState() {
     <main className="min-h-screen bg-gray-50 px-6 py-20">
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 flex items-center justify-between gap-3">
-          <h1 className="text-3xl font-semibold text-gray-900">
-            Maintenance Tasks
-          </h1>
-          <div
-            className="size-8 rounded-lg border border-gray-200 bg-white"
-            aria-hidden
-          />
+          <h1 className="text-3xl font-semibold text-gray-900">Maintenance Tasks</h1>
+          <div className="size-8 rounded-lg border border-gray-200 bg-white" aria-hidden />
         </div>
         <div className="text-sm text-gray-500">Loading...</div>
       </div>
@@ -582,9 +531,7 @@ function MaintenanceTaskRow(props: {
 
   const [isEditing, setIsEditing] = React.useState(false);
   const [editName, setEditName] = React.useState(props.task.name);
-  const [editPeriodHours, setEditPeriodHours] = React.useState(
-    String(props.task.periodHours),
-  );
+  const [editPeriodHours, setEditPeriodHours] = React.useState(String(props.task.periodHours));
   const [editShared, setEditShared] = React.useState(props.task.shared);
   const [isSavingEdit, setIsSavingEdit] = React.useState(false);
 
@@ -596,8 +543,7 @@ function MaintenanceTaskRow(props: {
   const [executionDialogValue, setExecutionDialogValue] = React.useState(
     getNowDateTimeLocalValue(),
   );
-  const [isSavingExecutionCustom, setIsSavingExecutionCustom] =
-    React.useState(false);
+  const [isSavingExecutionCustom, setIsSavingExecutionCustom] = React.useState(false);
 
   React.useEffect(() => {
     setEditName(props.task.name);
@@ -605,13 +551,8 @@ function MaintenanceTaskRow(props: {
     setEditShared(props.task.shared);
   }, [props.task.name, props.task.periodHours, props.task.shared]);
 
-  const executionQueryArgs = showExecutions
-    ? { taskId: props.task.id }
-    : "skip";
-  const executionsResult = useQuery(
-    api.maintenanceTasks.findTaskExecutions,
-    executionQueryArgs,
-  );
+  const executionQueryArgs = showExecutions ? { taskId: props.task.id } : "skip";
+  const executionsResult = useQuery(api.maintenanceTasks.findTaskExecutions, executionQueryArgs);
 
   const handleSaveEdit = React.useCallback(async () => {
     const name = editName.trim();
@@ -727,9 +668,7 @@ function MaintenanceTaskRow(props: {
                 />
               </div>
               <div>
-                <Label htmlFor={`edit-period-${props.task.id}`}>
-                  Period (hours)
-                </Label>
+                <Label htmlFor={`edit-period-${props.task.id}`}>Period (hours)</Label>
                 <Input
                   id={`edit-period-${props.task.id}`}
                   type="number"
@@ -756,12 +695,8 @@ function MaintenanceTaskRow(props: {
             </div>
           ) : (
             <>
-              <div className="text-lg font-medium text-gray-900">
-                {props.task.name}
-              </div>
-              <div className="text-sm text-gray-500">
-                Period: {props.task.periodHours} hours
-              </div>
+              <div className="text-lg font-medium text-gray-900">{props.task.name}</div>
+              <div className="text-sm text-gray-500">Period: {props.task.periodHours} hours</div>
               <div className="text-sm text-gray-500">
                 Last execution:{" "}
                 {props.task.lastExecutedAt === null
@@ -770,14 +705,10 @@ function MaintenanceTaskRow(props: {
               </div>
               <div className="text-sm text-gray-500">
                 Periods due:{" "}
-                {props.task.periodsDue === null
-                  ? "N/A"
-                  : props.task.periodsDue.toFixed(2)}
+                {props.task.periodsDue === null ? "N/A" : props.task.periodsDue.toFixed(2)}
               </div>
               <div className="mt-1 flex flex-wrap gap-2">
-                <span className={getStateClassName(props.task.state)}>
-                  {props.task.state}
-                </span>
+                <span className={getStateClassName(props.task.state)}>{props.task.state}</span>
                 {props.task.shared ? (
                   <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
                     Shared
@@ -791,11 +722,7 @@ function MaintenanceTaskRow(props: {
         <div className="flex flex-wrap gap-2">
           {isEditing ? (
             <>
-              <Button
-                type="button"
-                onClick={() => void handleSaveEdit()}
-                disabled={isSavingEdit}
-              >
+              <Button type="button" onClick={() => void handleSaveEdit()} disabled={isSavingEdit}>
                 {isSavingEdit ? "Saving..." : "Save"}
               </Button>
               <Button
@@ -910,14 +837,10 @@ function MaintenanceTaskRow(props: {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add execution date and time</DialogTitle>
-            <DialogDescription>
-              Choose when this maintenance task was executed.
-            </DialogDescription>
+            <DialogDescription>Choose when this maintenance task was executed.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
-            <Label htmlFor={`execution-custom-${props.task.id}`}>
-              Executed at
-            </Label>
+            <Label htmlFor={`execution-custom-${props.task.id}`}>Executed at</Label>
             <Input
               id={`execution-custom-${props.task.id}`}
               type="datetime-local"
@@ -963,8 +886,7 @@ function ArchivedMaintenanceTaskRow(props: {
     api.maintenanceTasks.deleteArchivedTaskPermanently,
   );
   const [isUnarchivingTask, setIsUnarchivingTask] = React.useState(false);
-  const [isPermanentlyDeletingTask, setIsPermanentlyDeletingTask] =
-    React.useState(false);
+  const [isPermanentlyDeletingTask, setIsPermanentlyDeletingTask] = React.useState(false);
 
   const handleUnarchiveTask = React.useCallback(async () => {
     setIsUnarchivingTask(true);
@@ -993,17 +915,11 @@ function ArchivedMaintenanceTaskRow(props: {
   return (
     <div className="flex flex-col gap-3 px-6 py-4 md:flex-row md:items-start md:justify-between">
       <div>
-        <div className="text-lg font-medium text-gray-900">
-          {props.task.name}
-        </div>
-        <div className="text-sm text-gray-500">
-          Period: {props.task.periodHours} hours
-        </div>
+        <div className="text-lg font-medium text-gray-900">{props.task.name}</div>
+        <div className="text-sm text-gray-500">Period: {props.task.periodHours} hours</div>
         <div className="text-sm text-gray-500">
           Last execution:{" "}
-          {props.task.lastExecutedAt === null
-            ? "Never"
-            : formatDateTime(props.task.lastExecutedAt)}
+          {props.task.lastExecutedAt === null ? "Never" : formatDateTime(props.task.lastExecutedAt)}
         </div>
       </div>
       <div>

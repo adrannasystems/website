@@ -11,8 +11,14 @@
 import type * as MaintenanceTaskModel from "../MaintenanceTaskModel.js";
 import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
+import type * as http from "../http.js";
 import type * as maintenanceTaskNotifications from "../maintenanceTaskNotifications.js";
 import type * as maintenanceTasks from "../maintenanceTasks.js";
+import type * as telegram_agent from "../telegram/agent.js";
+import type * as telegram_api from "../telegram/api.js";
+import type * as telegram_notifications from "../telegram/notifications.js";
+import type * as telegram_tasks from "../telegram/tasks.js";
+import type * as telegram_users from "../telegram/users.js";
 
 import type {
   ApiFromModules,
@@ -24,8 +30,14 @@ declare const fullApi: ApiFromModules<{
   MaintenanceTaskModel: typeof MaintenanceTaskModel;
   auth: typeof auth;
   crons: typeof crons;
+  http: typeof http;
   maintenanceTaskNotifications: typeof maintenanceTaskNotifications;
   maintenanceTasks: typeof maintenanceTasks;
+  "telegram/agent": typeof telegram_agent;
+  "telegram/api": typeof telegram_api;
+  "telegram/notifications": typeof telegram_notifications;
+  "telegram/tasks": typeof telegram_tasks;
+  "telegram/users": typeof telegram_users;
 }>;
 
 /**

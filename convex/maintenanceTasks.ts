@@ -1,15 +1,8 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query } from "./_generated/server";
-import {
-  createUnauthorizedError,
-  databaseUserId,
-  requireAuthenticatedUser,
-} from "./auth";
-import {
-  MaintenanceTaskModelImpl,
-  type MaintenanceTaskState,
-} from "./MaintenanceTaskModel";
+import { createUnauthorizedError, databaseUserId, requireAuthenticatedUser } from "./auth";
+import { MaintenanceTaskModelImpl, type MaintenanceTaskState } from "./MaintenanceTaskModel";
 
 export const listTasksForMaintenanceOverview = query({
   args: {},
@@ -19,25 +12,19 @@ export const listTasksForMaintenanceOverview = query({
 
     const myTasks = await ctx.db
       .query("maintenanceTasks")
-      .withIndex("by_userId_deletedAt_name", (q) =>
-        q.eq("userId", userId).eq("deletedAt", null),
-      )
+      .withIndex("by_userId_deletedAt_name", (q) => q.eq("userId", userId).eq("deletedAt", null))
       .order("asc")
       .take(100);
 
     const sharedTasks = await ctx.db
       .query("maintenanceTasks")
-      .withIndex("by_shared_deletedAt", (q) =>
-        q.eq("shared", true).eq("deletedAt", null),
-      )
+      .withIndex("by_shared_deletedAt", (q) => q.eq("shared", true).eq("deletedAt", null))
       .take(100);
 
     const myTaskIds = new Set(myTasks.map((t) => t._id));
     const otherSharedTasks = sharedTasks.filter((t) => !myTaskIds.has(t._id));
 
-    const allTasks = [...myTasks, ...otherSharedTasks].sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
+    const allTasks = [...myTasks, ...otherSharedTasks].sort((a, b) => a.name.localeCompare(b.name));
 
     return allTasks.map(toTaskWithState);
   },
@@ -51,9 +38,7 @@ export const listArchivedTasksForMaintenanceOverview = query({
 
     const archivedTasks = await ctx.db
       .query("maintenanceTasks")
-      .withIndex("by_userId_deletedAt_name", (q) =>
-        q.eq("userId", userId).gt("deletedAt", null),
-      )
+      .withIndex("by_userId_deletedAt_name", (q) => q.eq("userId", userId).gt("deletedAt", null))
       .order("desc")
       .take(100);
 
@@ -173,9 +158,7 @@ export const deleteArchivedTaskPermanently = mutation({
         .withIndex("by_taskId", (query) => query.eq("taskId", task._id))
         .collect();
 
-      await Promise.all(
-        taskExecutions.map((execution) => ctx.db.delete(execution._id)),
-      );
+      await Promise.all(taskExecutions.map((execution) => ctx.db.delete(execution._id)));
       await ctx.db.delete(task._id);
     }
   },
@@ -236,9 +219,7 @@ export const deleteExecution = mutation({
 
       const latestExecution = await ctx.db
         .query("maintenanceExecutions")
-        .withIndex("by_taskId_executedAt", (query) =>
-          query.eq("taskId", execution.taskId),
-        )
+        .withIndex("by_taskId_executedAt", (query) => query.eq("taskId", execution.taskId))
         .order("desc")
         .first();
       await ctx.db.patch(execution.taskId, {
@@ -269,9 +250,7 @@ export const findTaskExecutions = query({
     }
     const executions = await ctx.db
       .query("maintenanceExecutions")
-      .withIndex("by_taskId_executedAt", (query) =>
-        query.eq("taskId", args.taskId),
-      )
+      .withIndex("by_taskId_executedAt", (query) => query.eq("taskId", args.taskId))
       .order("desc")
       .collect();
 
@@ -317,16 +296,10 @@ function createMaintenanceTaskNotFoundError() {
 export const backfillSharedField = internalMutation({
   args: {},
   handler: async (ctx) => {
-
-    const tasks = await ctx.db
-      .query("maintenanceTasks")
-      .withIndex("by_deletedAt")
-      .take(500);
+    const tasks = await ctx.db.query("maintenanceTasks").withIndex("by_deletedAt").take(500);
 
     const unset = tasks.filter((t) => t.shared === undefined);
-    await Promise.all(
-      unset.map((t) => ctx.db.patch(t._id, { shared: false })),
-    );
+    await Promise.all(unset.map((t) => ctx.db.patch(t._id, { shared: false })));
 
     return { patched: unset.length };
   },

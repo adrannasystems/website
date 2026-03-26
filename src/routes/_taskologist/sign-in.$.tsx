@@ -1,20 +1,18 @@
-import { createFileRoute } from '@tanstack/react-router'
-import {
-  SignInRoutePage,
-  redirectSignedInUsers,
-  validateSignInSearch,
-} from './-sign-in-shared'
+import { createFileRoute } from "@tanstack/react-router";
+import { SignInRoutePage, redirectSignedInUsers, validateSignInSearch } from "./-sign-in-shared";
 
-export const Route = createFileRoute('/_taskologist/sign-in/$')({
+export const Route = createFileRoute("/_taskologist/sign-in/$")({
   validateSearch: validateSignInSearch,
   beforeLoad: redirectSignedInUsers,
   component: SignInNestedPathPage,
-})
+});
 
 function SignInNestedPathPage() {
-  const search = Route.useSearch()
+  const search = Route.useSearch();
 
-  return search.redirect_url === undefined
-    ? <SignInRoutePage />
-    : <SignInRoutePage redirectUrl={search.redirect_url} />
+  return search.redirect_url === undefined ? (
+    <SignInRoutePage />
+  ) : (
+    <SignInRoutePage redirectUrl={search.redirect_url} />
+  );
 }

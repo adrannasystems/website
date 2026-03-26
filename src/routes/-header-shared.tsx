@@ -32,15 +32,12 @@ export function AuthButtons(props: { size?: "sm" }) {
   );
 }
 
-export function MobileMenuButton(props: {
-  isMobileMenuOpen: boolean;
-  onClick: () => void;
-}) {
+export function MobileMenuButton(props: { isMobileMenuOpen: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={props.onClick}
-      className="md:hidden inline-flex items-center justify-center rounded-md border border-gray-300 p-2 text-gray-700"
+      className="inline-flex items-center justify-center rounded-md border border-gray-300 p-2 text-gray-700 md:hidden"
       aria-expanded={props.isMobileMenuOpen}
       aria-controls="mobile-navigation"
       aria-label="Toggle menu"
@@ -54,11 +51,7 @@ export function MobileMenuButton(props: {
         strokeWidth="2"
         className="h-5 w-5"
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M4 6h16M4 12h16M4 18h16"
-        />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
       </svg>
     </button>
   );

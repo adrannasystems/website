@@ -33,13 +33,9 @@ export const Route = createFileRoute("/_taskologist/tasks")({
 
 function TasksPage() {
   const queryClient = useQueryClient();
-  const [pendingTaskIds, setPendingTaskIds] = React.useState<Set<string>>(
-    () => new Set(),
-  );
+  const [pendingTaskIds, setPendingTaskIds] = React.useState<Set<string>>(() => new Set());
   const [toastMessage, setToastMessage] = React.useState<string | null>(null);
-  const [doneAtPickerTaskId, setDoneAtPickerTaskId] = React.useState<
-    string | null
-  >(null);
+  const [doneAtPickerTaskId, setDoneAtPickerTaskId] = React.useState<string | null>(null);
   const [doneAtPickerValue, setDoneAtPickerValue] = React.useState<string>(
     getNowDateTimeLocalValue(),
   );
@@ -61,40 +57,35 @@ function TasksPage() {
         return next;
       });
 
-      const previousTaskResult =
-        queryClient.getQueryData<LoaderResult<TaskItem[]>>(tasksQueryKey);
+      const previousTaskResult = queryClient.getQueryData<LoaderResult<TaskItem[]>>(tasksQueryKey);
 
-      queryClient.setQueryData<LoaderResult<TaskItem[]>>(
-        tasksQueryKey,
-        (currentTaskResult) => {
-          return currentTaskResult === undefined || currentTaskResult.isError
-            ? currentTaskResult
-            : {
-                isError: false,
-                data: currentTaskResult.data.map((task) => {
-                  const doneAtValue = doneAt ?? new Date().toISOString();
-                  return task.id === taskId
-                    ? done
-                      ? {
-                          ...task,
-                          done: true,
-                          doneAt: doneAtValue,
-                        }
-                      : {
-                          id: task.id,
-                          task: task.task,
-                          done: false,
-                          dueDate: task.dueDate,
-                        }
-                    : task;
-                }),
-              };
-        },
-      );
+      queryClient.setQueryData<LoaderResult<TaskItem[]>>(tasksQueryKey, (currentTaskResult) => {
+        return currentTaskResult === undefined || currentTaskResult.isError
+          ? currentTaskResult
+          : {
+              isError: false,
+              data: currentTaskResult.data.map((task) => {
+                const doneAtValue = doneAt ?? new Date().toISOString();
+                return task.id === taskId
+                  ? done
+                    ? {
+                        ...task,
+                        done: true,
+                        doneAt: doneAtValue,
+                      }
+                    : {
+                        id: task.id,
+                        task: task.task,
+                        done: false,
+                        dueDate: task.dueDate,
+                      }
+                  : task;
+              }),
+            };
+      });
 
       try {
-        const mutationInput =
-          doneAt === undefined ? { taskId, done } : { taskId, done, doneAt };
+        const mutationInput = doneAt === undefined ? { taskId, done } : { taskId, done, doneAt };
         const result = await markTaskDoneMutation.mutateAsync({
           data: mutationInput,
         });
@@ -134,26 +125,20 @@ function TasksPage() {
       if (Number.isNaN(selectedDate.getTime())) {
         setToastMessage("Please select a valid date and time.");
       } else {
-        await handleSetDone(
-          doneAtPickerTaskId,
-          true,
-          selectedDate.toISOString(),
-        );
+        await handleSetDone(doneAtPickerTaskId, true, selectedDate.toISOString());
         setDoneAtPickerTaskId(null);
       }
     }
   }, [doneAtPickerTaskId, doneAtPickerValue, handleSetDone]);
 
   const isSavingDoneAt =
-    doneAtPickerTaskId === null
-      ? false
-      : pendingTaskIds.has(doneAtPickerTaskId);
+    doneAtPickerTaskId === null ? false : pendingTaskIds.has(doneAtPickerTaskId);
 
   if (taskQuery.isPending) {
     return (
       <main className="min-h-screen bg-gray-50 px-6 pt-12 pb-20">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-semibold text-gray-900 mb-8">Tasks</h1>
+        <div className="mx-auto max-w-3xl">
+          <h1 className="mb-8 text-3xl font-semibold text-gray-900">Tasks</h1>
           <div className="text-sm text-gray-500">Loading...</div>
         </div>
       </main>
@@ -161,8 +146,8 @@ function TasksPage() {
   } else if (taskQuery.data === undefined || taskQuery.data.isError) {
     return (
       <main className="min-h-screen bg-gray-50 px-6 pt-12 pb-20">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-semibold text-gray-900 mb-8">Tasks</h1>
+        <div className="mx-auto max-w-3xl">
+          <h1 className="mb-8 text-3xl font-semibold text-gray-900">Tasks</h1>
           <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             Unable to load tasks.
           </div>
@@ -172,8 +157,8 @@ function TasksPage() {
   } else {
     return (
       <main className="min-h-screen bg-gray-50 px-6 pt-12 pb-20">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl font-semibold text-gray-900 mb-8">Tasks</h1>
+        <div className="mx-auto max-w-3xl">
+          <h1 className="mb-8 text-3xl font-semibold text-gray-900">Tasks</h1>
           <TasksContent
             tasks={taskQuery.data.data}
             pendingTaskIds={pendingTaskIds}
@@ -250,7 +235,7 @@ function TasksContent(props: {
   return (
     <div>
       {props.toastMessage !== null ? (
-        <div className="fixed right-4 top-4 z-50 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow">
+        <div className="fixed top-4 right-4 z-50 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow">
           <div className="flex items-center gap-3">
             <span>{props.toastMessage}</span>
             <button
@@ -263,32 +248,21 @@ function TasksContent(props: {
           </div>
         </div>
       ) : null}
-      <div className="text-sm text-gray-500 mb-4">
-        {props.tasks.length} items
-      </div>
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+      <div className="mb-4 text-sm text-gray-500">{props.tasks.length} items</div>
+      <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
         <div className="divide-y divide-gray-200">
           {props.tasks.map((task) => {
             const isPending = props.pendingTaskIds.has(task.id);
 
             return (
-              <div
-                key={task.id}
-                className="flex items-center justify-between px-6 py-4"
-              >
+              <div key={task.id} className="flex items-center justify-between px-6 py-4">
                 <div>
-                  <div className="text-lg font-medium text-gray-900">
-                    {task.task}
-                  </div>
+                  <div className="text-lg font-medium text-gray-900">{task.task}</div>
                   {task.dueDate !== "" ? (
-                    <div className="text-sm text-gray-500">
-                      Due: {task.dueDate}
-                    </div>
+                    <div className="text-sm text-gray-500">Due: {task.dueDate}</div>
                   ) : null}
                   {task.doneAt !== undefined && task.doneAt !== "" ? (
-                    <div className="text-sm text-gray-500">
-                      Done At: {task.doneAt}
-                    </div>
+                    <div className="text-sm text-gray-500">Done At: {task.doneAt}</div>
                   ) : null}
                 </div>
                 <div className="flex items-center">
@@ -315,9 +289,7 @@ function TasksContent(props: {
             );
           })}
           {props.tasks.length === 0 ? (
-            <div className="px-6 py-10 text-center text-sm text-gray-500">
-              No tasks found.
-            </div>
+            <div className="px-6 py-10 text-center text-sm text-gray-500">No tasks found.</div>
           ) : null}
         </div>
       </div>

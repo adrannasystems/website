@@ -20,7 +20,8 @@ export const markTaskDone = createServerFn({ method: "POST" })
       return { isError: true };
     } else {
       try {
-        const { markTaskDone: markTaskDoneInNotion } = await import("../notion-mark-task-done.server");
+        const { markTaskDone: markTaskDoneInNotion } =
+          await import("../notion-mark-task-done.server");
         await markTaskDoneInNotion(taskId, done, doneAt);
         return { isError: false };
       } catch {

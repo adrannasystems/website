@@ -18,12 +18,10 @@ export type MaintenanceTaskForNotification = {
 export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
   args: {},
   handler: async (ctx) => {
-    const dueOrOverdueTasks: MaintenanceTaskForNotification[] =
-      await ctx.runQuery(
-        internal.maintenanceTaskNotifications
-          .listDueOrMoreUrgentTasksForNotifications,
-        {},
-      );
+    const dueOrOverdueTasks: MaintenanceTaskForNotification[] = await ctx.runQuery(
+      internal.maintenanceTaskNotifications.listDueOrMoreUrgentTasksForNotifications,
+      {},
+    );
 
     const notificationPromises: Promise<void>[] = [];
     for (const task of dueOrOverdueTasks) {
@@ -41,9 +39,7 @@ export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
             `Periods Due: ${task.periodsDue === Infinity ? "n/a" : task.periodsDue.toFixed(2)}`,
             `Period [h]: ${String(task.periodHours)}`,
             `Last Executed At: ${
-              task.lastExecutedAt === null
-                ? "Never"
-                : new Date(task.lastExecutedAt).toISOString()
+              task.lastExecutedAt === null ? "Never" : new Date(task.lastExecutedAt).toISOString()
             }`,
           ].join("\n"),
         }),
@@ -61,9 +57,7 @@ export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
     }
 
     if (notificationsFailedToSendCount > 0) {
-      console.warn(
-        `Failed to send ${String(notificationsFailedToSendCount)} notifications`,
-      );
+      console.warn(`Failed to send ${String(notificationsFailedToSendCount)} notifications`);
     }
 
     return {

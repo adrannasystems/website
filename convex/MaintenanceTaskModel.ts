@@ -71,7 +71,4 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
   }
 }
 
-export type MaintenanceTaskState = "All Good" |
-  "Due" |
-  "Overdue" |
-  "Never Done";
+export type MaintenanceTaskState = "All Good" | "Due" | "Overdue" | "Never Done";

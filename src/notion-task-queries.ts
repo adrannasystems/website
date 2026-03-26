@@ -2,7 +2,10 @@ import { err, ok, Result } from "neverthrow";
 import { getNotionClient, getNotionTaskDatabaseId } from "./notion.server";
 import { taskPropertyNames } from "./notion-tasks.server";
 import { type TaskItem } from "./TaskItem";
-import { type PageObjectResponse, type QueryDataSourceResponse } from "@notionhq/client/build/src/api-endpoints";
+import {
+  type PageObjectResponse,
+  type QueryDataSourceResponse,
+} from "@notionhq/client/build/src/api-endpoints";
 import { type Client } from "@notionhq/client";
 
 export type SortDirection = "ascending" | "descending";
@@ -12,7 +15,7 @@ export async function queryTasksForReminders(): Promise<TaskItem[]> {
     property: taskPropertyNames.done,
     checkbox: { equals: false },
   });
-  return allOpenTasks
+  return allOpenTasks;
 }
 
 export async function queryTasksForPage() {
@@ -53,9 +56,7 @@ async function queryTasks(
   }
 }
 
-function mapTasks(
-  results: QueryDataSourceResponse["results"],
-): Result<TaskItem[], Error> {
+function mapTasks(results: QueryDataSourceResponse["results"]): Result<TaskItem[], Error> {
   return Result.combine(
     results.map((result) => {
       return isPageObject(result)
@@ -66,51 +67,55 @@ function mapTasks(
 }
 
 function mapTask(page: PageObjectResponse): Result<TaskItem, Error> {
-  const properties = page.properties
+  const properties = page.properties;
 
-  const taskProperty = properties[taskPropertyNames.task]
-  const doneProperty = properties[taskPropertyNames.done]
-  const doneAtProperty = properties[taskPropertyNames.doneAt]
-  const dueDateProperty = properties[taskPropertyNames.dueDate]
+  const taskProperty = properties[taskPropertyNames.task];
+  const doneProperty = properties[taskPropertyNames.done];
+  const doneAtProperty = properties[taskPropertyNames.doneAt];
+  const dueDateProperty = properties[taskPropertyNames.dueDate];
 
-  if (taskProperty?.type !== 'select') {
-    return err(new Error(
-      `Invalid Notion property '${taskPropertyNames.task}' on page '${page.id}': expected select`,
-    ))
-  } else if (
-    taskProperty.select?.name === undefined ||
-    taskProperty.select.name === ''
-  ) {
-    return err(new Error(
-      `Invalid Notion property '${taskPropertyNames.task}' on page '${page.id}': missing selected value`,
-    ))
-  } else if (doneProperty?.type !== 'checkbox') {
-    return err(new Error(
-      `Invalid Notion property '${taskPropertyNames.done}' on page '${page.id}': expected checkbox`,
-    ))
-  } else if (dueDateProperty?.type !== 'date') {
-    return err(new Error(
-      `Invalid Notion property '${taskPropertyNames.dueDate}' on page '${page.id}': expected date`,
-    ))
-  } else if (
-    dueDateProperty.date?.start === undefined ||
-    dueDateProperty.date.start === ''
-  ) {
-    return err(new Error(
-      `Invalid Notion property '${taskPropertyNames.dueDate}' on page '${page.id}': missing date`,
-    ))
-  } else if (doneAtProperty !== undefined && doneAtProperty.type !== 'date') {
-    return err(new Error(
-      `Invalid Notion property '${taskPropertyNames.doneAt}' on page '${page.id}': expected date`,
-    ))
+  if (taskProperty?.type !== "select") {
+    return err(
+      new Error(
+        `Invalid Notion property '${taskPropertyNames.task}' on page '${page.id}': expected select`,
+      ),
+    );
+  } else if (taskProperty.select?.name === undefined || taskProperty.select.name === "") {
+    return err(
+      new Error(
+        `Invalid Notion property '${taskPropertyNames.task}' on page '${page.id}': missing selected value`,
+      ),
+    );
+  } else if (doneProperty?.type !== "checkbox") {
+    return err(
+      new Error(
+        `Invalid Notion property '${taskPropertyNames.done}' on page '${page.id}': expected checkbox`,
+      ),
+    );
+  } else if (dueDateProperty?.type !== "date") {
+    return err(
+      new Error(
+        `Invalid Notion property '${taskPropertyNames.dueDate}' on page '${page.id}': expected date`,
+      ),
+    );
+  } else if (dueDateProperty.date?.start === undefined || dueDateProperty.date.start === "") {
+    return err(
+      new Error(
+        `Invalid Notion property '${taskPropertyNames.dueDate}' on page '${page.id}': missing date`,
+      ),
+    );
+  } else if (doneAtProperty !== undefined && doneAtProperty.type !== "date") {
+    return err(
+      new Error(
+        `Invalid Notion property '${taskPropertyNames.doneAt}' on page '${page.id}': expected date`,
+      ),
+    );
   } else {
-    const task = taskProperty.select.name
-    const done = doneProperty.checkbox
-    const dueDate = dueDateProperty.date.start
+    const task = taskProperty.select.name;
+    const done = doneProperty.checkbox;
+    const dueDate = dueDateProperty.date.start;
     const doneAt =
-      doneAtProperty === undefined
-        ? undefined
-        : doneAtProperty.date?.start ?? undefined
+      doneAtProperty === undefined ? undefined : (doneAtProperty.date?.start ?? undefined);
 
     return ok({
       id: page.id,
@@ -118,12 +123,10 @@ function mapTask(page: PageObjectResponse): Result<TaskItem, Error> {
       done,
       dueDate,
       ...(doneAt === undefined ? {} : { doneAt }),
-    })
+    });
   }
 }
 
 function isPageObject(response: unknown): response is PageObjectResponse {
-  return (
-    typeof response === 'object' && response !== null && 'properties' in response
-  )
+  return typeof response === "object" && response !== null && "properties" in response;
 }

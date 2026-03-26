@@ -10,42 +10,36 @@ function ConsultingPage() {
 }
 
 export function ConsultingLandingPage() {
-  const handleSubmit = React.useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
-      event.preventDefault();
-      const formData = new FormData(event.currentTarget);
-      const subjectValue = String(formData.get("subject") ?? "").trim();
-      const messageValue = String(formData.get("message") ?? "").trim();
+  const handleSubmit = React.useCallback((event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const subjectValue = String(formData.get("subject") ?? "").trim();
+    const messageValue = String(formData.get("message") ?? "").trim();
 
-      const subject =
-        subjectValue !== ""
-          ? subjectValue
-          : "Contact from Adranna Systems website";
-      const body = messageValue;
+    const subject = subjectValue !== "" ? subjectValue : "Contact from Adranna Systems website";
+    const body = messageValue;
 
-      const mailtoUrl = `mailto:a.buchel@outlook.com?subject=${encodeURIComponent(
-        subject,
-      )}&body=${encodeURIComponent(body)}`;
-      window.location.href = mailtoUrl;
-    },
-    [],
-  );
+    const mailtoUrl = `mailto:a.buchel@outlook.com?subject=${encodeURIComponent(
+      subject,
+    )}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoUrl;
+  }, []);
 
   return (
     <div>
-      <section className="pt-16 pb-20 bg-gradient-to-br from-blue-50 to-indigo-50">
+      <section className="bg-gradient-to-br from-blue-50 to-indigo-50 pt-16 pb-20">
         <div className="container mx-auto px-6">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl font-bold text-gray-900 mb-6">
+          <div className="mx-auto max-w-4xl text-center">
+            <h1 className="mb-6 text-5xl font-bold text-gray-900">
               Transforming Business Through Technology
             </h1>
-            <p className="text-xl text-gray-600 mb-8">
-              Expert IT development, management, and cyber security consulting
-              services to protect and advance your business
+            <p className="mb-8 text-xl text-gray-600">
+              Expert IT development, management, and cyber security consulting services to protect
+              and advance your business
             </p>
             <a
               href="#contact"
-              className="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition duration-300"
+              className="rounded-lg bg-blue-600 px-8 py-3 text-white transition duration-300 hover:bg-blue-700"
             >
               Get in Touch
             </a>
@@ -53,101 +47,83 @@ export function ConsultingLandingPage() {
         </div>
       </section>
 
-      <section id="services" className="py-20 bg-white">
+      <section id="services" className="bg-white py-20">
         <div className="container mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            Our Services
-          </h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                IT Development
-              </h3>
+          <h2 className="mb-12 text-center text-3xl font-bold text-gray-900">Our Services</h2>
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+            <div className="rounded-lg border border-gray-200 p-6 transition duration-300 hover:shadow-lg">
+              <h3 className="mb-4 text-xl font-semibold text-gray-900">IT Development</h3>
               <p className="text-gray-600">
-                Custom software solutions, web applications, and enterprise
-                systems tailored to your specific business requirements.
+                Custom software solutions, web applications, and enterprise systems tailored to your
+                specific business requirements.
               </p>
             </div>
-            <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                IT Management
-              </h3>
+            <div className="rounded-lg border border-gray-200 p-6 transition duration-300 hover:shadow-lg">
+              <h3 className="mb-4 text-xl font-semibold text-gray-900">IT Management</h3>
               <p className="text-gray-600">
-                Strategic IT leadership, infrastructure optimization, and
-                technology roadmap development for sustainable growth.
+                Strategic IT leadership, infrastructure optimization, and technology roadmap
+                development for sustainable growth.
               </p>
             </div>
-            <div className="p-6 border border-gray-200 rounded-lg hover:shadow-lg transition duration-300">
-              <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                Cyber Security
-              </h3>
+            <div className="rounded-lg border border-gray-200 p-6 transition duration-300 hover:shadow-lg">
+              <h3 className="mb-4 text-xl font-semibold text-gray-900">Cyber Security</h3>
               <p className="text-gray-600">
-                Comprehensive security assessments, threat prevention, and
-                robust protection strategies for your digital assets.
+                Comprehensive security assessments, threat prevention, and robust protection
+                strategies for your digital assets.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="about" className="py-20 bg-gray-50">
+      <section id="about" className="bg-gray-50 py-20">
         <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto">
-            <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">
-              About Us
-            </h2>
-            <p className="text-gray-600 mb-6">
-              Adranna Systems is a specialized IT consultancy focusing on
-              development, management, and cyber security. We deliver
-              comprehensive technology solutions that help businesses thrive in
-              an increasingly digital world.
+          <div className="mx-auto max-w-3xl">
+            <h2 className="mb-8 text-center text-3xl font-bold text-gray-900">About Us</h2>
+            <p className="mb-6 text-gray-600">
+              Adranna Systems is a specialized IT consultancy focusing on development, management,
+              and cyber security. We deliver comprehensive technology solutions that help businesses
+              thrive in an increasingly digital world.
             </p>
             <p className="text-gray-600">
-              Our team brings together extensive experience in software
-              development, IT management, and cyber security, ensuring that
-              every project benefits from both technical excellence and
-              security-first thinking.
+              Our team brings together extensive experience in software development, IT management,
+              and cyber security, ensuring that every project benefits from both technical
+              excellence and security-first thinking.
             </p>
           </div>
         </div>
       </section>
 
-      <section id="contact" className="py-20 bg-white">
+      <section id="contact" className="bg-white py-20">
         <div className="container mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            Get in Touch
-          </h2>
-          <div className="max-w-lg mx-auto">
-            <form
-              id="contactForm"
-              className="space-y-6"
-              onSubmit={handleSubmit}
-            >
+          <h2 className="mb-12 text-center text-3xl font-bold text-gray-900">Get in Touch</h2>
+          <div className="mx-auto max-w-lg">
+            <form id="contactForm" className="space-y-6" onSubmit={handleSubmit}>
               <div>
-                <label className="block text-gray-700 mb-2" htmlFor="subject">
+                <label className="mb-2 block text-gray-700" htmlFor="subject">
                   Subject
                 </label>
                 <input
                   type="text"
                   id="subject"
                   name="subject"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-gray-700 mb-2" htmlFor="message">
+                <label className="mb-2 block text-gray-700" htmlFor="message">
                   Message
                 </label>
                 <textarea
                   id="message"
                   name="message"
                   rows={4}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 ></textarea>
               </div>
               <button
                 type="submit"
-                className="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300"
+                className="w-full rounded-lg bg-blue-600 px-6 py-3 text-white transition duration-300 hover:bg-blue-700"
               >
                 Send Message
               </button>
@@ -156,15 +132,12 @@ export function ConsultingLandingPage() {
         </div>
       </section>
 
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-gray-900 py-12 text-white">
         <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="text-xl font-bold mb-4 md:mb-0">
-              Adranna Systems
-            </div>
-            <div className="text-gray-400 text-sm">
-              © 2024-{new Date().getFullYear()} Adranna Systems. All rights
-              reserved.
+          <div className="flex flex-col items-center justify-between md:flex-row">
+            <div className="mb-4 text-xl font-bold md:mb-0">Adranna Systems</div>
+            <div className="text-sm text-gray-400">
+              © 2024-{new Date().getFullYear()} Adranna Systems. All rights reserved.
             </div>
           </div>
         </div>

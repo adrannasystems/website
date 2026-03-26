@@ -12,9 +12,7 @@ async function main() {
       await sendNtfyNotification(ntfyTopic, "Task still open", body);
     }
   }
-  console.log(
-    `Sent ${String(tasksDueToday.length)} reminder notification(s) for tasks due today`,
-  );
+  console.log(`Sent ${String(tasksDueToday.length)} reminder notification(s) for tasks due today`);
 }
 
 function requireEnv(name: string): string {
@@ -25,11 +23,7 @@ function requireEnv(name: string): string {
   return value;
 }
 
-async function sendNtfyNotification(
-  topic: string,
-  title: string,
-  body: string,
-) {
+async function sendNtfyNotification(topic: string, title: string, body: string) {
   const response = await fetch(`https://ntfy.sh/${encodeURIComponent(topic)}`, {
     method: "POST",
     headers: {

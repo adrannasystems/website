@@ -3,11 +3,13 @@
 Tasks for the agent loop. Use `/next-task` to process all pending tasks.
 
 ## Status legend
+
 - `[ ]` — pending
 - `[~]` — in progress
 - `[x]` — done
 
 ## Queue
+
 - [ ] upgrade Render to a paid plan to avoid cold-start downtime (milestone 2)
 - [ ] allow user to change maintenance task order (custom ordering) instead of sorting only by dueness / name
 - [x] add mcp or similar for feedback loop so agents can open a browser and check visual changes to the app. in particular, when they create html/css I want them to check the result and make sure that it is "mobile first"

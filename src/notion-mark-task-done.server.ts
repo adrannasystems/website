@@ -1,13 +1,13 @@
-import { getNotionClient } from './notion.server'
-import { taskPropertyNames } from './notion-tasks.server'
+import { getNotionClient } from "./notion.server";
+import { taskPropertyNames } from "./notion-tasks.server";
 
 export async function markTaskDone(
   taskPageId: string,
   done: boolean,
   doneAt?: string,
 ): Promise<void> {
-  const client = getNotionClient()
-  const doneAtValue = done ? doneAt ?? new Date().toISOString() : null
+  const client = getNotionClient();
+  const doneAtValue = done ? (doneAt ?? new Date().toISOString()) : null;
 
   await client.pages.update({
     page_id: taskPageId,
@@ -19,5 +19,5 @@ export async function markTaskDone(
         date: doneAtValue === null ? null : { start: doneAtValue },
       },
     },
-  })
+  });
 }

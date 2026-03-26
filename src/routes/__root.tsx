@@ -1,21 +1,12 @@
 /// <reference types="vite/client" />
 
 import * as React from "react";
-import {
-  HeadContent,
-  Outlet,
-  Scripts,
-  createRootRoute,
-} from "@tanstack/react-router";
+import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
-import {
-  ClerkProvider,
-  useAuth,
-  useUser,
-} from "@clerk/tanstack-react-start";
+import { ClerkProvider, useAuth, useUser } from "@clerk/tanstack-react-start";
 import { auth } from "@clerk/tanstack-react-start/server";
 import { z } from "zod";
 import { PostHogProvider, usePostHog } from "posthog-js/react";
@@ -80,9 +71,7 @@ function RootComponent() {
               <OneSignalSync />
               <QueryClientProvider client={queryClient}>
                 <Outlet />
-                {import.meta.env.DEV ? (
-                  <ReactQueryDevtools initialIsOpen={false} />
-                ) : null}
+                {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
               </QueryClientProvider>
             </ConvexProviderWithClerk>
           </PostHogProvider>

@@ -16,7 +16,7 @@ function ConsultingLayout() {
 
   return (
     <>
-      <header className="bg-white shadow-sm fixed w-full z-10">
+      <header className="fixed z-10 w-full bg-white shadow-sm">
         <nav className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between gap-4">
             <Link to="/consulting" className="text-2xl font-bold text-gray-800">
@@ -36,26 +36,14 @@ function ConsultingLayout() {
                 onClick={() => setIsMobileMenuOpen((v) => !v)}
               />
             </div>
-            <div className="hidden md:flex items-center gap-8">
-              <Link
-                to="/consulting"
-                hash="services"
-                className="text-gray-600 hover:text-gray-900"
-              >
+            <div className="hidden items-center gap-8 md:flex">
+              <Link to="/consulting" hash="services" className="text-gray-600 hover:text-gray-900">
                 Services
               </Link>
-              <Link
-                to="/consulting"
-                hash="about"
-                className="text-gray-600 hover:text-gray-900"
-              >
+              <Link to="/consulting" hash="about" className="text-gray-600 hover:text-gray-900">
                 About
               </Link>
-              <Link
-                to="/consulting"
-                hash="contact"
-                className="text-gray-600 hover:text-gray-900"
-              >
+              <Link to="/consulting" hash="contact" className="text-gray-600 hover:text-gray-900">
                 Contact
               </Link>
               <SignedOut>
@@ -67,10 +55,7 @@ function ConsultingLayout() {
             </div>
           </div>
           {isMobileMenuOpen ? (
-            <div
-              id="mobile-navigation"
-              className="md:hidden mt-4 border-t border-gray-200 pt-4"
-            >
+            <div id="mobile-navigation" className="mt-4 border-t border-gray-200 pt-4 md:hidden">
               <div className="flex flex-col gap-3">
                 <Link
                   to="/consulting"

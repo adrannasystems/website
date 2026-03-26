@@ -34,12 +34,10 @@ export function OneSignalSync() {
 }
 
 export function getOneSignal() {
-  globalThis.__oneSignalReadyPromise ??= initializeOneSignal().catch(
-    (error) => {
-      globalThis.__oneSignalReadyPromise = undefined;
-      throw error;
-    },
-  );
+  globalThis.__oneSignalReadyPromise ??= initializeOneSignal().catch((error) => {
+    globalThis.__oneSignalReadyPromise = undefined;
+    throw error;
+  });
   return globalThis.__oneSignalReadyPromise;
 }
 

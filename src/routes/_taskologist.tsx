@@ -12,7 +12,7 @@ function TaskologistLayout() {
 
   return (
     <>
-      <header className="bg-white shadow-sm fixed w-full z-10">
+      <header className="fixed z-10 w-full bg-white shadow-sm">
         <nav className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between gap-4">
             <Link to="/" className="text-2xl font-bold text-gray-800">
@@ -32,7 +32,7 @@ function TaskologistLayout() {
                 onClick={() => setIsMobileMenuOpen((v) => !v)}
               />
             </div>
-            <div className="hidden md:flex items-center gap-8">
+            <div className="hidden items-center gap-8 md:flex">
               <SignedOut>
                 <AuthButtons />
               </SignedOut>
@@ -42,10 +42,7 @@ function TaskologistLayout() {
             </div>
           </div>
           {isMobileMenuOpen ? (
-            <div
-              id="mobile-navigation"
-              className="md:hidden mt-4 border-t border-gray-200 pt-4"
-            />
+            <div id="mobile-navigation" className="mt-4 border-t border-gray-200 pt-4 md:hidden" />
           ) : null}
         </nav>
       </header>

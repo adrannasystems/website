@@ -32,15 +32,15 @@ Clerk Billing is in **beta** and wraps Stripe under the hood.
 New TanStack Router route at `/pricing` using Clerk's `<PricingTable />` component:
 
 ```tsx
-import { PricingTable } from '@clerk/tanstack-react-start'
+import { PricingTable } from "@clerk/tanstack-react-start";
 
 export default function PricingPage() {
   return (
     <div className="container mx-auto py-16">
-      <h1 className="text-3xl font-bold text-center mb-8">Plans & Pricing</h1>
+      <h1 className="mb-8 text-center text-3xl font-bold">Plans & Pricing</h1>
       <PricingTable newSubscriptionRedirectUrl="/tasks" />
     </div>
-  )
+  );
 }
 ```
 
@@ -86,16 +86,16 @@ Internal mutations called by the webhook handler:
 **Client-side (React):**
 
 ```tsx
-import { useAuth } from '@clerk/tanstack-react-start'
+import { useAuth } from "@clerk/tanstack-react-start";
 
-const { has } = useAuth()
-if (!has({ plan: 'pro' })) return <UpgradeBanner />
+const { has } = useAuth();
+if (!has({ plan: "pro" })) return <UpgradeBanner />;
 ```
 
 Or declaratively:
 
 ```tsx
-<Show when={{ feature: 'tasks_access' }} fallback={<UpgradeBanner />}>
+<Show when={{ feature: "tasks_access" }} fallback={<UpgradeBanner />}>
   <TasksUI />
 </Show>
 ```
@@ -107,14 +107,14 @@ The existing `requireAuthenticatedUser` in `convex/auth.ts` can be extended to r
 
 ## Files
 
-| File | Action |
-| --- | --- |
-| `convex/schema.ts` | modify — add `userSubscriptions` table |
-| `convex/http.ts` | create — webhook handler |
-| `convex/subscriptions.ts` | create — subscription mutations/queries |
-| `src/routes/pricing.tsx` | create — pricing page |
-| `src/routes/__root.tsx` | modify — add "Pricing" nav link |
-| `convex/auth.ts` | modify (optional) — extend to return subscription status |
+| File                      | Action                                                   |
+| ------------------------- | -------------------------------------------------------- |
+| `convex/schema.ts`        | modify — add `userSubscriptions` table                   |
+| `convex/http.ts`          | create — webhook handler                                 |
+| `convex/subscriptions.ts` | create — subscription mutations/queries                  |
+| `src/routes/pricing.tsx`  | create — pricing page                                    |
+| `src/routes/__root.tsx`   | modify — add "Pricing" nav link                          |
+| `convex/auth.ts`          | modify (optional) — extend to return subscription status |
 
 ## Verification
 
