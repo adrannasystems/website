@@ -5,18 +5,17 @@ import { z } from "zod";
 import { api } from "../../../convex/_generated/api";
 
 const searchSchema = z.object({
-  chat: z.string().optional(),
+  chat: z.coerce.string().optional(),
 });
 
 export const Route = createFileRoute("/_taskologist/telegram-link")({
   validateSearch: searchSchema,
-  beforeLoad: ({ context, search }) => {
+  beforeLoad: ({ context, location }) => {
     if (context.currentUserId === null) {
-      const redirectUrl =
-        search.chat !== undefined
-          ? `/telegram-link?chat=${encodeURIComponent(search.chat)}`
-          : "/telegram-link";
-      throw redirect({ to: "/sign-in", search: { redirect_url: redirectUrl } });
+      throw redirect({
+        to: "/sign-in",
+        search: { redirect_url: location.href },
+      });
     }
   },
   component: TelegramLinkPage,
