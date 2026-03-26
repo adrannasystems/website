@@ -22,7 +22,7 @@ type AnthropicResponse = {
 
 type ToolHandler = (
   ctx: ActionCtx,
-  chatId: string,
+  userId: string,
   input: Record<string, unknown>,
 ) => Promise<string>;
 
@@ -37,8 +37,8 @@ const TOOLS: {
     description:
       "List all tasks visible to the user (own private tasks + all shared tasks), with their current state.",
     input_schema: { type: "object", properties: {}, required: [] },
-    handler: async (ctx, chatId) => {
-      const tasks = await ctx.runQuery(internal.telegram.tasks.listTasks, { chatId });
+    handler: async (ctx, userId) => {
+      const tasks = await ctx.runQuery(internal.telegram.tasks.listTasks, { userId });
       if (tasks.length === 0) return "No tasks yet.";
       return tasks
         .map(
@@ -52,8 +52,8 @@ const TOOLS: {
     name: "get_due_tasks",
     description: "List tasks that are Due, Overdue, or Never Done.",
     input_schema: { type: "object", properties: {}, required: [] },
-    handler: async (ctx, chatId) => {
-      const tasks = await ctx.runQuery(internal.telegram.tasks.getDueTasks, { chatId });
+    handler: async (ctx, userId) => {
+      const tasks = await ctx.runQuery(internal.telegram.tasks.getDueTasks, { userId });
       if (tasks.length === 0) return "Nothing due right now.";
       return tasks
         .map((t) => `• ${t.name} — ${t.state}${t.shared ? " [shared]" : ""} [id: ${t.id}]`)
@@ -75,9 +75,9 @@ const TOOLS: {
       },
       required: ["name", "periodHours"],
     },
-    handler: async (ctx, chatId, input) => {
+    handler: async (ctx, userId, input) => {
       const taskId = await ctx.runMutation(internal.telegram.tasks.createTask, {
-        chatId,
+        userId,
         name: String(input["name"]),
         periodHours: Number(input["periodHours"]),
         shared: Boolean(input["shared"] ?? false),
@@ -96,10 +96,10 @@ const TOOLS: {
       },
       required: ["taskId"],
     },
-    handler: async (ctx, chatId, input) => {
+    handler: async (ctx, userId, input) => {
       const executedAtRaw = input["executedAt"];
       const baseArgs = {
-        chatId,
+        userId,
         taskId: String(input["taskId"]) as Id<"maintenanceTasks">,
       };
       await ctx.runMutation(
@@ -119,9 +119,9 @@ const TOOLS: {
       },
       required: ["taskId"],
     },
-    handler: async (ctx, chatId, input) => {
+    handler: async (ctx, userId, input) => {
       await ctx.runMutation(internal.telegram.tasks.archiveTask, {
-        chatId,
+        userId,
         taskId: String(input["taskId"]) as Id<"maintenanceTasks">,
       });
       return "Task archived.";
@@ -141,9 +141,30 @@ export const processMessage = internalAction({
     text: v.string(),
   },
   handler: async (ctx, args): Promise<void> => {
-    await ctx.runMutation(internal.telegram.users.upsertUser, {
+    const trimmedText = args.text.trim();
+
+    const linkMatch = /^\/link\s+(\S+)$/i.exec(trimmedText);
+    if (linkMatch !== null) {
+      const code = (linkMatch[1] ?? "").toUpperCase();
+      const result = await ctx.runMutation(internal.telegram.users.applyLinkToken, {
+        chatId: args.chatId,
+        token: code,
+      });
+      await sendTelegramMessage(args.chatId, result.message);
+      return;
+    }
+
+    const userId = await ctx.runQuery(internal.telegram.users.getLinkedUserId, {
       chatId: args.chatId,
     });
+
+    if (userId === null) {
+      await sendTelegramMessage(
+        args.chatId,
+        "This bot is not linked to a Taskologist account.\n\nTo get started:\n1. Sign in at the Taskologist web app\n2. Go to Settings and generate a link code\n3. Send /link <code> here",
+      );
+      return;
+    }
 
     const envVarName = "ANTHROPIC_API_KEY";
     const apiKey = z
@@ -151,7 +172,7 @@ export const processMessage = internalAction({
       .nonempty()
       .parse(process.env[envVarName]);
 
-    const messages: AnthropicMessage[] = [{ role: "user", content: args.text }];
+    const messages: AnthropicMessage[] = [{ role: "user", content: trimmedText }];
 
     for (let i = 0; i < 10; i++) {
       const response = await fetch("https://api.anthropic.com/v1/messages", {
@@ -196,7 +217,7 @@ export const processMessage = internalAction({
 
           let toolResultContent: string;
           try {
-            toolResultContent = await executeTool(ctx, args.chatId, block.name, block.input);
+            toolResultContent = await executeTool(ctx, userId, block.name, block.input);
           } catch (err) {
             toolResultContent = `Error: ${err instanceof Error ? err.message : String(err)}`;
           }
@@ -223,11 +244,11 @@ export const processMessage = internalAction({
 
 async function executeTool(
   ctx: ActionCtx,
-  chatId: string,
+  userId: string,
   name: string,
   input: Record<string, unknown>,
 ): Promise<string> {
   const tool = TOOLS.find((t) => t.name === name);
   if (tool === undefined) return `Unknown tool: ${name}`;
-  return tool.handler(ctx, chatId, input);
+  return tool.handler(ctx, userId, input);
 }

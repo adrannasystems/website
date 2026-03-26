@@ -21,7 +21,13 @@ export default defineSchema({
   })
     .index("by_taskId", ["taskId"])
     .index("by_taskId_executedAt", ["taskId", "executedAt"]),
-  telegramUsers: defineTable({
+  telegramChats: defineTable({
     chatId: v.string(),
+    userId: v.optional(v.string()),
   }).index("by_chatId", ["chatId"]),
+  telegramLinkTokens: defineTable({
+    token: v.string(),
+    userId: v.string(),
+    expiresAt: v.number(),
+  }).index("by_token", ["token"]),
 });

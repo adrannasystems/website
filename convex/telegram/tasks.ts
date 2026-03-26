@@ -24,13 +24,7 @@ function toSummary(doc: Doc<"maintenanceTasks">): TaskSummary {
   };
 }
 
-function userIdFromChatId(chatId: string): string {
-  return `telegram:${chatId}`;
-}
-
-async function getActiveTasks(ctx: QueryCtx, chatId: string): Promise<Doc<"maintenanceTasks">[]> {
-  const userId = userIdFromChatId(chatId);
-
+async function getActiveTasks(ctx: QueryCtx, userId: string): Promise<Doc<"maintenanceTasks">[]> {
   const myTasks = await ctx.db
     .query("maintenanceTasks")
     .withIndex("by_userId_deletedAt_name", (q) => q.eq("userId", userId).eq("deletedAt", null))
@@ -48,17 +42,17 @@ async function getActiveTasks(ctx: QueryCtx, chatId: string): Promise<Doc<"maint
 }
 
 export const listTasks = internalQuery({
-  args: { chatId: v.string() },
+  args: { userId: v.string() },
   handler: async (ctx, args): Promise<TaskSummary[]> => {
-    const tasks = await getActiveTasks(ctx, args.chatId);
+    const tasks = await getActiveTasks(ctx, args.userId);
     return tasks.map(toSummary);
   },
 });
 
 export const getDueTasks = internalQuery({
-  args: { chatId: v.string() },
+  args: { userId: v.string() },
   handler: async (ctx, args): Promise<TaskSummary[]> => {
-    const tasks = await getActiveTasks(ctx, args.chatId);
+    const tasks = await getActiveTasks(ctx, args.userId);
     return tasks.map(toSummary).filter((t) => t.state !== "All Good");
   },
 });
@@ -76,7 +70,7 @@ export const getSharedDueTasks = internalQuery({
 
 export const createTask = internalMutation({
   args: {
-    chatId: v.string(),
+    userId: v.string(),
     name: v.string(),
     periodHours: v.number(),
     shared: v.optional(v.boolean()),
@@ -90,7 +84,7 @@ export const createTask = internalMutation({
       periodHours: args.periodHours,
       lastExecutedAt: null,
       deletedAt: null,
-      userId: userIdFromChatId(args.chatId),
+      userId: args.userId,
       shared: args.shared === true,
     });
   },
@@ -98,12 +92,12 @@ export const createTask = internalMutation({
 
 export const logExecution = internalMutation({
   args: {
-    chatId: v.string(),
+    userId: v.string(),
     taskId: v.id("maintenanceTasks"),
     executedAt: v.optional(v.number()),
   },
   handler: async (ctx, args): Promise<void> => {
-    const userId = userIdFromChatId(args.chatId);
+    const userId = args.userId;
     const task = await ctx.db.get(args.taskId);
     if (task?.deletedAt !== null) {
       throw new Error("Task not found");
@@ -124,11 +118,11 @@ export const logExecution = internalMutation({
 
 export const archiveTask = internalMutation({
   args: {
-    chatId: v.string(),
+    userId: v.string(),
     taskId: v.id("maintenanceTasks"),
   },
   handler: async (ctx, args): Promise<void> => {
-    const userId = userIdFromChatId(args.chatId);
+    const userId = args.userId;
     const task = await ctx.db.get(args.taskId);
     if (task === null) {
       throw new Error("Task not found");
