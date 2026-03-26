@@ -226,21 +226,6 @@ export const findTaskExecutions = query({
   },
 });
 
-/**
- * One-time migration: backfill `shared: false` on all existing tasks that
- * were created before the field was added. Safe to run multiple times.
- * Delete this mutation after running it on production.
- */
-export const backfillSharedField = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const tasks = await ctx.db.query("maintenanceTasks").withIndex("by_deletedAt").collect();
-    const unset = tasks.filter((t) => t.shared === undefined);
-    await Promise.all(unset.map((t) => ctx.db.patch(t._id, { shared: false })));
-    return { patched: unset.length };
-  },
-});
-
 async function createTaskImpl(
   ctx: MutationCtx,
   userId: string,

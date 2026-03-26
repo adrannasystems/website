@@ -21,7 +21,7 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
       periodHours: number;
       lastExecutedAt: number | null;
       deletedAt: number | null;
-      shared?: boolean;
+      shared: boolean;
       userId: string;
     },
   ) {}
