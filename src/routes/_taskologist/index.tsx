@@ -481,8 +481,6 @@ function MaintenanceTasksContent() {
               </div>
             </div>
           </section>
-
-          <TelegramLinkSection />
         </div>
       </main>
     );
@@ -945,78 +943,6 @@ function ArchivedMaintenanceTaskRow(props: {
         </div>
       </div>
     </div>
-  );
-}
-
-function TelegramLinkSection() {
-  const generateToken = useMutation(api.maintenanceTasks.generateTelegramLinkToken);
-  const [token, setToken] = React.useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  const handleGenerate = React.useCallback(async () => {
-    setIsGenerating(true);
-    setError(null);
-    try {
-      const t = await generateToken({});
-      setToken(t);
-    } catch {
-      setError("Unable to generate link code.");
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [generateToken]);
-
-  return (
-    <section className="mt-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <h2 className="mb-1 text-lg font-medium text-gray-900">Connect Telegram</h2>
-      <p className="mb-4 text-sm text-gray-500">
-        Link your account to a Telegram chat so you can manage tasks from the bot.
-      </p>
-
-      {token !== null ? (
-        <div>
-          <p className="mb-2 text-sm text-gray-600">Send this code to the bot within 15 minutes:</p>
-          <div className="mb-3 flex items-center gap-3">
-            <code className="rounded bg-gray-100 px-4 py-2 font-mono text-2xl tracking-widest text-gray-900">
-              {token}
-            </code>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                void navigator.clipboard.writeText(`/link ${token}`);
-              }}
-            >
-              Copy command
-            </Button>
-          </div>
-          <p className="mb-3 text-xs text-gray-400">
-            In Telegram, send: <code>/link {token}</code>
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => void handleGenerate()}
-            disabled={isGenerating}
-          >
-            {isGenerating ? "Generating..." : "Generate new code"}
-          </Button>
-        </div>
-      ) : (
-        <Button type="button" onClick={() => void handleGenerate()} disabled={isGenerating}>
-          {isGenerating ? "Generating..." : "Generate link code"}
-        </Button>
-      )}
-
-      {error !== null ? (
-        <div className="mt-3 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          {error}
-        </div>
-      ) : null}
-    </section>
   );
 }
 

@@ -25,9 +25,4 @@ export default defineSchema({
     chatId: v.string(),
     userId: v.optional(v.string()),
   }).index("by_chatId", ["chatId"]),
-  telegramLinkTokens: defineTable({
-    token: v.string(),
-    userId: v.string(),
-    expiresAt: v.number(),
-  }).index("by_token", ["token"]),
 });

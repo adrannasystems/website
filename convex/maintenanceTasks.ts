@@ -226,26 +226,6 @@ export const findTaskExecutions = query({
   },
 });
 
-export const generateTelegramLinkToken = mutation({
-  args: {},
-  handler: async (ctx): Promise<string> => {
-    const identity = await requireAuthenticatedUser(ctx);
-    const userId = databaseUserId(identity);
-    const existing = await ctx.db
-      .query("telegramLinkTokens")
-      .filter((q) => q.eq(q.field("userId"), userId))
-      .collect();
-    await Promise.all(existing.map((t) => ctx.db.delete(t._id)));
-    const token = generateToken();
-    await ctx.db.insert("telegramLinkTokens", {
-      token,
-      userId,
-      expiresAt: Date.now() + 15 * 60 * 1000,
-    });
-    return token;
-  },
-});
-
 /**
  * One-time migration: backfill `shared: false` on all existing tasks that
  * were created before the field was added. Safe to run multiple times.
@@ -332,13 +312,4 @@ function toTaskWithState(taskData: Doc<"maintenanceTasks">): {
 
 function createMaintenanceTaskNotFoundError() {
   return new Error("Maintenance task not found");
-}
-
-function generateToken(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let result = "";
-  for (let i = 0; i < 6; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return result;
 }

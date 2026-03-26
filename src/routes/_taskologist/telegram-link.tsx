@@ -1,13 +1,22 @@
 import * as React from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { Authenticated, AuthLoading, Unauthenticated, useMutation } from "convex/react";
+import { z } from "zod";
 import { api } from "../../../convex/_generated/api";
-import { Button } from "@/components/ui/button";
+
+const searchSchema = z.object({
+  chat: z.string().optional(),
+});
 
 export const Route = createFileRoute("/_taskologist/telegram-link")({
-  beforeLoad: ({ context }) => {
+  validateSearch: searchSchema,
+  beforeLoad: ({ context, search }) => {
     if (context.currentUserId === null) {
-      throw redirect({ to: "/sign-in", search: { redirect_url: "/telegram-link" } });
+      const redirectUrl =
+        search.chat !== undefined
+          ? `/telegram-link?chat=${encodeURIComponent(search.chat)}`
+          : "/telegram-link";
+      throw redirect({ to: "/sign-in", search: { redirect_url: redirectUrl } });
     }
   },
   component: TelegramLinkPage,
@@ -17,100 +26,67 @@ function TelegramLinkPage() {
   return (
     <>
       <AuthLoading>
-        <TelegramLinkPageLoading />
+        <TelegramLinkShell>Loading...</TelegramLinkShell>
       </AuthLoading>
       <Authenticated>
-        <TelegramLinkPageContent />
+        <TelegramLinkContent />
       </Authenticated>
       <Unauthenticated>
-        <TelegramLinkPageLoading />
+        <TelegramLinkShell>Loading...</TelegramLinkShell>
       </Unauthenticated>
     </>
   );
 }
 
-function TelegramLinkPageContent() {
-  const generateToken = useMutation(api.maintenanceTasks.generateTelegramLinkToken);
-  const [token, setToken] = React.useState<string | null>(null);
-  const [error, setError] = React.useState<string | null>(null);
+function TelegramLinkContent() {
+  const { chat: chatId } = Route.useSearch();
+  const linkChat = useMutation(api.telegram.users.linkChat);
+  const [status, setStatus] = React.useState<"pending" | "linked" | "error">("pending");
 
   React.useEffect(() => {
+    if (chatId === undefined) {
+      setStatus("error");
+      return;
+    }
     let cancelled = false;
-    generateToken({})
-      .then((t) => {
-        if (!cancelled) setToken(t);
+    linkChat({ chatId })
+      .then(() => {
+        if (!cancelled) setStatus("linked");
       })
       .catch(() => {
-        if (!cancelled) setError("Unable to generate link code. Please try again.");
+        if (!cancelled) setStatus("error");
       });
     return () => {
       cancelled = true;
     };
-  }, [generateToken]);
+  }, [chatId, linkChat]);
 
-  const handleRegenerate = React.useCallback(async () => {
-    setError(null);
-    try {
-      const t = await generateToken({});
-      setToken(t);
-    } catch {
-      setError("Unable to generate link code. Please try again.");
-    }
-  }, [generateToken]);
-
-  return (
-    <main className="min-h-screen bg-gray-50 px-6 py-20">
-      <div className="mx-auto max-w-md">
-        <h1 className="mb-2 text-2xl font-semibold text-gray-900">Link Telegram</h1>
-        <p className="mb-8 text-sm text-gray-500">
-          Send the code below to the Taskologist bot to link this account.
+  if (status === "linked") {
+    return (
+      <TelegramLinkShell>
+        <p className="text-lg font-medium text-gray-900">Linked.</p>
+        <p className="text-sm text-gray-500">You can close this.</p>
+      </TelegramLinkShell>
+    );
+  } else if (status === "error") {
+    return (
+      <TelegramLinkShell>
+        <p className="text-sm text-red-600">
+          {chatId === undefined
+            ? "No chat ID provided. Open this link from the Telegram bot."
+            : "Something went wrong. Please try again from the bot."}
         </p>
-
-        {error !== null ? (
-          <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            {error}
-          </div>
-        ) : null}
-
-        {token === null && error === null ? (
-          <div className="text-sm text-gray-500">Generating code...</div>
-        ) : token !== null ? (
-          <div>
-            <div className="mb-4 flex items-center gap-3">
-              <code className="rounded bg-gray-100 px-4 py-3 font-mono text-3xl tracking-widest text-gray-900">
-                {token}
-              </code>
-            </div>
-            <p className="mb-4 text-sm text-gray-600">
-              In Telegram, send: <code className="font-mono">/link {token}</code>
-            </p>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                onClick={() => {
-                  void navigator.clipboard.writeText(`/link ${token}`);
-                }}
-              >
-                Copy command
-              </Button>
-              <Button type="button" variant="outline" onClick={() => void handleRegenerate()}>
-                Generate new code
-              </Button>
-            </div>
-            <p className="mt-4 text-xs text-gray-400">Valid for 15 minutes.</p>
-          </div>
-        ) : null}
-      </div>
-    </main>
-  );
+      </TelegramLinkShell>
+    );
+  } else {
+    return <TelegramLinkShell>Linking...</TelegramLinkShell>;
+  }
 }
 
-function TelegramLinkPageLoading() {
+function TelegramLinkShell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-20">
-      <div className="mx-auto max-w-md">
-        <div className="text-sm text-gray-500">Loading...</div>
-      </div>
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-6">
+      <div className="text-center">{children}</div>
     </main>
   );
 }

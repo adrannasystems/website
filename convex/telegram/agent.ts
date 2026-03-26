@@ -149,26 +149,15 @@ export const processMessage = internalAction({
   handler: async (ctx, args): Promise<void> => {
     const trimmedText = args.text.trim();
 
-    const linkMatch = /^\/link\s+(\S+)$/i.exec(trimmedText);
-    if (linkMatch !== null) {
-      const code = (linkMatch[1] ?? "").toUpperCase();
-      const result = await ctx.runMutation(internal.telegram.users.applyLinkToken, {
-        chatId: args.chatId,
-        token: code,
-      });
-      await sendTelegramMessage(args.chatId, result.message);
-      return;
-    }
-
     const userId = await ctx.runQuery(internal.telegram.users.getLinkedUserId, {
       chatId: args.chatId,
     });
 
     if (userId === null) {
-      const linkUrl = `${publicAppOrigin.replace(/\/$/, "")}/telegram-link`;
+      const linkUrl = `${publicAppOrigin.replace(/\/$/, "")}/telegram-link?chat=${encodeURIComponent(args.chatId)}`;
       await sendTelegramMessage(
         args.chatId,
-        `This chat is not linked to a Taskologist account.\n\nTo get started, open this link and copy the command shown:\n${linkUrl}\n\nThen send it here as: /link <code>`,
+        `This chat is not linked to a Taskologist account.\n\nTap the link to link it:\n${linkUrl}`,
       );
       return;
     }
@@ -246,6 +235,13 @@ export const processMessage = internalAction({
     }
 
     await sendTelegramMessage(args.chatId, "Sorry, I got confused. Please try again.");
+  },
+});
+
+export const sendLinkConfirmation = internalAction({
+  args: { chatId: v.string(), userName: v.string() },
+  handler: async (_ctx, args): Promise<void> => {
+    await sendTelegramMessage(args.chatId, `✅ ${args.userName} is now linked to this chat.`);
   },
 });
 
