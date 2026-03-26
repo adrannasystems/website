@@ -10,11 +10,4 @@ crons.interval(
   {},
 );
 
-crons.interval(
-  "send telegram due task notifications",
-  { hours: 1 },
-  internal.telegram.notifications.sendDueTasks,
-  {},
-);
-
 export default crons;

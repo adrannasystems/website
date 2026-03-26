@@ -2,13 +2,15 @@ import type { Id } from "./_generated/dataModel";
 
 export type MaintenanceTaskModel = {
   id: Id<"maintenanceTasks">;
-  lastExecutedAt: () => number | null;
+  lastExecutedAt: number | null;
   name: string;
   periodHours: number;
   isArchived: boolean;
   archivedAt: number | null;
-  state: () => MaintenanceTaskState;
-  periodsDue: () => number;
+  state: MaintenanceTaskState;
+  periodsDue: number;
+  isShared: boolean;
+  userId: string;
 };
 
 export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
@@ -19,6 +21,8 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
       periodHours: number;
       lastExecutedAt: number | null;
       deletedAt: number | null;
+      shared?: boolean;
+      userId: string;
     },
   ) {}
 
@@ -26,7 +30,11 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
     return this.data._id;
   }
 
-  lastExecutedAt(): number | null {
+  get userId(): string {
+    return this.data.userId;
+  }
+
+  get lastExecutedAt(): number | null {
     return this.data.lastExecutedAt;
   }
 
@@ -46,8 +54,8 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
     return this.archivedAt !== null;
   }
 
-  state(): MaintenanceTaskState {
-    const periodsDue = this.periodsDue();
+  get state(): MaintenanceTaskState {
+    const periodsDue = this.periodsDue;
     if (periodsDue === Number.POSITIVE_INFINITY) {
       return "Never Done";
     } else if (periodsDue < 1) {
@@ -59,8 +67,8 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
     }
   }
 
-  periodsDue(): number {
-    const lastExecutedAt = this.lastExecutedAt();
+  get periodsDue(): number {
+    const lastExecutedAt = this.lastExecutedAt;
     if (lastExecutedAt === null) {
       return Number.POSITIVE_INFINITY;
     } else {
@@ -68,6 +76,10 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
       const elapsedMilliseconds = Date.now() - lastExecutedAt;
       return elapsedMilliseconds / periodMilliseconds;
     }
+  }
+
+  get isShared(): boolean {
+    return this.data.shared === true;
   }
 }
 

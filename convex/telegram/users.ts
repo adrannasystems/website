@@ -15,14 +15,6 @@ export const upsertChat = internalMutation({
   },
 });
 
-export const listLinkedChats = internalQuery({
-  args: {},
-  handler: async (ctx) => {
-    const all = await ctx.db.query("telegramChats").take(100);
-    return all.filter((c) => c.userId !== undefined);
-  },
-});
-
 export const getLinkedUserId = internalQuery({
   args: { chatId: v.string() },
   handler: async (ctx, args): Promise<string | null> => {

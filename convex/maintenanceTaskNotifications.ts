@@ -4,6 +4,7 @@ import { z } from "zod";
 import { internalAction, internalQuery } from "./_generated/server";
 import type { MaintenanceTaskState } from "./MaintenanceTaskModel";
 import { MaintenanceTaskModelImpl } from "./MaintenanceTaskModel";
+import { sendTelegramMessage } from "./telegram/api";
 
 export type MaintenanceTaskForNotification = {
   id: Id<"maintenanceTasks">;
@@ -23,27 +24,13 @@ export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
       {},
     );
 
+    const linkedChats = await ctx.runQuery(internal.maintenanceTaskNotifications.listLinkedChats);
+    const telegramChatByUserId = new Map(linkedChats.map((c) => [c.userId as string, c.chatId]));
+
     const notificationPromises: Promise<void>[] = [];
     for (const task of dueOrOverdueTasks) {
-      notificationPromises.push(
-        sendOneSignalNotification({
-          appId: oneSignalAppId,
-          restApiKey: oneSignalRestApiKey,
-          openUrl: maintenanceTaskDeepLink(task.id),
-          userId: task.userId,
-          webPushTopic: `task-${task.id}-state`,
-          title: `Task is ${task.state.toLowerCase()}: ${task.name}`,
-          body: [
-            `Task: ${task.name}`,
-            `State: ${task.state}`,
-            `Periods Due: ${task.periodsDue === Infinity ? "n/a" : task.periodsDue.toFixed(2)}`,
-            `Period [h]: ${String(task.periodHours)}`,
-            `Last Executed At: ${
-              task.lastExecutedAt === null ? "Never" : new Date(task.lastExecutedAt).toISOString()
-            }`,
-          ].join("\n"),
-        }),
-      );
+      notificationPromises.push(pushWebNotification(task));
+      notificationPromises.push(pushTelegramNotification(task, telegramChatByUserId));
     }
 
     let notificationsSentCount = 0;
@@ -64,6 +51,14 @@ export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
       notificationsSent: notificationsSentCount,
       notificationsFailedToSend: notificationsFailedToSendCount,
     };
+  },
+});
+
+export const listLinkedChats = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const all = await ctx.db.query("telegramChats").collect();
+    return all.filter((c) => c.userId !== undefined);
   },
 });
 
@@ -99,6 +94,37 @@ async function sendOneSignalNotification(input: {
       `OneSignal request failed (${String(response.status)} ${response.statusText}): ${errorBody}`,
     );
   }
+}
+
+function pushWebNotification(task: MaintenanceTaskForNotification): Promise<void> {
+  return sendOneSignalNotification({
+    appId: oneSignalAppId,
+    restApiKey: oneSignalRestApiKey,
+    openUrl: maintenanceTaskDeepLink(task.id),
+    userId: task.userId,
+    webPushTopic: `task-${task.id}-state`,
+    title: `Task is ${task.state.toLowerCase()}: ${task.name}`,
+    body: [
+      `Task: ${task.name}`,
+      `State: ${task.state}`,
+      `Periods Due: ${task.periodsDue === Infinity ? "n/a" : task.periodsDue.toFixed(2)}`,
+      `Period [h]: ${String(task.periodHours)}`,
+      `Last Executed At: ${
+        task.lastExecutedAt === null ? "Never" : new Date(task.lastExecutedAt).toISOString()
+      }`,
+    ].join("\n"),
+  });
+}
+
+function pushTelegramNotification(
+  task: MaintenanceTaskForNotification,
+  telegramChatByUserId: Map<string, string>,
+): Promise<void> {
+  const chatId = telegramChatByUserId.get(task.userId);
+  if (chatId === undefined) {
+    return Promise.resolve();
+  }
+  return sendTelegramMessage(chatId, `⚠️ ${task.name} is ${task.state.toLowerCase()}`);
 }
 
 const oneSignalAppIdEnvVarName = "ONESIGNAL_APP_ID";
@@ -138,16 +164,16 @@ export const listDueOrMoreUrgentTasksForNotifications = internalQuery({
     const dueOrOverdueTasks: MaintenanceTaskForNotification[] = [];
     for (const dbo of taskDbos) {
       const task = new MaintenanceTaskModelImpl(dbo);
-      const state = task.state();
+      const state = task.state;
       if (state === "Due" || state === "Overdue" || state === "Never Done") {
         dueOrOverdueTasks.push({
           id: task.id,
           name: task.name,
           state,
-          periodsDue: task.periodsDue(),
+          periodsDue: task.periodsDue,
           periodHours: task.periodHours,
-          lastExecutedAt: task.lastExecutedAt(),
-          userId: dbo.userId,
+          lastExecutedAt: task.lastExecutedAt,
+          userId: task.userId,
         } satisfies MaintenanceTaskForNotification);
       }
     }

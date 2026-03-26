@@ -14,7 +14,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
     "reminders": "node --env-file=.env --env-file=.env.local --import tsx scripts/send-task-reminders.ts",
     "preview": "vite preview",
-    "precommit": "npm run lint && npm run typecheck && npm run build"
+    "codegen": "convex codegen",
+    "precommit": "npm run format && npm run codegen && npm run lint && npm run typecheck"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",

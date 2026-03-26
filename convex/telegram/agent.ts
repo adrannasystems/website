@@ -5,6 +5,12 @@ import { internal } from "../_generated/api";
 import { sendTelegramMessage } from "./api";
 import type { Id } from "../_generated/dataModel";
 
+const publicAppOriginEnvVarName = "PUBLIC_APP_ORIGIN";
+const publicAppOrigin = z
+  .string({ message: `${publicAppOriginEnvVarName} is required` })
+  .url()
+  .parse(process.env[publicAppOriginEnvVarName]);
+
 type AnthropicMessage = {
   role: "user" | "assistant";
   content: AnthropicContentBlock[] | string;
@@ -76,7 +82,7 @@ const TOOLS: {
       required: ["name", "periodHours"],
     },
     handler: async (ctx, userId, input) => {
-      const taskId = await ctx.runMutation(internal.telegram.tasks.createTask, {
+      const taskId = await ctx.runMutation(internal.maintenanceTasks.createTaskForUser, {
         userId,
         name: String(input["name"]),
         periodHours: Number(input["periodHours"]),
@@ -103,7 +109,7 @@ const TOOLS: {
         taskId: String(input["taskId"]) as Id<"maintenanceTasks">,
       };
       await ctx.runMutation(
-        internal.telegram.tasks.logExecution,
+        internal.maintenanceTasks.logExecutionForUser,
         executedAtRaw !== undefined ? { ...baseArgs, executedAt: Number(executedAtRaw) } : baseArgs,
       );
       return "Execution logged.";
@@ -120,7 +126,7 @@ const TOOLS: {
       required: ["taskId"],
     },
     handler: async (ctx, userId, input) => {
-      await ctx.runMutation(internal.telegram.tasks.archiveTask, {
+      await ctx.runMutation(internal.maintenanceTasks.archiveTaskForUser, {
         userId,
         taskId: String(input["taskId"]) as Id<"maintenanceTasks">,
       });
@@ -159,9 +165,10 @@ export const processMessage = internalAction({
     });
 
     if (userId === null) {
+      const linkUrl = `${publicAppOrigin.replace(/\/$/, "")}/telegram-link`;
       await sendTelegramMessage(
         args.chatId,
-        "This bot is not linked to a Taskologist account.\n\nTo get started:\n1. Sign in at the Taskologist web app\n2. Go to Settings and generate a link code\n3. Send /link <code> here",
+        `This chat is not linked to a Taskologist account.\n\nTo get started, open this link and copy the command shown:\n${linkUrl}\n\nThen send it here as: /link <code>`,
       );
       return;
     }
