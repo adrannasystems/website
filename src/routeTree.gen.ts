@@ -13,7 +13,6 @@ import { Route as TaskologistRouteImport } from './routes/_taskologist'
 import { Route as ConsultingRouteImport } from './routes/_consulting'
 import { Route as TaskologistIndexRouteImport } from './routes/_taskologist/index'
 import { Route as TaskologistTelegramLinkRouteImport } from './routes/_taskologist/telegram-link'
-import { Route as TaskologistTasksRouteImport } from './routes/_taskologist/tasks'
 import { Route as TaskologistSignInRouteImport } from './routes/_taskologist/sign-in'
 import { Route as ConsultingConsultingRouteImport } from './routes/_consulting/consulting'
 import { Route as TaskologistSignInSplatRouteImport } from './routes/_taskologist/sign-in.$'
@@ -36,11 +35,6 @@ const TaskologistTelegramLinkRoute = TaskologistTelegramLinkRouteImport.update({
   path: '/telegram-link',
   getParentRoute: () => TaskologistRoute,
 } as any)
-const TaskologistTasksRoute = TaskologistTasksRouteImport.update({
-  id: '/tasks',
-  path: '/tasks',
-  getParentRoute: () => TaskologistRoute,
-} as any)
 const TaskologistSignInRoute = TaskologistSignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
@@ -61,7 +55,6 @@ export interface FileRoutesByFullPath {
   '/': typeof TaskologistIndexRoute
   '/consulting': typeof ConsultingConsultingRoute
   '/sign-in': typeof TaskologistSignInRouteWithChildren
-  '/tasks': typeof TaskologistTasksRoute
   '/telegram-link': typeof TaskologistTelegramLinkRoute
   '/sign-in/$': typeof TaskologistSignInSplatRoute
 }
@@ -69,7 +62,6 @@ export interface FileRoutesByTo {
   '/': typeof TaskologistIndexRoute
   '/consulting': typeof ConsultingConsultingRoute
   '/sign-in': typeof TaskologistSignInRouteWithChildren
-  '/tasks': typeof TaskologistTasksRoute
   '/telegram-link': typeof TaskologistTelegramLinkRoute
   '/sign-in/$': typeof TaskologistSignInSplatRoute
 }
@@ -79,35 +71,21 @@ export interface FileRoutesById {
   '/_taskologist': typeof TaskologistRouteWithChildren
   '/_consulting/consulting': typeof ConsultingConsultingRoute
   '/_taskologist/sign-in': typeof TaskologistSignInRouteWithChildren
-  '/_taskologist/tasks': typeof TaskologistTasksRoute
   '/_taskologist/telegram-link': typeof TaskologistTelegramLinkRoute
   '/_taskologist/': typeof TaskologistIndexRoute
   '/_taskologist/sign-in/$': typeof TaskologistSignInSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/consulting'
-    | '/sign-in'
-    | '/tasks'
-    | '/telegram-link'
-    | '/sign-in/$'
+  fullPaths: '/' | '/consulting' | '/sign-in' | '/telegram-link' | '/sign-in/$'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/consulting'
-    | '/sign-in'
-    | '/tasks'
-    | '/telegram-link'
-    | '/sign-in/$'
+  to: '/' | '/consulting' | '/sign-in' | '/telegram-link' | '/sign-in/$'
   id:
     | '__root__'
     | '/_consulting'
     | '/_taskologist'
     | '/_consulting/consulting'
     | '/_taskologist/sign-in'
-    | '/_taskologist/tasks'
     | '/_taskologist/telegram-link'
     | '/_taskologist/'
     | '/_taskologist/sign-in/$'
@@ -146,13 +124,6 @@ declare module '@tanstack/react-router' {
       path: '/telegram-link'
       fullPath: '/telegram-link'
       preLoaderRoute: typeof TaskologistTelegramLinkRouteImport
-      parentRoute: typeof TaskologistRoute
-    }
-    '/_taskologist/tasks': {
-      id: '/_taskologist/tasks'
-      path: '/tasks'
-      fullPath: '/tasks'
-      preLoaderRoute: typeof TaskologistTasksRouteImport
       parentRoute: typeof TaskologistRoute
     }
     '/_taskologist/sign-in': {
@@ -204,14 +175,12 @@ const TaskologistSignInRouteWithChildren =
 
 interface TaskologistRouteChildren {
   TaskologistSignInRoute: typeof TaskologistSignInRouteWithChildren
-  TaskologistTasksRoute: typeof TaskologistTasksRoute
   TaskologistTelegramLinkRoute: typeof TaskologistTelegramLinkRoute
   TaskologistIndexRoute: typeof TaskologistIndexRoute
 }
 
 const TaskologistRouteChildren: TaskologistRouteChildren = {
   TaskologistSignInRoute: TaskologistSignInRouteWithChildren,
-  TaskologistTasksRoute: TaskologistTasksRoute,
   TaskologistTelegramLinkRoute: TaskologistTelegramLinkRoute,
   TaskologistIndexRoute: TaskologistIndexRoute,
 }

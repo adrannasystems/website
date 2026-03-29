@@ -11,8 +11,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.server.json --noEmit",
-    "reminders": "node --env-file=.env --env-file=.env.local --import tsx scripts/send-task-reminders.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "preview": "vite preview",
     "codegen": "convex codegen",
     "precommit": "npm run format && npm run codegen && npm run lint && npm run typecheck"
@@ -20,7 +19,6 @@
   "dependencies": {
     "@base-ui/react": "^1.2.0",
     "@clerk/tanstack-react-start": "^0.29.5",
-    "@notionhq/client": "^5.9.0",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-query-devtools": "^5.91.3",
     "@tanstack/react-router": "latest",

@@ -25,7 +25,7 @@
     "alwaysStrict": true,
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
-    "types": ["vite/client"]
+    "types": ["vite/client", "node"]
   },
   "include": ["src"],
   "exclude": ["src/**/*.server.ts", "scripts"]
