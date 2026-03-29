@@ -1,4 +1,4 @@
-import { SignInButton, SignUpButton } from "@clerk/tanstack-react-start";
+import { SignInButton, SignUpButton } from "@clerk/clerk-react";
 
 export function AuthButtons(props: { size?: "sm" }) {
   const cls =

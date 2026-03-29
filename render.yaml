@@ -2,10 +2,12 @@ previews:
   generation: automatic
 
 services:
-  - type: web
+  - type: static
     name: adranna-systems-app
-    runtime: node
-    plan: free
     buildCommand: npm ci && npm run build
-    startCommand: npm run start
+    staticPublishPath: dist
     autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

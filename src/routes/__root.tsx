@@ -1,13 +1,9 @@
 /// <reference types="vite/client" />
 
 import * as React from "react";
-import { HeadContent, Outlet, Scripts, createRootRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { Outlet, createRootRoute, useNavigate } from "@tanstack/react-router";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
-import { ClerkProvider, useAuth, useUser } from "@clerk/tanstack-react-start";
-import { auth } from "@clerk/tanstack-react-start/server";
+import { ClerkProvider, useAuth, useUser } from "@clerk/clerk-react";
 import { z } from "zod";
 import { PostHogProvider, usePostHog } from "posthog-js/react";
 import { OneSignalSync } from "../components/OneSignalSync";
@@ -15,71 +11,43 @@ import { convexClient } from "../convex-client";
 import "../styles.css";
 
 export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      {
-        title: "Taskologist — The science of your recurring tasks",
-      },
-    ],
-    links: [
-      {
-        rel: "icon",
-        type: "image/svg+xml",
-        href: "/favicon.svg",
-      },
-      {
-        rel: "shortcut icon",
-        href: "/favicon.svg",
-      },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
-      },
-    ],
-  }),
-  beforeLoad: async () => {
-    return {
-      currentUserId: await getCurrentUserId(),
-    };
-  },
   component: RootComponent,
 });
 
-const getCurrentUserId = createServerFn({ method: "GET" }).handler(async () => {
-  const { userId } = await auth();
-  return userId;
-});
-
 function RootComponent() {
-  const [queryClient] = React.useState(() => new QueryClient());
+  const navigate = useNavigate();
 
   return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body className="bg-gray-50">
-        <ClerkProvider signInUrl="/sign-in">
-          <PostHogProvider
-            apiKey={getPostHogApiKey()}
-            options={{ api_host: getPostHogHost(), defaults: "2026-01-30" }}
-          >
-            <PostHogUserSync />
-            <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
-              <OneSignalSync />
-              <QueryClientProvider client={queryClient}>
-                <Outlet />
-                {import.meta.env.DEV ? <ReactQueryDevtools initialIsOpen={false} /> : null}
-              </QueryClientProvider>
-            </ConvexProviderWithClerk>
-          </PostHogProvider>
-        </ClerkProvider>
-        <Scripts />
-      </body>
-    </html>
+    <ClerkProvider
+      publishableKey={getClerkPublishableKey()}
+      signInUrl="/sign-in"
+      routerPush={(to) => {
+        void navigate({ href: to });
+      }}
+      routerReplace={(to) => {
+        void navigate({ href: to, replace: true });
+      }}
+    >
+      <PostHogProvider
+        apiKey={getPostHogApiKey()}
+        options={{ api_host: getPostHogHost(), defaults: "2026-01-30" }}
+      >
+        <PostHogUserSync />
+        <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
+          <OneSignalSync />
+          <Outlet />
+        </ConvexProviderWithClerk>
+      </PostHogProvider>
+    </ClerkProvider>
   );
+}
+
+function getClerkPublishableKey() {
+  const key = "VITE_CLERK_PUBLISHABLE_KEY";
+  return z
+    .string({ message: `${key} is required` })
+    .nonempty()
+    .parse(import.meta.env[key]);
 }
 
 function getPostHogApiKey() {

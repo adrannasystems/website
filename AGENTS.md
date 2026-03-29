@@ -7,8 +7,7 @@ This file defines guardrails for agentic coding in this repo.
 - Always inspect the repo state before changes (`rg --files`, `ls`, or `git status`).
 - Before introducing a new dependency, external system, or platform integration, read the official docs first and implement from that source of truth.
 - Summarize what changed.
-- Do not use raw `fetch` for backend calls. Use type-safe server functions or route loaders instead.
-- Use TanStack Start environment file conventions: server-only code in `*.server.ts(x)` and client-only code in `*.client.ts(x)`.
+- Do not use raw `fetch` for backend calls. Use Convex queries/mutations instead.
 - For API queries, check whether results are paginated. If pagination is possible, ask the user how to handle it before implementing.
 - Before pushing, run `npm run precommit` and fix any failures.
 - Before telling the user a task is done, always run `npm run precommit` and fix all failures.
@@ -43,6 +42,10 @@ This file defines guardrails for agentic coding in this repo.
 - Verify the relevant version before implementation. If the project is pinned to a version, follow that version's docs. If the version is not pinned or is unclear, follow the latest stable docs and note the assumption.
 - Prefer primary sources (official docs, official migration guides, official API references, and release notes) over third-party tutorials.
 - When implementation details are version-sensitive or ambiguous, state the source and version used in your summary.
+
+## Dependencies
+
+- Always pin new dependencies with a caret version (e.g. `^1.2.3`), never `"latest"` or an unbound range.
 
 ## Safety
 

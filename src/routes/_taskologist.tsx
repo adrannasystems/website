@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
-import { SignedIn, SignedOut, UserButton } from "@clerk/tanstack-react-start";
+import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import { AuthButtons, MobileMenuButton } from "./-header-shared";
 
 export const Route = createFileRoute("/_taskologist")({

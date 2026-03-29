@@ -1,5 +1,5 @@
 import * as React from "react";
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { Authenticated, AuthLoading, Unauthenticated, useMutation, useQuery } from "convex/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
@@ -44,15 +44,6 @@ const taskologistIndexSearchSchema = z.object({
 
 export const Route = createFileRoute("/_taskologist/")({
   validateSearch: taskologistIndexSearchSchema,
-  beforeLoad: ({ context, search }) => {
-    if (context.currentUserId === null && search.task !== undefined) {
-      const qs = new URLSearchParams({ task: search.task });
-      throw redirect({
-        to: "/sign-in",
-        search: { redirect_url: `/?${qs.toString()}` },
-      });
-    }
-  },
   component: IndexPage,
 });
 

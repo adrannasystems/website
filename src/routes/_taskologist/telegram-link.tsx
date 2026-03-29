@@ -1,5 +1,5 @@
 import * as React from "react";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, useLocation } from "@tanstack/react-router";
 import { Authenticated, AuthLoading, Unauthenticated, useMutation } from "convex/react";
 import { z } from "zod";
 import { api } from "../../../convex/_generated/api";
@@ -10,18 +10,12 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute("/_taskologist/telegram-link")({
   validateSearch: searchSchema,
-  beforeLoad: ({ context, location }) => {
-    if (context.currentUserId === null) {
-      throw redirect({
-        to: "/sign-in",
-        search: { redirect_url: location.href },
-      });
-    }
-  },
   component: TelegramLinkPage,
 });
 
 function TelegramLinkPage() {
+  const location = useLocation();
+
   return (
     <>
       <AuthLoading>
@@ -31,10 +25,23 @@ function TelegramLinkPage() {
         <TelegramLinkContent />
       </Authenticated>
       <Unauthenticated>
-        <TelegramLinkShell>Loading...</TelegramLinkShell>
+        <RedirectToSignIn redirectUrl={location.href} />
       </Unauthenticated>
     </>
   );
+}
+
+function RedirectToSignIn(props: { redirectUrl: string }) {
+  const navigate = Route.useNavigate();
+
+  React.useEffect(() => {
+    void navigate({
+      to: "/sign-in",
+      search: { redirect_url: props.redirectUrl },
+    });
+  }, [navigate, props.redirectUrl]);
+
+  return <TelegramLinkShell>Loading...</TelegramLinkShell>;
 }
 
 function TelegramLinkContent() {
