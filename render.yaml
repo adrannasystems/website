@@ -2,7 +2,8 @@ previews:
   generation: automatic
 
 services:
-  - type: static
+  - type: web
+    runtime: static
     name: adranna-systems-app
     buildCommand: npm ci && npm run build
     staticPublishPath: dist
