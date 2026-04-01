@@ -1,11 +1,38 @@
 import * as React from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Authenticated, AuthLoading, Unauthenticated, useMutation, useQuery } from "convex/react";
+import type { FunctionReturnType } from "convex/server";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { getOneSignal } from "@/components/OneSignalSync";
 import { Button } from "@/components/ui/button";
-import { Archive, Bell, BellOff, CheckCircle2, Clock, Pencil, Plus } from "lucide-react";
+import {
+  Archive,
+  Bell,
+  BellOff,
+  CheckCircle2,
+  Clock,
+  GripVertical,
+  Pencil,
+  Plus,
+} from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   Dialog,
   DialogContent,
@@ -19,20 +46,9 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
 
-type MaintenanceTask = {
-  id: Id<"maintenanceTasks">;
-  name: string;
-  periodHours: number;
-  state: string;
-  periodsDue: number | null;
-  lastExecutedAt: number | null;
-  shared: boolean;
-};
-
-type MaintenanceExecution = {
-  id: Id<"maintenanceExecutions">;
-  executedAt: number;
-};
+type MaintenanceTask = FunctionReturnType<
+  typeof api.maintenanceTasks.listTasksForMaintenanceOverview
+>[number];
 
 const taskologistIndexSearchSchema = z.object({
   task: z
@@ -123,6 +139,7 @@ function MaintenanceTasksContent() {
   const [pulseTaskId, setPulseTaskId] = React.useState<string | null>(null);
 
   const createTask = useMutation(api.maintenanceTasks.createTask);
+  const reorderTasks = useMutation(api.maintenanceTasks.reorderTasks);
   const [isAddTaskOpen, setIsAddTaskOpen] = React.useState(false);
   const [createName, setCreateName] = React.useState("");
   const [createPeriodHours, setCreatePeriodHours] = React.useState("24");
@@ -139,6 +156,7 @@ function MaintenanceTasksContent() {
     api.maintenanceTasks.listArchivedTasksForMaintenanceOverview,
     {},
   );
+  const myPositionsResult = useQuery(api.maintenanceTasks.getMyTaskPositions, {});
 
   React.useLayoutEffect(() => {
     if (highlightTaskIdFromUrl === undefined) {
@@ -147,8 +165,7 @@ function MaintenanceTasksContent() {
     if (activeTasksResult === undefined) {
       return;
     }
-    const activeTasks = activeTasksResult as MaintenanceTask[];
-    const found = activeTasks.some((t) => t.id === highlightTaskIdFromUrl);
+    const found = activeTasksResult.some((t) => t.id === highlightTaskIdFromUrl);
     if (!found) {
       return;
     }
@@ -283,11 +300,76 @@ function MaintenanceTasksContent() {
     }
   }, [isPushOptedIn, isPushPreferenceAvailable, isUpdatingPushPreference]);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  // Classify and sort tasks: unacknowledged (new/re-shared) at top, then by user-defined position.
+  const displayedTasks = React.useMemo(() => {
+    const tasks = activeTasksResult ?? [];
+    const positions = myPositionsResult ?? [];
+    const posMap = new Map(positions.map((p) => [p.taskId, p]));
+
+    const unacknowledged: MaintenanceTask[] = [];
+    const positioned: MaintenanceTask[] = [];
+
+    for (const task of tasks) {
+      const pos = posMap.get(task.id);
+      const isUnacknowledged =
+        pos === undefined ||
+        (task.lastSharedAt !== undefined && task.lastSharedAt > (pos.lastPositionedAt ?? 0));
+      if (isUnacknowledged) {
+        unacknowledged.push(task);
+      } else {
+        positioned.push(task);
+      }
+    }
+
+    // unacknowledged: already newest-first from backend; positioned: sort by stored position
+    positioned.sort(
+      (a, b) => (posMap.get(a.id)?.position ?? 0) - (posMap.get(b.id)?.position ?? 0),
+    );
+
+    return [...unacknowledged, ...positioned];
+  }, [activeTasksResult, myPositionsResult]);
+
+  // Optimistic local order for instant drag feedback.
+  const [localOrder, setLocalOrder] = React.useState<Id<"maintenanceTasks">[]>([]);
+
+  React.useEffect(() => {
+    setLocalOrder(displayedTasks.map((t) => t.id));
+  }, [displayedTasks]);
+
+  const orderedTasks = React.useMemo(() => {
+    const taskMap = new Map(displayedTasks.map((t) => [t.id, t]));
+    return localOrder.flatMap((id) => {
+      const task = taskMap.get(id);
+      return task !== undefined ? [task] : [];
+    });
+  }, [displayedTasks, localOrder]);
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (over === null || active.id === over.id) {
+      return;
+    }
+    setLocalOrder((prev) => {
+      const activeId = prev.find((id) => id === active.id);
+      const overId = prev.find((id) => id === over.id);
+      if (activeId === undefined || overId === undefined) {
+        return prev;
+      }
+      const newOrder = arrayMove(prev, prev.indexOf(activeId), prev.indexOf(overId));
+      void reorderTasks({ orderedTaskIds: newOrder });
+      return newOrder;
+    });
+  }
+
   if (activeTasksResult === undefined || archivedTasksResult === undefined) {
     return <MaintenanceTasksLoadingState />;
   } else {
-    const activeTasks = activeTasksResult as MaintenanceTask[];
-    const archivedTasks = archivedTasksResult as MaintenanceTask[];
+    const archivedTasks = archivedTasksResult;
 
     return (
       <main className="min-h-screen bg-gray-50 px-6 py-20">
@@ -432,17 +514,26 @@ function MaintenanceTasksContent() {
           <section className="mb-8">
             <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
               <div className="divide-y divide-gray-200">
-                {activeTasks.map((task) => {
-                  return (
-                    <MaintenanceTaskRow
-                      key={task.id}
-                      task={task}
-                      onError={setErrorMessage}
-                      isPulseHighlighted={pulseTaskId === task.id}
-                    />
-                  );
-                })}
-                {activeTasks.length === 0 ? (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={orderedTasks.map((t) => t.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    {orderedTasks.map((task) => (
+                      <SortableTaskRow
+                        key={task.id}
+                        task={task}
+                        onError={setErrorMessage}
+                        isPulseHighlighted={pulseTaskId === task.id}
+                      />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+                {orderedTasks.length === 0 ? (
                   <div className="px-6 py-10 text-center text-sm text-gray-500">
                     No maintenance tasks yet.
                   </div>
@@ -510,10 +601,43 @@ function getPushSubscriptionToggleLabel(
   }
 }
 
+function SortableTaskRow(props: {
+  task: MaintenanceTask;
+  onError: (message: string) => void;
+  isPulseHighlighted?: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: props.task.id,
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : undefined,
+        position: "relative",
+        zIndex: isDragging ? 1 : undefined,
+      }}
+    >
+      <MaintenanceTaskRow
+        task={props.task}
+        onError={props.onError}
+        {...(props.isPulseHighlighted !== undefined
+          ? { isPulseHighlighted: props.isPulseHighlighted }
+          : {})}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </div>
+  );
+}
+
 function MaintenanceTaskRow(props: {
   task: MaintenanceTask;
   onError: (message: string) => void;
   isPulseHighlighted?: boolean;
+  dragHandleProps?: Record<string, unknown>;
 }) {
   const updateTask = useMutation(api.maintenanceTasks.updateTask);
   const archiveTask = useMutation(api.maintenanceTasks.archiveTask);
@@ -632,7 +756,7 @@ function MaintenanceTaskRow(props: {
     [deleteExecution, props],
   );
 
-  const executions = (executionsResult ?? []) as MaintenanceExecution[];
+  const executions = executionsResult ?? [];
 
   return (
     <div
@@ -644,144 +768,155 @@ function MaintenanceTaskRow(props: {
           : undefined,
       )}
     >
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
-          {isEditing ? (
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div>
-                <Label htmlFor={`edit-name-${props.task.id}`}>Name</Label>
-                <Input
-                  id={`edit-name-${props.task.id}`}
-                  value={editName}
-                  onChange={(event) => {
-                    setEditName(event.target.value);
-                  }}
-                />
+      <div className="flex gap-1">
+        {props.dragHandleProps !== undefined ? (
+          <button
+            type="button"
+            aria-label="Drag to reorder"
+            className="mt-0.5 cursor-grab touch-none self-start rounded p-1 text-gray-400 hover:text-gray-600 active:cursor-grabbing"
+            {...props.dragHandleProps}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        ) : null}
+        <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <div>
+            {isEditing ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-1.5">
+                  <Label htmlFor={`edit-name-${props.task.id}`}>Name</Label>
+                  <Input
+                    id={`edit-name-${props.task.id}`}
+                    value={editName}
+                    onChange={(event) => {
+                      setEditName(event.target.value);
+                    }}
+                  />
+                </div>
+                <div className="grid gap-1.5">
+                  <Label htmlFor={`edit-period-${props.task.id}`}>Period (hours)</Label>
+                  <Input
+                    id={`edit-period-${props.task.id}`}
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={editPeriodHours}
+                    onChange={(event) => {
+                      setEditPeriodHours(event.target.value);
+                    }}
+                  />
+                </div>
+                <div className="flex items-center gap-2 sm:col-span-2">
+                  <input
+                    id={`edit-shared-${props.task.id}`}
+                    type="checkbox"
+                    checked={editShared}
+                    onChange={(e) => {
+                      setEditShared(e.target.checked);
+                    }}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <Label htmlFor={`edit-shared-${props.task.id}`}>Shared</Label>
+                </div>
               </div>
-              <div>
-                <Label htmlFor={`edit-period-${props.task.id}`}>Period (hours)</Label>
-                <Input
-                  id={`edit-period-${props.task.id}`}
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={editPeriodHours}
-                  onChange={(event) => {
-                    setEditPeriodHours(event.target.value);
-                  }}
-                />
-              </div>
-              <div className="flex items-center gap-2 sm:col-span-2">
-                <input
-                  id={`edit-shared-${props.task.id}`}
-                  type="checkbox"
-                  checked={editShared}
-                  onChange={(e) => {
-                    setEditShared(e.target.checked);
-                  }}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                <Label htmlFor={`edit-shared-${props.task.id}`}>Shared</Label>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="text-lg font-medium text-gray-900">{props.task.name}</div>
-              <div className="text-sm text-gray-500">Period: {props.task.periodHours} hours</div>
-              <div className="text-sm text-gray-500">
-                Last execution:{" "}
-                {props.task.lastExecutedAt === null
-                  ? "Never"
-                  : formatDateTime(props.task.lastExecutedAt)}
-              </div>
-              <div className="text-sm text-gray-500">
-                Periods due:{" "}
-                {props.task.periodsDue === null ? "N/A" : props.task.periodsDue.toFixed(2)}
-              </div>
-              <div className="mt-1 flex flex-wrap gap-2">
-                <span className={getStateClassName(props.task.state)}>{props.task.state}</span>
-                {props.task.shared ? (
-                  <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
-                    Shared
-                  </span>
-                ) : null}
-              </div>
-            </>
-          )}
-        </div>
+            ) : (
+              <>
+                <div className="text-lg font-medium text-gray-900">{props.task.name}</div>
+                <div className="text-sm text-gray-500">Period: {props.task.periodHours} hours</div>
+                <div className="text-sm text-gray-500">
+                  Last execution:{" "}
+                  {props.task.lastExecutedAt === null
+                    ? "Never"
+                    : formatDateTime(props.task.lastExecutedAt)}
+                </div>
+                <div className="text-sm text-gray-500">
+                  Periods due: {props.task.periodsDue.toFixed(2)}
+                </div>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  <span className={getStateClassName(props.task.state)}>{props.task.state}</span>
+                  {props.task.shared ? (
+                    <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+                      Shared
+                    </span>
+                  ) : null}
+                </div>
+              </>
+            )}
+          </div>
 
-        <div className="flex flex-wrap gap-2">
-          {isEditing ? (
-            <>
-              <Button type="button" onClick={() => void handleSaveEdit()} disabled={isSavingEdit}>
-                {isSavingEdit ? "Saving..." : "Save"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setIsEditing(false);
-                  setEditName(props.task.name);
-                  setEditPeriodHours(String(props.task.periodHours));
-                  setEditShared(props.task.shared);
-                }}
-                disabled={isSavingEdit}
-              >
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                type="button"
-                variant="outline"
-                aria-label="Edit task"
-                onClick={() => {
-                  setIsEditing(true);
-                }}
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  void handleAddExecutionNow();
-                }}
-                disabled={isSavingExecutionNow}
-              >
-                {isSavingExecutionNow ? "Saving..." : "Add Execution Now"}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setExecutionDialogValue(getNowDateTimeLocalValue());
-                  setExecutionDialogOpen(true);
-                }}
-              >
-                Add Execution Custom
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setShowExecutions((currentValue) => !currentValue);
-                }}
-              >
-                {showExecutions ? "Hide Executions" : "Show Executions"}
-              </Button>
-              <Button
-                type="button"
-                variant="destructive"
-                aria-label="Archive task"
-                onClick={() => void handleArchiveTask()}
-                disabled={isArchivingTask}
-              >
-                <Archive className="h-4 w-4" />
-              </Button>
-            </>
-          )}
+          <div className="flex flex-wrap gap-2">
+            {isEditing ? (
+              <>
+                <Button type="button" onClick={() => void handleSaveEdit()} disabled={isSavingEdit}>
+                  {isSavingEdit ? "Saving..." : "Save"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditName(props.task.name);
+                    setEditPeriodHours(String(props.task.periodHours));
+                    setEditShared(props.task.shared);
+                  }}
+                  disabled={isSavingEdit}
+                >
+                  Cancel
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  aria-label="Edit task"
+                  onClick={() => {
+                    setIsEditing(true);
+                  }}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    void handleAddExecutionNow();
+                  }}
+                  disabled={isSavingExecutionNow}
+                >
+                  {isSavingExecutionNow ? "Saving..." : "Add Execution Now"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setExecutionDialogValue(getNowDateTimeLocalValue());
+                    setExecutionDialogOpen(true);
+                  }}
+                >
+                  Add Execution Custom
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowExecutions((currentValue) => !currentValue);
+                  }}
+                >
+                  {showExecutions ? "Hide Executions" : "Show Executions"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  aria-label="Archive task"
+                  onClick={() => void handleArchiveTask()}
+                  disabled={isArchivingTask}
+                >
+                  <Archive className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 

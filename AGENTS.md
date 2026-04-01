@@ -121,6 +121,7 @@ The default viewport is **375×812px** (iPhone-sized), matching the mobile-first
 - Avoid single-use local type aliases/interfaces that are only used to annotate one function in the same file.
 - Prefer type inference for local return values and intermediate objects when the inferred type is clear.
 - Create named types only when reused, exported, or needed to document a non-obvious contract.
+- Never use `as SomeType` to satisfy the type checker. If a cast feels necessary, it almost always means a type should be derived instead of hand-written (use `FunctionReturnType`, `ReturnType`, `NonNullable`, indexed access, or `typeof`), or a value should be narrowed at runtime (use `find`, a type guard, or an explicit `if` check). The only acceptable `as` casts are unavoidable interop with untyped third-party APIs, and must be accompanied by a comment explaining why the assertion is safe.
 
 <!-- convex-ai-start -->
 

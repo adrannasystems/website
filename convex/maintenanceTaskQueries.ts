@@ -18,5 +18,5 @@ export async function queryActiveTasksForUser(
   const myTaskIds = new Set(myTasks.map((t) => t._id));
   const otherShared = sharedTasks.filter((t) => !myTaskIds.has(t._id));
 
-  return [...myTasks, ...otherShared].sort((a, b) => a.name.localeCompare(b.name));
+  return [...myTasks, ...otherShared];
 }
