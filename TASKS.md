@@ -12,9 +12,7 @@ Tasks for the agent loop. Use `/next-task` to process all pending tasks.
 
 - [ ] [arch] Adopt functional-core architecture: migrate all Convex handlers to functional-core / imperative-shell pattern. See `docs/architecture/functional-core.md` for the full target picture, code patterns, and per-handler checklist. Use strangler fig: migrate one handler per session, starting with `addExecution`. Run `npm run precommit` and `npm run test:unit` after each handler. Includes one-time scaffold (install neverthrow + vitest, create domain/ folder, move MaintenanceTaskModel, update tsconfigs).
 - [ ] [arch/e2e] Set up Playwright E2E test suite. See `docs/architecture/e2e-testing.md` — NOTE: open questions in that doc must be resolved via user interview before any implementation begins. Start by reviewing the open questions with the user.
-
-- [ ] upgrade Render to a paid plan to avoid cold-start downtime (milestone 2)
-- [ ] allow user to change maintenance task order (custom ordering) instead of sorting only by dueness / name
+- [x] allow user to change maintenance task order (custom ordering) instead of sorting only by dueness / name
 - [x] add mcp or similar for feedback loop so agents can open a browser and check visual changes to the app. in particular, when they create html/css I want them to check the result and make sure that it is "mobile first"
 - [ ] add billing. see @docs/tasks/billing-setup.md
 - [ ] allow shared tasks (multiple users can collaborate on the same maintenance tasks)
