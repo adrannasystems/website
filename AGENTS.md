@@ -43,6 +43,10 @@ This file defines guardrails for agentic coding in this repo.
 - Prefer primary sources (official docs, official migration guides, official API references, and release notes) over third-party tutorials.
 - When implementation details are version-sensitive or ambiguous, state the source and version used in your summary.
 
+## Git
+
+- Always use squash merge (`git merge --squash`) when merging branches into main. Never use plain `git merge`, which creates a merge commit.
+
 ## Dependencies
 
 - Always pin new dependencies with a caret version (e.g. `^1.2.3`), never `"latest"` or an unbound range.
