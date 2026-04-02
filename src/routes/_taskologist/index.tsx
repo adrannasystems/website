@@ -643,6 +643,7 @@ function MaintenanceTaskRow(props: {
   const archiveTask = useMutation(api.maintenanceTasks.archiveTask);
   const addExecution = useMutation(api.maintenanceTasks.addExecution);
   const deleteExecution = useMutation(api.maintenanceTasks.deleteExecution);
+  const setNotificationsEnabled = useMutation(api.maintenanceTasks.setTaskNotificationsEnabled);
 
   const [isEditing, setIsEditing] = React.useState(false);
   const [editName, setEditName] = React.useState(props.task.name);
@@ -839,6 +840,13 @@ function MaintenanceTaskRow(props: {
                       Shared
                     </span>
                   ) : null}
+                  {props.task.actions.toggleNotifications === "hidden" &&
+                  !props.task.notificationsEnabled ? (
+                    <span className="flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-medium text-gray-500">
+                      <BellOff className="h-3 w-3" />
+                      Notifications off
+                    </span>
+                  ) : null}
                 </div>
               </>
             )}
@@ -866,6 +874,36 @@ function MaintenanceTaskRow(props: {
               </>
             ) : (
               <>
+                {props.task.actions.toggleNotifications !== "hidden" ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={props.task.actions.toggleNotifications === "restricted"}
+                    aria-label={
+                      props.task.notificationsEnabled
+                        ? "Disable notifications"
+                        : "Enable notifications"
+                    }
+                    title={
+                      props.task.notificationsEnabled
+                        ? "Disable notifications"
+                        : "Enable notifications"
+                    }
+                    onClick={() =>
+                      void setNotificationsEnabled({
+                        taskId: props.task.id,
+                        enabled: !props.task.notificationsEnabled,
+                      })
+                    }
+                  >
+                    {props.task.notificationsEnabled ? (
+                      <Bell className="h-4 w-4 text-blue-600" />
+                    ) : (
+                      <BellOff className="h-4 w-4 text-gray-500" />
+                    )}
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
                   variant="outline"

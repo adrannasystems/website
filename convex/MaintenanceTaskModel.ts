@@ -11,6 +11,7 @@ export type MaintenanceTaskModel = {
   periodsDue: number;
   isShared: boolean;
   userId: string;
+  notificationsEnabled: boolean;
 };
 
 export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
@@ -23,6 +24,7 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
       deletedAt: number | null;
       shared: boolean;
       userId: string;
+      notificationsEnabled?: boolean;
     },
   ) {}
 
@@ -80,6 +82,11 @@ export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
 
   get isShared(): boolean {
     return this.data.shared === true;
+  }
+
+  /** True unless explicitly set to false. Undefined (pre-migration rows) means enabled. */
+  get notificationsEnabled(): boolean {
+    return this.data.notificationsEnabled !== false;
   }
 }
 

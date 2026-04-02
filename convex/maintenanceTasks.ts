@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, mutation, query, type MutationCtx } from "./_generated/server";
 import { createUnauthorizedError, authedUserIdOrThrow } from "./auth";
-import { MaintenanceTaskModelImpl, type MaintenanceTaskState } from "./MaintenanceTaskModel";
+import { MaintenanceTaskModelImpl } from "./MaintenanceTaskModel";
 import { queryActiveTasksForUser } from "./maintenanceTaskQueries";
 
 export const listTasksForMaintenanceOverview = query({
@@ -10,7 +10,7 @@ export const listTasksForMaintenanceOverview = query({
   handler: async (ctx) => {
     const userId = await authedUserIdOrThrow(ctx);
     const allTasks = await queryActiveTasksForUser(ctx, userId);
-    return allTasks.map(toTaskWithState);
+    return allTasks.map((t) => toTaskWithState(t, userId));
   },
 });
 
@@ -23,7 +23,7 @@ export const listArchivedTasksForMaintenanceOverview = query({
       .withIndex("by_userId_deletedAt_name", (q) => q.eq("userId", userId).gt("deletedAt", null))
       .order("desc")
       .collect();
-    return archivedTasks.map(toTaskWithState);
+    return archivedTasks.map((t) => toTaskWithState(t, userId));
   },
 });
 
@@ -275,16 +275,19 @@ async function logExecutionImpl(
   return executionId;
 }
 
-function toTaskWithState(taskData: Doc<"maintenanceTasks">): {
-  id: Id<"maintenanceTasks">;
-  name: string;
-  periodHours: number;
-  lastExecutedAt: number | null;
-  state: MaintenanceTaskState;
-  periodsDue: number;
-  shared: boolean;
-  lastSharedAt: number | undefined;
-} {
+type TaskActionPermission = "allowed" | "restricted" | "hidden";
+
+function buildTaskActions(taskData: Doc<"maintenanceTasks">, currentUserId: string) {
+  const isOwner = taskData.userId === currentUserId;
+  return {
+    toggleNotifications: (isOwner ? "allowed" : "hidden") satisfies TaskActionPermission,
+    edit: "allowed" satisfies TaskActionPermission,
+    archive: "allowed" satisfies TaskActionPermission,
+    addExecution: "allowed" satisfies TaskActionPermission,
+  };
+}
+
+function toTaskWithState(taskData: Doc<"maintenanceTasks">, currentUserId: string) {
   const task = new MaintenanceTaskModelImpl(taskData);
   return {
     id: task.id,
@@ -295,8 +298,25 @@ function toTaskWithState(taskData: Doc<"maintenanceTasks">): {
     periodsDue: task.periodsDue,
     shared: taskData.shared === true,
     lastSharedAt: taskData.lastSharedAt ?? undefined,
+    notificationsEnabled: task.notificationsEnabled,
+    actions: buildTaskActions(taskData, currentUserId),
   };
 }
+
+export const setTaskNotificationsEnabled = mutation({
+  args: { taskId: v.id("maintenanceTasks"), enabled: v.boolean() },
+  handler: async (ctx, args) => {
+    const userId = await authedUserIdOrThrow(ctx);
+    const task = await ctx.db.get(args.taskId);
+    if (task === null) {
+      throw createMaintenanceTaskNotFoundError();
+    } else if (buildTaskActions(task, userId).toggleNotifications !== "allowed") {
+      throw createUnauthorizedError();
+    } else {
+      await ctx.db.patch(args.taskId, { notificationsEnabled: args.enabled });
+    }
+  },
+});
 
 export const getMyTaskPositions = query({
   args: {},

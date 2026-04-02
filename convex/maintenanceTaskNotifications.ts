@@ -165,7 +165,10 @@ export const listDueOrMoreUrgentTasksForNotifications = internalQuery({
     for (const dbo of taskDbos) {
       const task = new MaintenanceTaskModelImpl(dbo);
       const state = task.state;
-      if (state === "Due" || state === "Overdue" || state === "Never Done") {
+      if (
+        (state === "Due" || state === "Overdue" || state === "Never Done") &&
+        task.notificationsEnabled
+      ) {
         dueOrOverdueTasks.push({
           id: task.id,
           name: task.name,

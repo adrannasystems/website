@@ -13,6 +13,8 @@ export default defineSchema({
     shared: v.boolean(),
     /** Timestamp of the last transition from shared=false to shared=true. Never cleared on unshare. Used for re-share detection. */
     lastSharedAt: v.optional(v.number()),
+    /** When false, no notifications are sent for this task. Undefined (existing tasks) means enabled. */
+    notificationsEnabled: v.optional(v.boolean()),
   })
     .index("by_userId_deletedAt_name", ["userId", "deletedAt", "name"])
     .index("by_deletedAt", ["deletedAt"])
