@@ -1,12 +1,16 @@
 name: Convex Preview Deploy
 
 on:
+  pull_request:
+    branches:
+      - main
   merge_group:
 
 jobs:
   deploy_staging:
     runs-on: ubuntu-latest
     environment: staging
+    if: github.event_name == 'merge_group'
     steps:
       - uses: actions/checkout@v4
 
