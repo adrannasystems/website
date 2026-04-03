@@ -28,12 +28,12 @@ Notifications toggle is lower priority.
 
 ## Tooling direction (preliminary)
 
-| Concern | Direction | Status |
-|---------|-----------|--------|
-| Test runner | Playwright (`@playwright/test`) | Agreed |
-| Auth | `@clerk/testing` with testing tokens | Direction set, details TBD |
-| Backend | Dedicated Convex test deployment | Direction set, details TBD |
-| Viewport | 375×812 primary (mobile-first), 1280×800 secondary | Agreed |
+| Concern     | Direction                                          | Status                     |
+| ----------- | -------------------------------------------------- | -------------------------- |
+| Test runner | Playwright (`@playwright/test`)                    | Agreed                     |
+| Auth        | `@clerk/testing` with testing tokens               | Direction set, details TBD |
+| Backend     | Dedicated Convex test deployment                   | Direction set, details TBD |
+| Viewport    | 375×812 primary (mobile-first), 1280×800 secondary | Agreed                     |
 
 ---
 
@@ -58,6 +58,7 @@ playwright.config.ts
 ### 1. Clerk auth strategy
 
 Two options were surfaced:
+
 - **UI login**: Playwright drives the Clerk sign-in page. Most realistic but fragile (UI changes break tests, slow).
 - **Clerk testing tokens** (`@clerk/testing/playwright`, `setupClerkTestingToken`): injects a JWT directly, bypasses UI login. Faster and more stable.
 
@@ -82,6 +83,7 @@ Decision needed: seeding strategy and whether tests are order-independent.
 ### 4. Two-user sharing tests
 
 `task-sharing.spec.ts` requires two users with active sessions simultaneously. Options:
+
 - Two separate `storageState` files (one per test user), run in separate browser contexts
 - Playwright's multi-context support within a single test
 

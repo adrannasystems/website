@@ -57,17 +57,30 @@ that wraps a raw DB document and exposes clean, named getters:
 ```ts
 // domain/models/MaintenanceTask.ts
 export class MaintenanceTaskModelImpl implements MaintenanceTaskModel {
-  constructor(private readonly data: { /* raw DB fields */ }) {}
+  constructor(
+    private readonly data: {
+      /* raw DB fields */
+    },
+  ) {}
 
-  get isArchived(): boolean { return this.data.deletedAt !== null; }
-  get isShared(): boolean { return this.data.shared === true; }
-  get notificationsEnabled(): boolean { return this.data.notificationsEnabled !== false; }
-  get state(): MaintenanceTaskState { /* computed */ }
+  get isArchived(): boolean {
+    return this.data.deletedAt !== null;
+  }
+  get isShared(): boolean {
+    return this.data.shared === true;
+  }
+  get notificationsEnabled(): boolean {
+    return this.data.notificationsEnabled !== false;
+  }
+  get state(): MaintenanceTaskState {
+    /* computed */
+  }
   // ...
 }
 ```
 
 Domain operations receive a `MaintenanceTaskModel`, never a raw DB document. This:
+
 - Keeps DB field names (`deletedAt`, `shared`) out of domain logic
 - Lets the class encapsulate migration defaults (e.g. `notificationsEnabled !== false`)
 - Caches derived values naturally (one instantiation per request)
@@ -102,11 +115,13 @@ export function executeTask(
   task: MaintenanceTaskModel,
   actorId: string,
   executedAt: number,
-): Result<{ executedAt: number; updateLastExecutedAt: boolean; effects: ExecuteEffect[] }, ExecuteError> {
+): Result<
+  { executedAt: number; updateLastExecutedAt: boolean; effects: ExecuteEffect[] },
+  ExecuteError
+> {
   if (task.isArchived) return err("archived");
   if (task.userId !== actorId && !task.isShared) return err("unauthorized");
-  const updateLastExecutedAt =
-    task.lastExecutedAt === null || executedAt > task.lastExecutedAt;
+  const updateLastExecutedAt = task.lastExecutedAt === null || executedAt > task.lastExecutedAt;
   return ok({
     executedAt,
     updateLastExecutedAt,
@@ -138,10 +153,9 @@ export function setTaskShared(
   if (task.userId !== actorId) return errAsync("unauthorized");
   if (!shared) return okAsync(undefined); // unsharing is always allowed
 
-  return ResultAsync.fromPromise(getOwnerSharedCount(), () => "limit_exceeded" as const)
-    .andThen((count) =>
-      count >= MAX_SHARED_TASKS ? err("limit_exceeded") : ok(undefined)
-    );
+  return ResultAsync.fromPromise(getOwnerSharedCount(), () => "limit_exceeded" as const).andThen(
+    (count) => (count >= MAX_SHARED_TASKS ? err("limit_exceeded") : ok(undefined)),
+  );
 }
 ```
 
@@ -150,7 +164,7 @@ export function setTaskShared(
 ## Effects: how domain operations trigger side effects
 
 Domain operations **never** call `ctx.scheduler`, send notifications, or perform any I/O.
-Instead, they return an `effects` array describing what *should* happen. The shell dispatches
+Instead, they return an `effects` array describing what _should_ happen. The shell dispatches
 each effect after persisting the core result.
 
 ```ts
@@ -322,6 +336,7 @@ Migrate **one handler per session**. Never leave a handler half-migrated. The co
 temporarily contain a mix of old-style and new-style handlers — that is fine and expected.
 
 **Per-handler checklist:**
+
 1. Create `domain/operations/<operation>.ts` with the domain function
 2. Write `domain/operations/<operation>.test.ts` with unit tests covering all Result branches
 3. Update the Convex handler to use the domain function (fetch → map → call → dispatch)
@@ -330,6 +345,7 @@ temporarily contain a mix of old-style and new-style handlers — that is fine a
 6. Manual smoke test: exercise the handler in the running app
 
 **Suggested migration order** (simplest first):
+
 1. `addExecution` — sync, no effects, clear permission rule
 2. `archiveTask` / `unarchiveTask` — sync, owner-only
 3. `createTask` — sync, input validation
@@ -369,6 +385,7 @@ npm install -D vitest
 ```
 
 `vitest.config.ts` at project root:
+
 ```ts
 import { defineConfig } from "vitest/config";
 export default defineConfig({
@@ -379,6 +396,7 @@ export default defineConfig({
 ```
 
 `package.json` scripts to add:
+
 ```json
 "test:unit": "vitest run",
 "test:unit:watch": "vitest"
