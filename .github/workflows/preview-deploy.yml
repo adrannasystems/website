@@ -2,8 +2,6 @@ name: Convex Preview Deploy
 
 on:
   merge_group:
-    branches:
-      - main
 
 jobs:
   deploy:
