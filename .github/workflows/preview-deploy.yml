@@ -4,7 +4,7 @@ on:
   merge_group:
 
 jobs:
-  deploy:
+  deploy_staging:
     runs-on: ubuntu-latest
     environment: staging
     steps:
