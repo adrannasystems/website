@@ -5,11 +5,7 @@ import { internal } from "../_generated/api";
 import { sendTelegramMessage } from "./api";
 import type { Id } from "../_generated/dataModel";
 
-const publicAppOriginEnvVarName = "PUBLIC_APP_ORIGIN";
-const publicAppOrigin = z
-  .string({ message: `${publicAppOriginEnvVarName} is required` })
-  .url()
-  .parse(process.env[publicAppOriginEnvVarName]);
+import { publicAppOrigin } from "../env";
 
 type AnthropicMessage = {
   role: "user" | "assistant";

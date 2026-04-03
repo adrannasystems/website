@@ -5,6 +5,7 @@ import { internalAction, internalQuery } from "./_generated/server";
 import type { MaintenanceTaskState } from "./MaintenanceTaskModel";
 import { MaintenanceTaskModelImpl } from "./MaintenanceTaskModel";
 import { sendTelegramMessage } from "./telegram/api";
+import { publicAppOrigin } from "./env";
 
 export type MaintenanceTaskForNotification = {
   id: Id<"maintenanceTasks">;
@@ -138,13 +139,6 @@ const oneSignalRestApiKey = z
   .string({ message: `${oneSignalRestApiKeyEnvVarName} is required` })
   .nonempty()
   .parse(process.env[oneSignalRestApiKeyEnvVarName]);
-
-/** Convex env: deployed web origin (e.g. https://task.example.com or http://localhost:3000). */
-const publicAppOriginEnvVarName = "PUBLIC_APP_ORIGIN";
-const publicAppOrigin = z
-  .string({ message: `${publicAppOriginEnvVarName} is required` })
-  .url()
-  .parse(process.env[publicAppOriginEnvVarName]);
 
 function maintenanceTaskDeepLink(taskId: Id<"maintenanceTasks">): string {
   return new URL(
