@@ -25,8 +25,11 @@ Run this skill:
    ```bash
    git diff --name-only origin/main...HEAD
    ```
-3. For each changed file, read the full file (not just the diff) and apply the guidelines below.
-4. Edit files in place. Do not change logic — only style, structure, and naming.
+3. For each changed file, get the diff of only the changed hunks:
+   ```bash
+   git diff origin/main...HEAD -- <file>
+   ```
+4. Apply the guidelines below **only to the changed lines and their immediate context**. Do not rewrite unrelated parts of the file. Do not change logic — only style, structure, and naming.
 5. Run `npm run precommit`. Fix every reported error — do not skip or suppress. Repeat until it passes.
 6. Summarise what was changed, file by file.
 
