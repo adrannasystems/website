@@ -9,6 +9,18 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "asyncRewake": true,
+            "statusMessage": "Running precommit...",
+            "command": "if git status --porcelain | grep -q .; then npm run precommit 2>&1 || exit 2; fi"
+          }
+        ]
+      }
     ]
   }
 }
