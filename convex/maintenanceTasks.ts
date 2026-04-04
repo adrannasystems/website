@@ -171,6 +171,9 @@ export const addExecution = mutation({
             throw createMaintenanceTaskNotFoundError();
           case "unauthorized":
             throw createUnauthorizedError();
+          default:
+            const _exhaustiveCheck: never = result.error;
+            throw new Error(`Unhandled error: ${result.error}`);
         }
       } else {
         // 5. Persist
