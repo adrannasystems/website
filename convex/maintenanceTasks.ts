@@ -4,6 +4,7 @@ import { internalMutation, mutation, query, type MutationCtx } from "./_generate
 import { createUnauthorizedError, authedUserIdOrThrow } from "./auth";
 import { MaintenanceTaskModelImpl } from "./MaintenanceTaskModel";
 import { queryActiveTasksForUser } from "./maintenanceTaskQueries";
+import { executeTask } from "../domain/operations/executeTask";
 
 export const listTasksForMaintenanceOverview = query({
   args: {},
@@ -150,15 +151,39 @@ export const addExecution = mutation({
   },
   handler: async (ctx, args) => {
     const userId = await authedUserIdOrThrow(ctx);
-    const task = await ctx.db.get(args.taskId);
-    if (task === null) {
+
+    // 1. Fetch raw data
+    const raw = await ctx.db.get(args.taskId);
+    if (raw === null) {
       throw createMaintenanceTaskNotFoundError();
-    } else if (task.userId !== userId && task.shared !== true) {
-      throw createUnauthorizedError();
-    } else if (new MaintenanceTaskModelImpl(task).isArchived) {
-      throw new Error("Cannot add execution to an archived maintenance task");
     } else {
-      return logExecutionImpl(ctx, args.taskId, args.executedAt);
+      // 2. Map to domain model
+      const task = new MaintenanceTaskModelImpl(raw);
+
+      // 3. Call domain function (pure, no I/O)
+      const result = executeTask(task, userId, args.executedAt);
+
+      // 4. Map domain errors to Convex errors, or persist
+      if (result.isErr()) {
+        switch (result.error) {
+          case "not_found":
+          case "archived":
+            throw createMaintenanceTaskNotFoundError();
+          case "unauthorized":
+            throw createUnauthorizedError();
+        }
+      } else {
+        // 5. Persist
+        const { executedAt, updateLastExecutedAt } = result.value;
+        const executionId = await ctx.db.insert("maintenanceExecutions", {
+          taskId: args.taskId,
+          executedAt,
+        });
+        if (updateLastExecutedAt) {
+          await ctx.db.patch(args.taskId, { lastExecutedAt: executedAt });
+        }
+        return executionId;
+      }
     }
   },
 });

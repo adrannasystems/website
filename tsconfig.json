@@ -27,6 +27,6 @@
     "skipLibCheck": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["src"],
+  "include": ["src", "domain", "convex"],
   "exclude": ["src/**/*.server.ts", "scripts"]
 }
