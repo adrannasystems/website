@@ -13,8 +13,7 @@ export function executeTask(
   } else if (task.userId !== actorId && !task.isShared) {
     return err("unauthorized");
   } else {
-    const updateLastExecutedAt =
-      task.lastExecutedAt === null || executedAt > task.lastExecutedAt;
+    const updateLastExecutedAt = task.lastExecutedAt === null || executedAt > task.lastExecutedAt;
     return ok({ executedAt, updateLastExecutedAt });
   }
 }
