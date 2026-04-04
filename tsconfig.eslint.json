@@ -3,6 +3,14 @@
   "compilerOptions": {
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "scripts", "convex", "vite.config.ts", "eslint.config.js"],
+  "include": [
+    "src",
+    "scripts",
+    "convex",
+    "domain",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "eslint.config.js"
+  ],
   "exclude": []
 }
