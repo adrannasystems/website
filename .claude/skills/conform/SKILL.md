@@ -41,12 +41,11 @@ Apply every rule below to the changed files. When a rule conflicts with preservi
 
 - Make control flow visually explicit with `if (...) { ... } else if (...) { ... } else { ... }` when handling decision branches. Do **not** stack early returns as a substitute for explicit branches.
 - For simple two-way branches that are short and concise (not long blocks), prefer a ternary return: `return <condition> ? <a> : <b>`.
-- Avoid complex inline conditionals; use named variables for clarity.
 - Every `switch` on a discriminated union must have a `default` exhaustiveness check so TypeScript catches missing cases at typecheck time:
   ```ts
   default:
     const _exhaustiveCheck: never = value;
-    throw new Error(`Unhandled case: ${value}`);
+    throw new Error(`Unhandled case: ${String(value)}`);
   ```
 
 ### Naming
