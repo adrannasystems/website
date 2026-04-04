@@ -9,8 +9,8 @@ This file defines guardrails for agentic coding in this repo.
 - Summarize what changed.
 - Do not use raw `fetch` for backend calls. Use Convex queries/mutations instead.
 - For API queries, check whether results are paginated. If pagination is possible, ask the user how to handle it before implementing.
-- Before pushing, run `npm run precommit` and fix any failures.
-- Before telling the user a task is done, always run `npm run precommit` and fix all failures.
+- `npm run precommit` runs automatically via Stop and pre-push hooks. If it fails, fix all reported errors before responding.
+- Before opening a PR, and after making any changes to a PR branch, run `/conform` to apply style guidelines and pass precommit.
 
 ## Runtime Validation
 
@@ -107,26 +107,6 @@ The default viewport is **375×812px** (iPhone-sized), matching the mobile-first
 - Default screenshots should be at the configured 375px width (no extra steps needed).
 - Check that text is readable, tap targets are large enough, and nothing overflows horizontally.
 - Verify responsive breakpoints at 768px (tablet) and 1280px (desktop) when relevant.
-
-## Readability
-
-- Prefer clarity over cleverness.
-- Do not duplicate near-identical logic across files; extract shared helpers/components when behavior is the same.
-- Do not extract a component into a separate file when it is used only once; keep it local to the usage file (as a non-exported helper component if needed for readability).
-- Use descriptive names; avoid abbreviations unless standard.
-- Keep functions small and focused; extract helpers when logic grows.
-- Make control flow visually explicit with `if (...) { ... } else if (...) { ... } else { ... }` when handling decision branches, instead of stacking early returns.
-- If appropriate and concise (not long blocks), prefer ternary returns for simple two-way branches: `return <condition> ? <a> : <b>`.
-- Avoid complex inline conditionals; use named variables for clarity.
-- Add short comments only when intent is non-obvious.
-- Order members top-down: exports first, then the members they use, with helpers placed below callers.
-- Keep files readable from top to bottom (high-level intent to low-level detail).
-- If ordering conflicts with JavaScript/TypeScript hoisting rules, prefer function declarations over const to keep this ordering.
-- Avoid single-use local type aliases/interfaces that are only used to annotate one function in the same file.
-- Prefer type inference for local return values and intermediate objects when the inferred type is clear.
-- Create named types only when reused, exported, or needed to document a non-obvious contract.
-- Never access raw database fields to apply migration defaults (e.g. `dbo.field !== false`, `dbo.field ?? default`). Encapsulate that coercion in the model class as a getter so business logic always reads a clean, typed value. The model is the single place where "undefined means X" is spelled out.
-- Never use `as SomeType` to satisfy the type checker. If a cast feels necessary, it almost always means a type should be derived instead of hand-written (use `FunctionReturnType`, `ReturnType`, `NonNullable`, indexed access, or `typeof`), or a value should be narrowed at runtime (use `find`, a type guard, or an explicit `if` check). The only acceptable `as` casts are unavoidable interop with untyped third-party APIs, and must be accompanied by a comment explaining why the assertion is safe.
 
 <!-- convex-ai-start -->
 

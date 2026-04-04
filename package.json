@@ -12,8 +12,9 @@
     "lint": "eslint .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "preview": "vite preview",
-    "codegen": "convex codegen",
-    "precommit": "npm run format && npm run codegen && npm run lint && npm run typecheck"
+    "codegen": "if [ -n \"$CONVEX_DEPLOYMENT\" ]; then convex codegen; fi",
+    "test:unit": "true",
+    "precommit": "npm run format && npm run codegen && npm run typecheck && npm run lint && npm run test:unit"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
