@@ -13,8 +13,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "preview": "vite preview",
     "codegen": "if [ -n \"$CONVEX_DEPLOYMENT\" ]; then convex codegen; fi",
-    "test:unit": "true",
-    "precommit": "npm run format && npm run codegen && npm run typecheck && npm run lint && npm run test:unit"
+    "precommit": "npm run format && npm run codegen && npm run typecheck && npm run lint && npm run test:unit",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
@@ -27,6 +28,7 @@
     "clsx": "^2.1.1",
     "convex": "^1.34.1",
     "lucide-react": "^1.7.0",
+    "neverthrow": "^8.2.0",
     "posthog-js": "^1.364.7",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -54,6 +56,7 @@
     "tw-animate-css": "^1.4.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
-    "vite-tsconfig-paths": "^6.1.1"
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.2"
   }
 }
