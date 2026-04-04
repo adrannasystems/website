@@ -1,12 +1,12 @@
 ---
-name: refactor
-description: Refactors all code changed on the current branch (diff vs latest main) to follow the project's readability and style guidelines. Triggers on /refactor.
+name: conform
+description: Applies the project's readability and style guidelines to all files changed on the current branch (diff vs latest main). Triggers on /conform.
 user-invocable: true
 ---
 
-# Refactor Changed Code
+# Conform Changed Code
 
-Refactor every file touched in the current branch to comply with the project's readability and style guidelines below.
+Apply the project's readability and style guidelines to every file touched in the current branch.
 
 ## When to run
 
@@ -27,7 +27,7 @@ Run this skill:
    ```
 3. For each changed file, read the full file (not just the diff) and apply the guidelines below.
 4. Edit files in place. Do not change logic — only style, structure, and naming.
-5. After all edits, run `npm run precommit` and fix any failures introduced by the refactor.
+5. Run `npm run precommit`. Fix every reported error — do not skip or suppress. Repeat until it passes.
 6. Summarise what was changed, file by file.
 
 ## Readability & Style Guidelines

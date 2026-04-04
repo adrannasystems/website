@@ -9,9 +9,8 @@ This file defines guardrails for agentic coding in this repo.
 - Summarize what changed.
 - Do not use raw `fetch` for backend calls. Use Convex queries/mutations instead.
 - For API queries, check whether results are paginated. If pagination is possible, ask the user how to handle it before implementing.
-- Before pushing, run `npm run precommit` and fix any failures.
-- Before telling the user a task is done, always run `npm run precommit` and fix all failures.
-- Before opening a PR, and after making any changes to a PR branch, run `/refactor` to apply the project's readability and style guidelines to all changed files.
+- `npm run precommit` runs automatically via Stop and pre-push hooks. If it fails, fix all reported errors before responding.
+- Before opening a PR, and after making any changes to a PR branch, run `/conform` to apply style guidelines and pass precommit.
 
 ## Runtime Validation
 

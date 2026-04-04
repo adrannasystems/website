@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if git rev-parse --git-dir 2>/dev/null | grep -q 'worktrees'; then main=$(git worktree list | head -1 | awk '{print $1}'); [ -f \"$main/.env.local\" ] && [ ! -e .env.local ] && ln -sf \"$main/.env.local\" .env.local; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
