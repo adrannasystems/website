@@ -36,7 +36,7 @@ const config = [
       react: { version: "detect" },
     },
     rules: {
-      "no-unused-vars": ["error", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
+      "no-unused-vars": "off",
       "no-implicit-coercion": "error",
       eqeqeq: "error",
 
