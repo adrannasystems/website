@@ -11,6 +11,7 @@ Refactor every file touched in the current branch to comply with the project's r
 ## When to run
 
 Run this skill:
+
 - Before opening a PR
 - After making any changes to a PR branch
 
