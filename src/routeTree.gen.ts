@@ -8,191 +8,188 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as TaskologistRouteImport } from './routes/_taskologist'
-import { Route as ConsultingRouteImport } from './routes/_consulting'
-import { Route as TaskologistIndexRouteImport } from './routes/_taskologist/index'
-import { Route as TaskologistTelegramLinkRouteImport } from './routes/_taskologist/telegram-link'
-import { Route as TaskologistSignInRouteImport } from './routes/_taskologist/sign-in'
-import { Route as ConsultingConsultingRouteImport } from './routes/_consulting/consulting'
-import { Route as TaskologistSignInSplatRouteImport } from './routes/_taskologist/sign-in.$'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as TaskologistRouteImport } from "./routes/_taskologist";
+import { Route as ConsultingRouteImport } from "./routes/_consulting";
+import { Route as TaskologistIndexRouteImport } from "./routes/_taskologist/index";
+import { Route as TaskologistTelegramLinkRouteImport } from "./routes/_taskologist/telegram-link";
+import { Route as TaskologistSignInRouteImport } from "./routes/_taskologist/sign-in";
+import { Route as ConsultingConsultingRouteImport } from "./routes/_consulting/consulting";
+import { Route as TaskologistSignInSplatRouteImport } from "./routes/_taskologist/sign-in.$";
 
 const TaskologistRoute = TaskologistRouteImport.update({
-  id: '/_taskologist',
+  id: "/_taskologist",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const ConsultingRoute = ConsultingRouteImport.update({
-  id: '/_consulting',
+  id: "/_consulting",
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const TaskologistIndexRoute = TaskologistIndexRouteImport.update({
-  id: '/',
-  path: '/',
+  id: "/",
+  path: "/",
   getParentRoute: () => TaskologistRoute,
-} as any)
+} as any);
 const TaskologistTelegramLinkRoute = TaskologistTelegramLinkRouteImport.update({
-  id: '/telegram-link',
-  path: '/telegram-link',
+  id: "/telegram-link",
+  path: "/telegram-link",
   getParentRoute: () => TaskologistRoute,
-} as any)
+} as any);
 const TaskologistSignInRoute = TaskologistSignInRouteImport.update({
-  id: '/sign-in',
-  path: '/sign-in',
+  id: "/sign-in",
+  path: "/sign-in",
   getParentRoute: () => TaskologistRoute,
-} as any)
+} as any);
 const ConsultingConsultingRoute = ConsultingConsultingRouteImport.update({
-  id: '/consulting',
-  path: '/consulting',
+  id: "/consulting",
+  path: "/consulting",
   getParentRoute: () => ConsultingRoute,
-} as any)
+} as any);
 const TaskologistSignInSplatRoute = TaskologistSignInSplatRouteImport.update({
-  id: '/$',
-  path: '/$',
+  id: "/$",
+  path: "/$",
   getParentRoute: () => TaskologistSignInRoute,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof TaskologistIndexRoute
-  '/consulting': typeof ConsultingConsultingRoute
-  '/sign-in': typeof TaskologistSignInRouteWithChildren
-  '/telegram-link': typeof TaskologistTelegramLinkRoute
-  '/sign-in/$': typeof TaskologistSignInSplatRoute
+  "/": typeof TaskologistIndexRoute;
+  "/consulting": typeof ConsultingConsultingRoute;
+  "/sign-in": typeof TaskologistSignInRouteWithChildren;
+  "/telegram-link": typeof TaskologistTelegramLinkRoute;
+  "/sign-in/$": typeof TaskologistSignInSplatRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof TaskologistIndexRoute
-  '/consulting': typeof ConsultingConsultingRoute
-  '/sign-in': typeof TaskologistSignInRouteWithChildren
-  '/telegram-link': typeof TaskologistTelegramLinkRoute
-  '/sign-in/$': typeof TaskologistSignInSplatRoute
+  "/": typeof TaskologistIndexRoute;
+  "/consulting": typeof ConsultingConsultingRoute;
+  "/sign-in": typeof TaskologistSignInRouteWithChildren;
+  "/telegram-link": typeof TaskologistTelegramLinkRoute;
+  "/sign-in/$": typeof TaskologistSignInSplatRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/_consulting': typeof ConsultingRouteWithChildren
-  '/_taskologist': typeof TaskologistRouteWithChildren
-  '/_consulting/consulting': typeof ConsultingConsultingRoute
-  '/_taskologist/sign-in': typeof TaskologistSignInRouteWithChildren
-  '/_taskologist/telegram-link': typeof TaskologistTelegramLinkRoute
-  '/_taskologist/': typeof TaskologistIndexRoute
-  '/_taskologist/sign-in/$': typeof TaskologistSignInSplatRoute
+  __root__: typeof rootRouteImport;
+  "/_consulting": typeof ConsultingRouteWithChildren;
+  "/_taskologist": typeof TaskologistRouteWithChildren;
+  "/_consulting/consulting": typeof ConsultingConsultingRoute;
+  "/_taskologist/sign-in": typeof TaskologistSignInRouteWithChildren;
+  "/_taskologist/telegram-link": typeof TaskologistTelegramLinkRoute;
+  "/_taskologist/": typeof TaskologistIndexRoute;
+  "/_taskologist/sign-in/$": typeof TaskologistSignInSplatRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/consulting' | '/sign-in' | '/telegram-link' | '/sign-in/$'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/consulting' | '/sign-in' | '/telegram-link' | '/sign-in/$'
+  fileRoutesByFullPath: FileRoutesByFullPath;
+  fullPaths: "/" | "/consulting" | "/sign-in" | "/telegram-link" | "/sign-in/$";
+  fileRoutesByTo: FileRoutesByTo;
+  to: "/" | "/consulting" | "/sign-in" | "/telegram-link" | "/sign-in/$";
   id:
-    | '__root__'
-    | '/_consulting'
-    | '/_taskologist'
-    | '/_consulting/consulting'
-    | '/_taskologist/sign-in'
-    | '/_taskologist/telegram-link'
-    | '/_taskologist/'
-    | '/_taskologist/sign-in/$'
-  fileRoutesById: FileRoutesById
+    | "__root__"
+    | "/_consulting"
+    | "/_taskologist"
+    | "/_consulting/consulting"
+    | "/_taskologist/sign-in"
+    | "/_taskologist/telegram-link"
+    | "/_taskologist/"
+    | "/_taskologist/sign-in/$";
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  ConsultingRoute: typeof ConsultingRouteWithChildren
-  TaskologistRoute: typeof TaskologistRouteWithChildren
+  ConsultingRoute: typeof ConsultingRouteWithChildren;
+  TaskologistRoute: typeof TaskologistRouteWithChildren;
 }
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    '/_taskologist': {
-      id: '/_taskologist'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof TaskologistRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_consulting': {
-      id: '/_consulting'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof ConsultingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_taskologist/': {
-      id: '/_taskologist/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof TaskologistIndexRouteImport
-      parentRoute: typeof TaskologistRoute
-    }
-    '/_taskologist/telegram-link': {
-      id: '/_taskologist/telegram-link'
-      path: '/telegram-link'
-      fullPath: '/telegram-link'
-      preLoaderRoute: typeof TaskologistTelegramLinkRouteImport
-      parentRoute: typeof TaskologistRoute
-    }
-    '/_taskologist/sign-in': {
-      id: '/_taskologist/sign-in'
-      path: '/sign-in'
-      fullPath: '/sign-in'
-      preLoaderRoute: typeof TaskologistSignInRouteImport
-      parentRoute: typeof TaskologistRoute
-    }
-    '/_consulting/consulting': {
-      id: '/_consulting/consulting'
-      path: '/consulting'
-      fullPath: '/consulting'
-      preLoaderRoute: typeof ConsultingConsultingRouteImport
-      parentRoute: typeof ConsultingRoute
-    }
-    '/_taskologist/sign-in/$': {
-      id: '/_taskologist/sign-in/$'
-      path: '/$'
-      fullPath: '/sign-in/$'
-      preLoaderRoute: typeof TaskologistSignInSplatRouteImport
-      parentRoute: typeof TaskologistSignInRoute
-    }
+    "/_taskologist": {
+      id: "/_taskologist";
+      path: "";
+      fullPath: "/";
+      preLoaderRoute: typeof TaskologistRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_consulting": {
+      id: "/_consulting";
+      path: "";
+      fullPath: "/";
+      preLoaderRoute: typeof ConsultingRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    "/_taskologist/": {
+      id: "/_taskologist/";
+      path: "/";
+      fullPath: "/";
+      preLoaderRoute: typeof TaskologistIndexRouteImport;
+      parentRoute: typeof TaskologistRoute;
+    };
+    "/_taskologist/telegram-link": {
+      id: "/_taskologist/telegram-link";
+      path: "/telegram-link";
+      fullPath: "/telegram-link";
+      preLoaderRoute: typeof TaskologistTelegramLinkRouteImport;
+      parentRoute: typeof TaskologistRoute;
+    };
+    "/_taskologist/sign-in": {
+      id: "/_taskologist/sign-in";
+      path: "/sign-in";
+      fullPath: "/sign-in";
+      preLoaderRoute: typeof TaskologistSignInRouteImport;
+      parentRoute: typeof TaskologistRoute;
+    };
+    "/_consulting/consulting": {
+      id: "/_consulting/consulting";
+      path: "/consulting";
+      fullPath: "/consulting";
+      preLoaderRoute: typeof ConsultingConsultingRouteImport;
+      parentRoute: typeof ConsultingRoute;
+    };
+    "/_taskologist/sign-in/$": {
+      id: "/_taskologist/sign-in/$";
+      path: "/$";
+      fullPath: "/sign-in/$";
+      preLoaderRoute: typeof TaskologistSignInSplatRouteImport;
+      parentRoute: typeof TaskologistSignInRoute;
+    };
   }
 }
 
 interface ConsultingRouteChildren {
-  ConsultingConsultingRoute: typeof ConsultingConsultingRoute
+  ConsultingConsultingRoute: typeof ConsultingConsultingRoute;
 }
 
 const ConsultingRouteChildren: ConsultingRouteChildren = {
   ConsultingConsultingRoute: ConsultingConsultingRoute,
-}
+};
 
-const ConsultingRouteWithChildren = ConsultingRoute._addFileChildren(
-  ConsultingRouteChildren,
-)
+const ConsultingRouteWithChildren = ConsultingRoute._addFileChildren(ConsultingRouteChildren);
 
 interface TaskologistSignInRouteChildren {
-  TaskologistSignInSplatRoute: typeof TaskologistSignInSplatRoute
+  TaskologistSignInSplatRoute: typeof TaskologistSignInSplatRoute;
 }
 
 const TaskologistSignInRouteChildren: TaskologistSignInRouteChildren = {
   TaskologistSignInSplatRoute: TaskologistSignInSplatRoute,
-}
+};
 
-const TaskologistSignInRouteWithChildren =
-  TaskologistSignInRoute._addFileChildren(TaskologistSignInRouteChildren)
+const TaskologistSignInRouteWithChildren = TaskologistSignInRoute._addFileChildren(
+  TaskologistSignInRouteChildren,
+);
 
 interface TaskologistRouteChildren {
-  TaskologistSignInRoute: typeof TaskologistSignInRouteWithChildren
-  TaskologistTelegramLinkRoute: typeof TaskologistTelegramLinkRoute
-  TaskologistIndexRoute: typeof TaskologistIndexRoute
+  TaskologistSignInRoute: typeof TaskologistSignInRouteWithChildren;
+  TaskologistTelegramLinkRoute: typeof TaskologistTelegramLinkRoute;
+  TaskologistIndexRoute: typeof TaskologistIndexRoute;
 }
 
 const TaskologistRouteChildren: TaskologistRouteChildren = {
   TaskologistSignInRoute: TaskologistSignInRouteWithChildren,
   TaskologistTelegramLinkRoute: TaskologistTelegramLinkRoute,
   TaskologistIndexRoute: TaskologistIndexRoute,
-}
+};
 
-const TaskologistRouteWithChildren = TaskologistRoute._addFileChildren(
-  TaskologistRouteChildren,
-)
+const TaskologistRouteWithChildren = TaskologistRoute._addFileChildren(TaskologistRouteChildren);
 
 const rootRouteChildren: RootRouteChildren = {
   ConsultingRoute: ConsultingRouteWithChildren,
   TaskologistRoute: TaskologistRouteWithChildren,
-}
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
