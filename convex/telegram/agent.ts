@@ -94,9 +94,12 @@ const TOOLS: {
       type: "object",
       properties: {
         taskId: { type: "string", description: "The task ID" },
-        executedAt: { type: "number", description: "Unix timestamp in ms. Omit to use now." },
+        executedAt: {
+          type: "string",
+          description: "ISO-8601 UTC timestamp, e.g. 2026-04-07T12:34:56.789Z.",
+        },
       },
-      required: ["taskId"],
+      required: ["taskId", "executedAt"],
     },
     handler: async (ctx, userId, input) => {
       const executedAtRaw = input["executedAt"];
@@ -104,10 +107,27 @@ const TOOLS: {
         userId,
         taskId: String(input["taskId"]) as Id<"maintenanceTasks">,
       };
-      await ctx.runMutation(
-        internal.maintenanceTasks.logExecutionForUser,
-        executedAtRaw !== undefined ? { ...baseArgs, executedAt: Number(executedAtRaw) } : baseArgs,
-      );
+
+      const executedAtIso = z.iso
+        .datetime({
+          offset: false,
+          local: false,
+          error:
+            "Invalid log_execution input: `executedAt` must be an ISO-8601 UTC string with trailing `Z` (for example: 2026-04-07T12:34:56.789Z).",
+        })
+        .parse(executedAtRaw);
+
+      const executedAt = Date.parse(executedAtIso);
+      if (Number.isNaN(executedAt)) {
+        throw new Error(
+          "Invalid log_execution input: `executedAt` could not be parsed. Use a full ISO-8601 UTC timestamp like 2026-04-07T12:34:56.789Z.",
+        );
+      }
+
+      await ctx.runMutation(internal.maintenanceTasks.logExecutionForUser, {
+        ...baseArgs,
+        executedAt,
+      });
       return "Execution logged.";
     },
   },
@@ -136,6 +156,15 @@ const SYSTEM_PROMPT = `You are a maintenance task assistant. You help users mana
 You can list tasks, create new ones, log executions, and archive tasks. Tasks can be private (only you see them) or shared (all household members see them).
 
 Be concise and friendly. When listing tasks, include their state (All Good / Due / Overdue / Never Done) and period. When confirming actions, be brief.`;
+
+function getSystemPromptNowUtc(nowIsoUtc: string): string {
+  return `${SYSTEM_PROMPT}
+
+Current UTC time: ${nowIsoUtc}
+
+When a user refers to relative time (for example: "today", "yesterday", "tomorrow"), resolve it against the current UTC time above.
+For log_execution.executedAt, pass a UTC ISO-8601 string with trailing "Z" (for example: 2026-04-07T12:34:56.789Z).`;
+}
 
 export const processMessage = internalAction({
   args: {
@@ -167,6 +196,7 @@ export const processMessage = internalAction({
     const messages: AnthropicMessage[] = [{ role: "user", content: trimmedText }];
 
     for (let i = 0; i < 10; i++) {
+      const nowIsoUtc = new Date().toISOString();
       const response = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
         headers: {
@@ -177,7 +207,7 @@ export const processMessage = internalAction({
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 1024,
-          system: SYSTEM_PROMPT,
+          system: getSystemPromptNowUtc(nowIsoUtc),
           tools: TOOLS.map(({ handler: _, ...schema }) => schema),
           messages,
         }),
