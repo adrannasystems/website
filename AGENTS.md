@@ -62,6 +62,13 @@ This file defines guardrails for agentic coding in this repo.
 - For missing/invalid input or API data, explicitly choose: fail parsing or return `undefined`.
 - If the correct behavior is unclear, ask before implementing.
 
+## Design Decisions
+
+- Before proposing a UI design (component layout, interaction pattern, iconography, copy), check established UX research and design consensus first (e.g. Nielsen Norman Group, W3C i18n guidelines, platform HIG docs, widely-cited industry studies).
+- Summarize the relevant findings and cite the source before making a recommendation.
+- Prefer evidence-backed patterns over personal convention or what "looks common".
+- Flag known controversies (e.g. flags for language selection, hamburger menus on desktop) and explain the tradeoffs.
+
 ## Communication
 
 - Be explicit about assumptions.
