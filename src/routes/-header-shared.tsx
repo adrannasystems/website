@@ -1,6 +1,9 @@
 import { SignInButton, SignUpButton } from "@clerk/clerk-react";
+import { useLocale } from "@/locale";
+import * as m from "@/paraglide/messages.js";
 
 export function AuthButtons(props: { size?: "sm" }) {
+  const { locale } = useLocale();
   const cls =
     props.size === "sm"
       ? {
@@ -17,15 +20,15 @@ export function AuthButtons(props: { size?: "sm" }) {
         };
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-4" lang={locale}>
       <SignInButton>
         <button type="button" className={cls.signIn}>
-          Sign In
+          {m.signIn()}
         </button>
       </SignInButton>
       <SignUpButton>
         <button type="button" className={cls.signUp}>
-          Sign Up
+          {m.signUp()}
         </button>
       </SignUpButton>
     </div>

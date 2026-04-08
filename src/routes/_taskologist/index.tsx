@@ -45,6 +45,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
+import { useLocale } from "@/locale";
+import { m } from "@/paraglide/messages.js";
 
 type MaintenanceTask = FunctionReturnType<
   typeof api.maintenanceTasks.listTasksForMaintenanceOverview
@@ -80,19 +82,18 @@ function IndexPage() {
 }
 
 function TaskologistLandingPage() {
+  const { locale } = useLocale();
+
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col" lang={locale}>
       {/* Hero */}
       <section className="bg-linear-to-br from-blue-50 to-indigo-50 px-6 pt-12 pb-20">
         <div className="mx-auto max-w-3xl text-center">
-          <h1 className="mb-6 text-5xl font-bold text-gray-900">Never Miss a Maintenance Task</h1>
-          <p className="mb-10 text-xl text-gray-600">
-            Track recurring maintenance work, stay on top of what's overdue, and keep a full history
-            of every execution.
-          </p>
+          <h1 className="mb-6 text-5xl font-bold text-gray-900">{m.landingHeroTitle()}</h1>
+          <p className="mb-10 text-xl text-gray-600">{m.landingHeroSubtitle()}</p>
           <Link to="/sign-in">
             <Button size="lg" className="px-8 py-3 text-base">
-              Go to app
+              {m.landingHeroCta()}
             </Button>
           </Link>
         </div>
@@ -103,27 +104,18 @@ function TaskologistLandingPage() {
         <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-3">
           <div className="rounded-lg border border-gray-200 p-6 transition duration-300 hover:shadow-lg">
             <Clock className="mb-4 h-8 w-8 text-blue-600" />
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">Recurring Schedules</h3>
-            <p className="text-sm text-gray-600">
-              Define tasks with a period in hours. The app always knows what's due and how overdue
-              it is.
-            </p>
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">{m.landingFeature1Title()}</h3>
+            <p className="text-sm text-gray-600">{m.landingFeature1Body()}</p>
           </div>
           <div className="rounded-lg border border-gray-200 p-6 transition duration-300 hover:shadow-lg">
             <CheckCircle2 className="mb-4 h-8 w-8 text-blue-600" />
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">Execution History</h3>
-            <p className="text-sm text-gray-600">
-              Log each time a task is completed — with the exact timestamp — so you always have a
-              clear audit trail.
-            </p>
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">{m.landingFeature2Title()}</h3>
+            <p className="text-sm text-gray-600">{m.landingFeature2Body()}</p>
           </div>
           <div className="rounded-lg border border-gray-200 p-6 transition duration-300 hover:shadow-lg">
             <Bell className="mb-4 h-8 w-8 text-blue-600" />
-            <h3 className="mb-2 text-lg font-semibold text-gray-900">Overdue Alerts</h3>
-            <p className="text-sm text-gray-600">
-              Tasks are clearly flagged as overdue, due, or all good — so nothing slips through the
-              cracks.
-            </p>
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">{m.landingFeature3Title()}</h3>
+            <p className="text-sm text-gray-600">{m.landingFeature3Body()}</p>
           </div>
         </div>
       </section>
@@ -132,6 +124,7 @@ function TaskologistLandingPage() {
 }
 
 function MaintenanceTasksContent() {
+  const { locale } = useLocale();
   const { task: highlightTaskIdFromUrl } = Route.useSearch();
   const navigate = Route.useNavigate();
   const navigateRef = React.useRef(navigate);
@@ -200,9 +193,9 @@ function MaintenanceTasksContent() {
       const periodHoursNumber = Number(createPeriodHours);
 
       if (name === "") {
-        setCreateErrorMessage("Task name is required.");
+        setCreateErrorMessage(m.errorTaskNameRequired());
       } else if (!Number.isFinite(periodHoursNumber) || periodHoursNumber <= 0) {
-        setCreateErrorMessage("Period hours must be a number greater than 0.");
+        setCreateErrorMessage(m.errorPeriodHours());
       } else {
         setIsCreating(true);
         setCreateErrorMessage(null);
@@ -218,7 +211,7 @@ function MaintenanceTasksContent() {
           setCreateShared(false);
           setIsAddTaskOpen(false);
         } catch {
-          setCreateErrorMessage("Unable to create maintenance task.");
+          setCreateErrorMessage(m.errorCreateTask());
         } finally {
           setIsCreating(false);
         }
@@ -294,7 +287,7 @@ function MaintenanceTasksContent() {
 
       setIsPushOptedIn(Boolean(OneSignal.User.PushSubscription.optedIn));
     } catch {
-      setPushPreferenceError("Unable to update notification preference.");
+      setPushPreferenceError(m.errorUpdateNotification());
     } finally {
       setIsUpdatingPushPreference(false);
     }
@@ -372,11 +365,11 @@ function MaintenanceTasksContent() {
     const archivedTasks = archivedTasksResult;
 
     return (
-      <main className="min-h-screen bg-gray-50 px-6 py-20">
+      <main className="min-h-screen bg-gray-50 px-6 py-20" lang={locale}>
         <div className="mx-auto max-w-4xl">
           <div className="mb-8 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-semibold text-gray-900">Maintenance Tasks</h1>
+              <h1 className="text-3xl font-semibold text-gray-900">{m.maintenanceTasks()}</h1>
               <Button
                 type="button"
                 size="sm"
@@ -389,7 +382,7 @@ function MaintenanceTasksContent() {
                 }}
               >
                 <Plus className="h-4 w-4" />
-                Add task
+                {m.addTask()}
               </Button>
             </div>
             <Button
@@ -446,23 +439,23 @@ function MaintenanceTasksContent() {
           >
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Add task</DialogTitle>
-                <DialogDescription>Define a new recurring maintenance task.</DialogDescription>
+                <DialogTitle>{m.addTaskDialogTitle()}</DialogTitle>
+                <DialogDescription>{m.addTaskDialogDescription()}</DialogDescription>
               </DialogHeader>
               <form className="grid gap-4" onSubmit={(e) => void handleCreateTask(e)}>
                 <div className="grid gap-1.5">
-                  <Label htmlFor="mtask-name">Name</Label>
+                  <Label htmlFor="mtask-name">{m.taskName()}</Label>
                   <Input
                     id="mtask-name"
                     value={createName}
                     onChange={(event) => {
                       setCreateName(event.target.value);
                     }}
-                    placeholder="e.g. Check backups"
+                    placeholder={m.taskNamePlaceholder()}
                   />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label htmlFor="mtask-period-hours">Period (hours)</Label>
+                  <Label htmlFor="mtask-period-hours">{m.taskPeriodHours()}</Label>
                   <Input
                     id="mtask-period-hours"
                     type="number"
@@ -484,7 +477,7 @@ function MaintenanceTasksContent() {
                     }}
                     className="h-4 w-4 rounded border-gray-300"
                   />
-                  <Label htmlFor="mtask-shared">Shared</Label>
+                  <Label htmlFor="mtask-shared">{m.taskShared()}</Label>
                 </div>
                 {createErrorMessage === null ? null : (
                   <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -501,10 +494,10 @@ function MaintenanceTasksContent() {
                     }}
                     disabled={isCreating}
                   >
-                    Cancel
+                    {m.cancel()}
                   </Button>
                   <Button type="submit" disabled={isCreating}>
-                    {isCreating ? "Creating..." : "Create"}
+                    {isCreating ? m.creating() : m.create()}
                   </Button>
                 </DialogFooter>
               </form>
@@ -535,7 +528,7 @@ function MaintenanceTasksContent() {
                 </DndContext>
                 {orderedTasks.length === 0 ? (
                   <div className="px-6 py-10 text-center text-sm text-gray-500">
-                    No maintenance tasks yet.
+                    {m.noMaintenanceTasks()}
                   </div>
                 ) : null}
               </div>
@@ -543,7 +536,7 @@ function MaintenanceTasksContent() {
           </section>
 
           <section>
-            <h2 className="mb-3 text-lg font-medium text-gray-900">Archived tasks</h2>
+            <h2 className="mb-3 text-lg font-medium text-gray-900">{m.archivedTasks()}</h2>
             <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
               <div className="divide-y divide-gray-200">
                 {archivedTasks.map((task) => {
@@ -557,7 +550,7 @@ function MaintenanceTasksContent() {
                 })}
                 {archivedTasks.length === 0 ? (
                   <div className="px-6 py-10 text-center text-sm text-gray-500">
-                    No archived maintenance tasks.
+                    {m.noArchivedTasks()}
                   </div>
                 ) : null}
               </div>
@@ -570,14 +563,16 @@ function MaintenanceTasksContent() {
 }
 
 function MaintenanceTasksLoadingState() {
+  const { locale } = useLocale();
+
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-20">
+    <main className="min-h-screen bg-gray-50 px-6 py-20" lang={locale}>
       <div className="mx-auto max-w-4xl">
         <div className="mb-8 flex items-center justify-between gap-3">
-          <h1 className="text-3xl font-semibold text-gray-900">Maintenance Tasks</h1>
+          <h1 className="text-3xl font-semibold text-gray-900">{m.maintenanceTasks()}</h1>
           <div className="size-8 rounded-lg border border-gray-200 bg-white" aria-hidden />
         </div>
-        <div className="text-sm text-gray-500">Loading...</div>
+        <div className="text-sm text-gray-500">{m.loading()}</div>
       </div>
     </main>
   );
@@ -589,15 +584,15 @@ function getPushSubscriptionToggleLabel(
   isUpdatingPushPreference: boolean,
 ): string {
   if (!isPushPreferenceAvailable) {
-    return "Push notifications are unavailable in this browser";
+    return m.pushUnavailable();
   } else if (isUpdatingPushPreference) {
-    return "Updating notification preference";
+    return m.pushUpdating();
   } else if (isPushOptedIn === null) {
-    return "Loading notification preference";
+    return m.pushLoading();
   } else if (isPushOptedIn) {
-    return "Unsubscribe from notifications";
+    return m.pushUnsubscribe();
   } else {
-    return "Subscribe to notifications";
+    return m.pushSubscribe();
   }
 }
 
@@ -639,6 +634,7 @@ function MaintenanceTaskRow(props: {
   isPulseHighlighted?: boolean;
   dragHandleProps?: Record<string, unknown>;
 }) {
+  const { locale } = useLocale();
   const updateTask = useMutation(api.maintenanceTasks.updateTask);
   const archiveTask = useMutation(api.maintenanceTasks.archiveTask);
   const addExecution = useMutation(api.maintenanceTasks.addExecution);
@@ -675,9 +671,9 @@ function MaintenanceTaskRow(props: {
     const periodHoursNumber = Number(editPeriodHours);
 
     if (name === "") {
-      props.onError("Task name is required.");
+      props.onError(m.errorTaskNameRequired());
     } else if (!Number.isFinite(periodHoursNumber) || periodHoursNumber <= 0) {
-      props.onError("Period hours must be a number greater than 0.");
+      props.onError(m.errorPeriodHours());
     } else {
       setIsSavingEdit(true);
 
@@ -690,7 +686,7 @@ function MaintenanceTaskRow(props: {
         });
         setIsEditing(false);
       } catch {
-        props.onError("Unable to update maintenance task.");
+        props.onError(m.errorUpdateTask());
       } finally {
         setIsSavingEdit(false);
       }
@@ -703,7 +699,7 @@ function MaintenanceTaskRow(props: {
     try {
       await archiveTask({ taskId: props.task.id });
     } catch {
-      props.onError("Unable to archive maintenance task.");
+      props.onError(m.errorArchiveTask());
     } finally {
       setIsArchivingTask(false);
     }
@@ -718,7 +714,7 @@ function MaintenanceTaskRow(props: {
         executedAt: Date.now(),
       });
     } catch {
-      props.onError("Unable to add execution.");
+      props.onError(m.errorAddExecution());
     } finally {
       setIsSavingExecutionNow(false);
     }
@@ -728,7 +724,7 @@ function MaintenanceTaskRow(props: {
     const selectedDate = new Date(executionDialogValue);
 
     if (Number.isNaN(selectedDate.getTime())) {
-      props.onError("Please select a valid execution date and time.");
+      props.onError(m.errorInvalidExecutionDate());
     } else {
       setIsSavingExecutionCustom(true);
 
@@ -739,7 +735,7 @@ function MaintenanceTaskRow(props: {
         });
         setExecutionDialogOpen(false);
       } catch {
-        props.onError("Unable to add execution.");
+        props.onError(m.errorAddExecution());
       } finally {
         setIsSavingExecutionCustom(false);
       }
@@ -751,7 +747,7 @@ function MaintenanceTaskRow(props: {
       try {
         await deleteExecution({ executionId });
       } catch {
-        props.onError("Unable to delete execution.");
+        props.onError(m.errorDeleteExecution());
       }
     },
     [deleteExecution, props],
@@ -773,7 +769,7 @@ function MaintenanceTaskRow(props: {
         {props.dragHandleProps !== undefined ? (
           <button
             type="button"
-            aria-label="Drag to reorder"
+            aria-label={m.dragToReorder()}
             className="mt-0.5 cursor-grab touch-none self-start rounded p-1 text-gray-400 hover:text-gray-600 active:cursor-grabbing"
             {...props.dragHandleProps}
           >
@@ -785,7 +781,7 @@ function MaintenanceTaskRow(props: {
             {isEditing ? (
               <div className="grid gap-2 sm:grid-cols-2">
                 <div className="grid gap-1.5">
-                  <Label htmlFor={`edit-name-${props.task.id}`}>Name</Label>
+                  <Label htmlFor={`edit-name-${props.task.id}`}>{m.taskName()}</Label>
                   <Input
                     id={`edit-name-${props.task.id}`}
                     value={editName}
@@ -795,7 +791,7 @@ function MaintenanceTaskRow(props: {
                   />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label htmlFor={`edit-period-${props.task.id}`}>Period (hours)</Label>
+                  <Label htmlFor={`edit-period-${props.task.id}`}>{m.taskPeriodHours()}</Label>
                   <Input
                     id={`edit-period-${props.task.id}`}
                     type="number"
@@ -817,34 +813,37 @@ function MaintenanceTaskRow(props: {
                     }}
                     className="h-4 w-4 rounded border-gray-300"
                   />
-                  <Label htmlFor={`edit-shared-${props.task.id}`}>Shared</Label>
+                  <Label htmlFor={`edit-shared-${props.task.id}`}>{m.taskShared()}</Label>
                 </div>
               </div>
             ) : (
               <>
                 <div className="text-lg font-medium text-gray-900">{props.task.name}</div>
-                <div className="text-sm text-gray-500">Period: {props.task.periodHours} hours</div>
                 <div className="text-sm text-gray-500">
-                  Last execution:{" "}
-                  {props.task.lastExecutedAt === null
-                    ? "Never"
-                    : formatDateTime(props.task.lastExecutedAt)}
+                  {m.periodHours({ hours: String(props.task.periodHours) })}
                 </div>
                 <div className="text-sm text-gray-500">
-                  Periods due: {props.task.periodsDue.toFixed(2)}
+                  {props.task.lastExecutedAt === null
+                    ? m.lastExecutionNever()
+                    : m.lastExecution({ date: formatDateTime(props.task.lastExecutedAt, locale) })}
+                </div>
+                <div className="text-sm text-gray-500">
+                  {m.periodsDue({ value: props.task.periodsDue.toFixed(2) })}
                 </div>
                 <div className="mt-1 flex flex-wrap gap-2">
-                  <span className={getStateClassName(props.task.state)}>{props.task.state}</span>
+                  <span className={getStateClassName(props.task.state)}>
+                    {getStateLabel(props.task.state)}
+                  </span>
                   {props.task.shared ? (
                     <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
-                      Shared
+                      {m.sharedBadge()}
                     </span>
                   ) : null}
                   {props.task.actions.toggleNotifications === "hidden" &&
                   !props.task.notificationsEnabled ? (
                     <span className="flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-medium text-gray-500">
                       <BellOff className="h-3 w-3" />
-                      Notifications off
+                      {m.notificationsOff()}
                     </span>
                   ) : null}
                 </div>
@@ -856,7 +855,7 @@ function MaintenanceTaskRow(props: {
             {isEditing ? (
               <>
                 <Button type="button" onClick={() => void handleSaveEdit()} disabled={isSavingEdit}>
-                  {isSavingEdit ? "Saving..." : "Save"}
+                  {isSavingEdit ? m.saving() : m.save()}
                 </Button>
                 <Button
                   type="button"
@@ -869,7 +868,7 @@ function MaintenanceTaskRow(props: {
                   }}
                   disabled={isSavingEdit}
                 >
-                  Cancel
+                  {m.cancel()}
                 </Button>
               </>
             ) : (
@@ -882,13 +881,13 @@ function MaintenanceTaskRow(props: {
                     disabled={props.task.actions.toggleNotifications === "restricted"}
                     aria-label={
                       props.task.notificationsEnabled
-                        ? "Disable notifications"
-                        : "Enable notifications"
+                        ? m.disableNotifications()
+                        : m.enableNotifications()
                     }
                     title={
                       props.task.notificationsEnabled
-                        ? "Disable notifications"
-                        : "Enable notifications"
+                        ? m.disableNotifications()
+                        : m.enableNotifications()
                     }
                     onClick={() =>
                       void setNotificationsEnabled({
@@ -907,7 +906,7 @@ function MaintenanceTaskRow(props: {
                 <Button
                   type="button"
                   variant="outline"
-                  aria-label="Edit task"
+                  aria-label={m.editTask()}
                   onClick={() => {
                     setIsEditing(true);
                   }}
@@ -922,7 +921,7 @@ function MaintenanceTaskRow(props: {
                   }}
                   disabled={isSavingExecutionNow}
                 >
-                  {isSavingExecutionNow ? "Saving..." : "Add Execution Now"}
+                  {isSavingExecutionNow ? m.saving() : m.addExecutionNow()}
                 </Button>
                 <Button
                   type="button"
@@ -932,7 +931,7 @@ function MaintenanceTaskRow(props: {
                     setExecutionDialogOpen(true);
                   }}
                 >
-                  Add Execution Custom
+                  {m.addExecutionCustom()}
                 </Button>
                 <Button
                   type="button"
@@ -941,12 +940,12 @@ function MaintenanceTaskRow(props: {
                     setShowExecutions((currentValue) => !currentValue);
                   }}
                 >
-                  {showExecutions ? "Hide Executions" : "Show Executions"}
+                  {showExecutions ? m.hideExecutions() : m.showExecutions()}
                 </Button>
                 <Button
                   type="button"
                   variant="destructive"
-                  aria-label="Archive task"
+                  aria-label={m.archiveTask()}
                   onClick={() => void handleArchiveTask()}
                   disabled={isArchivingTask}
                 >
@@ -961,9 +960,9 @@ function MaintenanceTaskRow(props: {
       {showExecutions ? (
         <div className="mt-3 rounded-md border border-gray-200 bg-gray-50 p-3">
           {executionsResult === undefined ? (
-            <div className="text-sm text-gray-500">Loading executions...</div>
+            <div className="text-sm text-gray-500">{m.loadingExecutions()}</div>
           ) : executions.length === 0 ? (
-            <div className="text-sm text-gray-500">No executions yet.</div>
+            <div className="text-sm text-gray-500">{m.noExecutions()}</div>
           ) : (
             <div className="space-y-2">
               {executions.map((execution) => {
@@ -973,7 +972,7 @@ function MaintenanceTaskRow(props: {
                     className="flex items-center justify-between rounded bg-white px-3 py-2"
                   >
                     <span className="text-sm text-gray-700">
-                      {formatDateTime(execution.executedAt)}
+                      {formatDateTime(execution.executedAt, locale)}
                     </span>
                     <Button
                       type="button"
@@ -982,7 +981,7 @@ function MaintenanceTaskRow(props: {
                         void handleDeleteExecution(execution.id);
                       }}
                     >
-                      Remove
+                      {m.remove()}
                     </Button>
                   </div>
                 );
@@ -1000,11 +999,11 @@ function MaintenanceTaskRow(props: {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add execution date and time</DialogTitle>
-            <DialogDescription>Choose when this maintenance task was executed.</DialogDescription>
+            <DialogTitle>{m.addExecutionDialogTitle()}</DialogTitle>
+            <DialogDescription>{m.addExecutionDialogDescription()}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">
-            <Label htmlFor={`execution-custom-${props.task.id}`}>Executed at</Label>
+            <Label htmlFor={`execution-custom-${props.task.id}`}>{m.executedAt()}</Label>
             <Input
               id={`execution-custom-${props.task.id}`}
               type="datetime-local"
@@ -1023,7 +1022,7 @@ function MaintenanceTaskRow(props: {
               }}
               disabled={isSavingExecutionCustom}
             >
-              Cancel
+              {m.cancel()}
             </Button>
             <Button
               type="button"
@@ -1032,7 +1031,7 @@ function MaintenanceTaskRow(props: {
               }}
               disabled={isSavingExecutionCustom}
             >
-              {isSavingExecutionCustom ? "Saving..." : "Save"}
+              {isSavingExecutionCustom ? m.saving() : m.save()}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1045,6 +1044,7 @@ function ArchivedMaintenanceTaskRow(props: {
   task: MaintenanceTask;
   onError: (message: string) => void;
 }) {
+  const { locale } = useLocale();
   const unarchiveTask = useMutation(api.maintenanceTasks.unarchiveTask);
   const deleteArchivedTaskPermanently = useMutation(
     api.maintenanceTasks.deleteArchivedTaskPermanently,
@@ -1058,7 +1058,7 @@ function ArchivedMaintenanceTaskRow(props: {
     try {
       await unarchiveTask({ taskId: props.task.id });
     } catch {
-      props.onError("Unable to unarchive maintenance task.");
+      props.onError(m.errorUnarchiveTask());
     } finally {
       setIsUnarchivingTask(false);
     }
@@ -1070,7 +1070,7 @@ function ArchivedMaintenanceTaskRow(props: {
     try {
       await deleteArchivedTaskPermanently({ taskId: props.task.id });
     } catch {
-      props.onError("Unable to permanently delete archived task.");
+      props.onError(m.errorDeleteTask());
     } finally {
       setIsPermanentlyDeletingTask(false);
     }
@@ -1080,10 +1080,13 @@ function ArchivedMaintenanceTaskRow(props: {
     <div className="flex flex-col gap-3 px-6 py-4 md:flex-row md:items-start md:justify-between">
       <div>
         <div className="text-lg font-medium text-gray-900">{props.task.name}</div>
-        <div className="text-sm text-gray-500">Period: {props.task.periodHours} hours</div>
         <div className="text-sm text-gray-500">
-          Last execution:{" "}
-          {props.task.lastExecutedAt === null ? "Never" : formatDateTime(props.task.lastExecutedAt)}
+          {m.periodHours({ hours: String(props.task.periodHours) })}
+        </div>
+        <div className="text-sm text-gray-500">
+          {props.task.lastExecutedAt === null
+            ? m.lastExecutionNever()
+            : m.lastExecution({ date: formatDateTime(props.task.lastExecutedAt, locale) })}
         </div>
       </div>
       <div>
@@ -1094,7 +1097,7 @@ function ArchivedMaintenanceTaskRow(props: {
             onClick={() => void handleUnarchiveTask()}
             disabled={isUnarchivingTask || isPermanentlyDeletingTask}
           >
-            {isUnarchivingTask ? "Unarchiving..." : "Unarchive"}
+            {isUnarchivingTask ? m.unarchiving() : m.unarchive()}
           </Button>
           <Button
             type="button"
@@ -1102,12 +1105,26 @@ function ArchivedMaintenanceTaskRow(props: {
             onClick={() => void handleDeleteTaskPermanently()}
             disabled={isUnarchivingTask || isPermanentlyDeletingTask}
           >
-            {isPermanentlyDeletingTask ? "Deleting..." : "Delete Permanently"}
+            {isPermanentlyDeletingTask ? m.deleting() : m.deletePermanently()}
           </Button>
         </div>
       </div>
     </div>
   );
+}
+
+function getStateLabel(state: string): string {
+  if (state === "All Good") {
+    return m.stateAllGood();
+  } else if (state === "Due") {
+    return m.stateDue();
+  } else if (state === "Overdue") {
+    return m.stateOverdue();
+  } else if (state === "Never Done") {
+    return m.stateNeverDone();
+  } else {
+    return state;
+  }
 }
 
 function getStateClassName(state: string): string {
@@ -1122,8 +1139,11 @@ function getStateClassName(state: string): string {
   }
 }
 
-function formatDateTime(timestamp: number): string {
-  return new Date(timestamp).toISOString();
+function formatDateTime(timestamp: number, locale: string): string {
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(timestamp));
 }
 
 function getNowDateTimeLocalValue(): string {

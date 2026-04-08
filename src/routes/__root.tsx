@@ -8,6 +8,7 @@ import { z } from "zod";
 import { PostHogProvider, usePostHog } from "posthog-js/react";
 import { OneSignalSync } from "../components/OneSignalSync";
 import { convexClient } from "../convex-client";
+import { LocaleProvider } from "../locale";
 import "../styles.css";
 
 export const Route = createRootRoute({
@@ -18,27 +19,29 @@ function RootComponent() {
   const navigate = useNavigate();
 
   return (
-    <ClerkProvider
-      publishableKey={getClerkPublishableKey()}
-      signInUrl="/sign-in"
-      routerPush={(to) => {
-        void navigate({ href: to });
-      }}
-      routerReplace={(to) => {
-        void navigate({ href: to, replace: true });
-      }}
-    >
-      <PostHogProvider
-        apiKey={getPostHogApiKey()}
-        options={{ api_host: getPostHogHost(), defaults: "2026-01-30" }}
+    <LocaleProvider>
+      <ClerkProvider
+        publishableKey={getClerkPublishableKey()}
+        signInUrl="/sign-in"
+        routerPush={(to) => {
+          void navigate({ href: to });
+        }}
+        routerReplace={(to) => {
+          void navigate({ href: to, replace: true });
+        }}
       >
-        <PostHogUserSync />
-        <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
-          <OneSignalSync />
-          <Outlet />
-        </ConvexProviderWithClerk>
-      </PostHogProvider>
-    </ClerkProvider>
+        <PostHogProvider
+          apiKey={getPostHogApiKey()}
+          options={{ api_host: getPostHogHost(), defaults: "2026-01-30" }}
+        >
+          <PostHogUserSync />
+          <ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
+            <OneSignalSync />
+            <Outlet />
+          </ConvexProviderWithClerk>
+        </PostHogProvider>
+      </ClerkProvider>
+    </LocaleProvider>
   );
 }
 
