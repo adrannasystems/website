@@ -1,6 +1,6 @@
 import { SignInButton, SignUpButton } from "@clerk/clerk-react";
 import { useLocale } from "@/locale";
-import * as m from "@/paraglide/messages.js";
+import { m } from "@/paraglide/messages.js";
 
 export function AuthButtons(props: { size?: "sm" }) {
   const { locale } = useLocale();

@@ -45,7 +45,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { z } from "zod";
-import { useLocale } from "@/locale";
+import { type Locale, useLocale } from "@/locale";
 import { m } from "@/paraglide/messages.js";
 
 type MaintenanceTask = FunctionReturnType<
@@ -69,10 +69,10 @@ function IndexPage() {
   return (
     <>
       <AuthLoading>
-        <MaintenanceTasksLoadingState />
+        <MaintenanceTasksContent authLoading={true} />
       </AuthLoading>
       <Authenticated>
-        <MaintenanceTasksContent />
+        <MaintenanceTasksContent authLoading={false} />
       </Authenticated>
       <Unauthenticated>
         <TaskologistLandingPage />
@@ -123,7 +123,7 @@ function TaskologistLandingPage() {
   );
 }
 
-function MaintenanceTasksContent() {
+function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
   const { locale } = useLocale();
   const { task: highlightTaskIdFromUrl } = Route.useSearch();
   const navigate = Route.useNavigate();
@@ -359,17 +359,16 @@ function MaintenanceTasksContent() {
     });
   }
 
-  if (activeTasksResult === undefined || archivedTasksResult === undefined) {
-    return <MaintenanceTasksLoadingState />;
-  } else {
-    const archivedTasks = archivedTasksResult;
+  const tasksLoading = authLoading || activeTasksResult === undefined;
+  const archivedTasksLoading = authLoading || archivedTasksResult === undefined;
 
-    return (
-      <main className="min-h-screen bg-gray-50 px-6 py-20" lang={locale}>
-        <div className="mx-auto max-w-4xl">
-          <div className="mb-8 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-semibold text-gray-900">{m.maintenanceTasks()}</h1>
+  return (
+    <main className="min-h-screen bg-gray-50 px-6 py-20" lang={locale}>
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-8 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-semibold text-gray-900">{m.maintenanceTasks()}</h1>
+            {!authLoading && (
               <Button
                 type="button"
                 size="sm"
@@ -384,7 +383,9 @@ function MaintenanceTasksContent() {
                 <Plus className="h-4 w-4" />
                 {m.addTask()}
               </Button>
-            </div>
+            )}
+          </div>
+          {!authLoading && (
             <Button
               type="button"
               size="icon"
@@ -414,132 +415,142 @@ function MaintenanceTasksContent() {
                 <BellOff className="text-gray-500" />
               )}
             </Button>
+          )}
+        </div>
+
+        {pushPreferenceError === null || !isPushPreferenceAvailable ? null : (
+          <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {pushPreferenceError}
           </div>
+        )}
 
-          {pushPreferenceError === null || !isPushPreferenceAvailable ? null : (
-            <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              {pushPreferenceError}
-            </div>
-          )}
+        {errorMessage === null ? null : (
+          <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            {errorMessage}
+          </div>
+        )}
 
-          {errorMessage === null ? null : (
-            <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-              {errorMessage}
-            </div>
-          )}
-
-          <Dialog
-            open={isAddTaskOpen}
-            onOpenChange={(open) => {
-              if (!open) {
-                setIsAddTaskOpen(false);
-                setCreateErrorMessage(null);
-              }
-            }}
-          >
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{m.addTaskDialogTitle()}</DialogTitle>
-                <DialogDescription>{m.addTaskDialogDescription()}</DialogDescription>
-              </DialogHeader>
-              <form className="grid gap-4" onSubmit={(e) => void handleCreateTask(e)}>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="mtask-name">{m.taskName()}</Label>
-                  <Input
-                    id="mtask-name"
-                    value={createName}
-                    onChange={(event) => {
-                      setCreateName(event.target.value);
-                    }}
-                    placeholder={m.taskNamePlaceholder()}
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor="mtask-period-hours">{m.taskPeriodHours()}</Label>
-                  <Input
-                    id="mtask-period-hours"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={createPeriodHours}
-                    onChange={(event) => {
-                      setCreatePeriodHours(event.target.value);
-                    }}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    id="mtask-shared"
-                    type="checkbox"
-                    checked={createShared}
-                    onChange={(e) => {
-                      setCreateShared(e.target.checked);
-                    }}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  <Label htmlFor="mtask-shared">{m.taskShared()}</Label>
-                </div>
-                {createErrorMessage === null ? null : (
-                  <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                    {createErrorMessage}
-                  </div>
-                )}
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsAddTaskOpen(false);
-                      setCreateErrorMessage(null);
-                    }}
-                    disabled={isCreating}
-                  >
-                    {m.cancel()}
-                  </Button>
-                  <Button type="submit" disabled={isCreating}>
-                    {isCreating ? m.creating() : m.create()}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-
-          <section className="mb-8">
-            <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-              <div className="divide-y divide-gray-200">
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={orderedTasks.map((t) => t.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
-                    {orderedTasks.map((task) => (
-                      <SortableTaskRow
-                        key={task.id}
-                        task={task}
-                        onError={setErrorMessage}
-                        isPulseHighlighted={pulseTaskId === task.id}
-                      />
-                    ))}
-                  </SortableContext>
-                </DndContext>
-                {orderedTasks.length === 0 ? (
-                  <div className="px-6 py-10 text-center text-sm text-gray-500">
-                    {m.noMaintenanceTasks()}
-                  </div>
-                ) : null}
+        <Dialog
+          open={isAddTaskOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setIsAddTaskOpen(false);
+              setCreateErrorMessage(null);
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{m.addTaskDialogTitle()}</DialogTitle>
+              <DialogDescription>{m.addTaskDialogDescription()}</DialogDescription>
+            </DialogHeader>
+            <form className="grid gap-4" onSubmit={(e) => void handleCreateTask(e)}>
+              <div className="grid gap-1.5">
+                <Label htmlFor="mtask-name">{m.taskName()}</Label>
+                <Input
+                  id="mtask-name"
+                  value={createName}
+                  onChange={(event) => {
+                    setCreateName(event.target.value);
+                  }}
+                  placeholder={m.taskNamePlaceholder()}
+                />
               </div>
-            </div>
-          </section>
+              <div className="grid gap-1.5">
+                <Label htmlFor="mtask-period-hours">{m.taskPeriodHours()}</Label>
+                <Input
+                  id="mtask-period-hours"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={createPeriodHours}
+                  onChange={(event) => {
+                    setCreatePeriodHours(event.target.value);
+                  }}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="mtask-shared"
+                  type="checkbox"
+                  checked={createShared}
+                  onChange={(e) => {
+                    setCreateShared(e.target.checked);
+                  }}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="mtask-shared">{m.taskShared()}</Label>
+              </div>
+              {createErrorMessage === null ? null : (
+                <div className="rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  {createErrorMessage}
+                </div>
+              )}
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddTaskOpen(false);
+                    setCreateErrorMessage(null);
+                  }}
+                  disabled={isCreating}
+                >
+                  {m.cancel()}
+                </Button>
+                <Button type="submit" disabled={isCreating}>
+                  {isCreating ? m.creating() : m.create()}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
-          <section>
-            <h2 className="mb-3 text-lg font-medium text-gray-900">{m.archivedTasks()}</h2>
-            <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+        <section className="mb-8">
+          <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div className="divide-y divide-gray-200">
+              {tasksLoading ? (
+                <div className="px-6 py-10 text-center text-sm text-gray-500">{m.loading()}</div>
+              ) : (
+                <>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={orderedTasks.map((t) => t.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {orderedTasks.map((task) => (
+                        <SortableTaskRow
+                          key={task.id}
+                          task={task}
+                          onError={setErrorMessage}
+                          isPulseHighlighted={pulseTaskId === task.id}
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
+                  {orderedTasks.length === 0 ? (
+                    <div className="px-6 py-10 text-center text-sm text-gray-500">
+                      {m.noMaintenanceTasks()}
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="mb-3 text-lg font-medium text-gray-900">{m.archivedTasks()}</h2>
+          <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+            {archivedTasksLoading ? (
+              <div className="px-6 py-10 text-center text-sm text-gray-500">{m.loading()}</div>
+            ) : (
               <div className="divide-y divide-gray-200">
-                {archivedTasks.map((task) => {
+                {archivedTasksResult.map((task) => {
                   return (
                     <ArchivedMaintenanceTaskRow
                       key={task.id}
@@ -548,31 +559,15 @@ function MaintenanceTasksContent() {
                     />
                   );
                 })}
-                {archivedTasks.length === 0 ? (
+                {archivedTasksResult.length === 0 ? (
                   <div className="px-6 py-10 text-center text-sm text-gray-500">
                     {m.noArchivedTasks()}
                   </div>
                 ) : null}
               </div>
-            </div>
-          </section>
-        </div>
-      </main>
-    );
-  }
-}
-
-function MaintenanceTasksLoadingState() {
-  const { locale } = useLocale();
-
-  return (
-    <main className="min-h-screen bg-gray-50 px-6 py-20" lang={locale}>
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-8 flex items-center justify-between gap-3">
-          <h1 className="text-3xl font-semibold text-gray-900">{m.maintenanceTasks()}</h1>
-          <div className="size-8 rounded-lg border border-gray-200 bg-white" aria-hidden />
-        </div>
-        <div className="text-sm text-gray-500">{m.loading()}</div>
+            )}
+          </div>
+        </section>
       </div>
     </main>
   );
@@ -828,7 +823,7 @@ function MaintenanceTaskRow(props: {
                     : m.lastExecution({ date: formatDateTime(props.task.lastExecutedAt, locale) })}
                 </div>
                 <div className="text-sm text-gray-500">
-                  {m.periodsDue({ value: props.task.periodsDue.toFixed(2) })}
+                  {m.periodsDue({ value: formatDecimal(props.task.periodsDue, locale) })}
                 </div>
                 <div className="mt-1 flex flex-wrap gap-2">
                   <span className={getStateClassName(props.task.state)}>
@@ -1144,6 +1139,10 @@ function formatDateTime(timestamp: number, locale: string): string {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(new Date(timestamp));
+}
+
+function formatDecimal(value: number | bigint, locale: Locale): string {
+  return new Intl.NumberFormat(locale, { style: "decimal" }).format(value);
 }
 
 function getNowDateTimeLocalValue(): string {

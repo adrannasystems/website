@@ -4,7 +4,7 @@ import { UserButton } from "@clerk/clerk-react";
 import { Globe } from "lucide-react";
 import { AuthButtons } from "./-header-shared";
 import { useLocale, SUPPORTED_LOCALES } from "@/locale";
-import * as m from "@/paraglide/messages.js";
+import { m } from "@/paraglide/messages.js";
 import { Authenticated, AuthLoading, Unauthenticated } from "convex/react";
 import { objectEntries } from "@/object-helpers";
 
