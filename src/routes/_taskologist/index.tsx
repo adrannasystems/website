@@ -144,12 +144,18 @@ function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
   const [isPushPreferenceAvailable, setIsPushPreferenceAvailable] = React.useState(true);
   const [isUpdatingPushPreference, setIsUpdatingPushPreference] = React.useState(false);
   const [pushPreferenceError, setPushPreferenceError] = React.useState<string | null>(null);
-  const activeTasksResult = useQuery(api.maintenanceTasks.listTasksForMaintenanceOverview, {});
+  const activeTasksResult = useQuery(
+    api.maintenanceTasks.listTasksForMaintenanceOverview,
+    authLoading ? "skip" : {},
+  );
   const archivedTasksResult = useQuery(
     api.maintenanceTasks.listArchivedTasksForMaintenanceOverview,
-    {},
+    authLoading ? "skip" : {},
   );
-  const myPositionsResult = useQuery(api.maintenanceTasks.getMyTaskPositions, {});
+  const myPositionsResult = useQuery(
+    api.maintenanceTasks.getMyTaskPositions,
+    authLoading ? "skip" : {},
+  );
 
   React.useLayoutEffect(() => {
     if (highlightTaskIdFromUrl === undefined) {
