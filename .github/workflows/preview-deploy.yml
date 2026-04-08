@@ -21,6 +21,8 @@ jobs:
 
       - run: npm ci
 
+      - run: npm run codegen:paraglide
+
       - name: Deploy Convex preview
         run: npx convex deploy --preview-create staging
         env:
