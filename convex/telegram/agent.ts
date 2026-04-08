@@ -4,6 +4,11 @@ import { internalAction, type ActionCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { sendTelegramMessage } from "./api";
 import type { Id } from "../_generated/dataModel";
+import {
+  extractTelegramCommand,
+  formatLinkConfirmationMessage,
+  formatTelegramHelpMessage,
+} from "./commands";
 
 import { publicAppOrigin } from "../env";
 
@@ -173,91 +178,112 @@ export const processMessage = internalAction({
   },
   handler: async (ctx, args): Promise<void> => {
     const trimmedText = args.text.trim();
+    const command = extractTelegramCommand(trimmedText);
+    const linkUrl = buildTelegramLinkUrl(args.chatId);
 
-    const userId = await ctx.runQuery(internal.telegram.users.getLinkedUserId, {
+    const linkedUserId = await ctx.runQuery(internal.telegram.users.getLinkedUserId, {
       chatId: args.chatId,
     });
+    const isLinked = linkedUserId !== null;
 
-    if (userId === null) {
-      const linkUrl = `${publicAppOrigin.replace(/\/$/, "")}/telegram-link?chat=${encodeURIComponent(args.chatId)}`;
+    if (command === "/help") {
       await sendTelegramMessage(
         args.chatId,
-        `This chat is not linked to a Taskologist account.\n\nTap the link to link it:\n${linkUrl}`,
+        formatTelegramHelpMessage({ isLinked, linkUrl: isLinked ? undefined : linkUrl }),
       );
       return;
-    }
-
-    const envVarName = "ANTHROPIC_API_KEY";
-    const apiKey = z
-      .string({ message: `${envVarName} is required` })
-      .nonempty()
-      .parse(process.env[envVarName]);
-
-    const messages: AnthropicMessage[] = [{ role: "user", content: trimmedText }];
-
-    for (let i = 0; i < 10; i++) {
-      const nowIsoUtc = new Date().toISOString();
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 1024,
-          system: getSystemPromptNowUtc(nowIsoUtc),
-          tools: TOOLS.map(({ handler: _, ...schema }) => schema),
-          messages,
-        }),
+    } else if (command === "/unlink") {
+      const unlinked = await ctx.runMutation(internal.telegram.users.unlinkChat, {
+        chatId: args.chatId,
       });
+      await sendTelegramMessage(
+        args.chatId,
+        unlinked
+          ? "This chat has been unlinked from your account.\n\nUse the link flow to reconnect it later.\nUse /help to see available commands."
+          : `This chat is not currently linked.\n\nLink it here:\n${linkUrl}\n\nUse /help to see available commands.`,
+      );
+      return;
+    } else if (!isLinked) {
+      await sendTelegramMessage(
+        args.chatId,
+        `This chat is not linked to a Taskologist account.\n\nTap the link to link it:\n${linkUrl}\n\nAfter linking, use /help to see commands, including /unlink for disconnecting this chat later.`,
+      );
+      return;
+    } else {
+      const userId = linkedUserId;
 
-      if (!response.ok) {
-        const body = await response.text();
-        await sendTelegramMessage(args.chatId, "Sorry, something went wrong.");
-        console.error("Anthropic API error:", response.status, body);
-        return;
-      }
+      const envVarName = "ANTHROPIC_API_KEY";
+      const apiKey = z
+        .string({ message: `${envVarName} is required` })
+        .nonempty()
+        .parse(process.env[envVarName]);
 
-      const result = (await response.json()) as AnthropicResponse;
+      const messages: AnthropicMessage[] = [{ role: "user", content: trimmedText }];
 
-      if (result.stop_reason === "end_turn") {
-        const textBlock = result.content.find((b) => b.type === "text");
-        const replyText = textBlock?.type === "text" ? textBlock.text : "Done.";
-        await sendTelegramMessage(args.chatId, replyText);
-        return;
-      }
+      for (let i = 0; i < 10; i++) {
+        const nowIsoUtc = new Date().toISOString();
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "x-api-key": apiKey,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 1024,
+            system: getSystemPromptNowUtc(nowIsoUtc),
+            tools: TOOLS.map(({ handler: _, ...schema }) => schema),
+            messages,
+          }),
+        });
 
-      if (result.stop_reason === "tool_use") {
-        messages.push({ role: "assistant", content: result.content });
-
-        const toolResults: AnthropicContentBlock[] = [];
-
-        for (const block of result.content) {
-          if (block.type !== "tool_use") continue;
-
-          let toolResultContent: string;
-          try {
-            toolResultContent = await executeTool(ctx, userId, block.name, block.input);
-          } catch (err) {
-            toolResultContent = `Error: ${err instanceof Error ? err.message : String(err)}`;
-          }
-
-          toolResults.push({
-            type: "tool_result",
-            tool_use_id: block.id,
-            content: toolResultContent,
-          });
+        if (!response.ok) {
+          const body = await response.text();
+          await sendTelegramMessage(args.chatId, "Sorry, something went wrong.");
+          console.error("Anthropic API error:", response.status, body);
+          return;
         }
 
-        messages.push({ role: "user", content: toolResults });
-        continue;
-      }
+        const result = (await response.json()) as AnthropicResponse;
 
-      // Unexpected stop reason
-      await sendTelegramMessage(args.chatId, "Sorry, something went wrong.");
-      return;
+        if (result.stop_reason === "end_turn") {
+          const textBlock = result.content.find((b) => b.type === "text");
+          const replyText = textBlock?.type === "text" ? textBlock.text : "Done.";
+          await sendTelegramMessage(args.chatId, replyText);
+          return;
+        }
+
+        if (result.stop_reason === "tool_use") {
+          messages.push({ role: "assistant", content: result.content });
+
+          const toolResults: AnthropicContentBlock[] = [];
+
+          for (const block of result.content) {
+            if (block.type !== "tool_use") continue;
+
+            let toolResultContent: string;
+            try {
+              toolResultContent = await executeTool(ctx, userId, block.name, block.input);
+            } catch (err) {
+              toolResultContent = `Error: ${err instanceof Error ? err.message : String(err)}`;
+            }
+
+            toolResults.push({
+              type: "tool_result",
+              tool_use_id: block.id,
+              content: toolResultContent,
+            });
+          }
+
+          messages.push({ role: "user", content: toolResults });
+          continue;
+        }
+
+        // Unexpected stop reason
+        await sendTelegramMessage(args.chatId, "Sorry, something went wrong.");
+        return;
+      }
     }
 
     await sendTelegramMessage(args.chatId, "Sorry, I got confused. Please try again.");
@@ -267,9 +293,13 @@ export const processMessage = internalAction({
 export const sendLinkConfirmation = internalAction({
   args: { chatId: v.string(), userName: v.string() },
   handler: async (_ctx, args): Promise<void> => {
-    await sendTelegramMessage(args.chatId, `✅ ${args.userName} is now linked to this chat.`);
+    await sendTelegramMessage(args.chatId, formatLinkConfirmationMessage(args.userName));
   },
 });
+
+function buildTelegramLinkUrl(chatId: string): string {
+  return `${publicAppOrigin.replace(/\/$/, "")}/telegram-link?chat=${encodeURIComponent(chatId)}`;
+}
 
 async function executeTool(
   ctx: ActionCtx,

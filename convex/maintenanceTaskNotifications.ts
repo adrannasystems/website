@@ -5,6 +5,7 @@ import { internalAction, internalQuery } from "./_generated/server";
 import type { MaintenanceTaskState } from "./MaintenanceTaskModel";
 import { MaintenanceTaskModelImpl } from "./MaintenanceTaskModel";
 import { sendTelegramMessage } from "./telegram/api";
+import { buildTelegramChatsByUserId } from "./telegram/chatLinks";
 import { publicAppOrigin } from "./env";
 
 export type MaintenanceTaskForNotification = {
@@ -25,13 +26,17 @@ export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
       {},
     );
 
-    const linkedChats = await ctx.runQuery(internal.maintenanceTaskNotifications.listLinkedChats);
-    const telegramChatByUserId = new Map(linkedChats.map((c) => [c.userId as string, c.chatId]));
+    const userIds = [...new Set(dueOrOverdueTasks.map((task) => task.userId))];
+    const linkedChats =
+      userIds.length === 0
+        ? []
+        : await ctx.runQuery(internal.telegram.users.listLinkedChatsForUserIds, { userIds });
+    const telegramChatsByUserId = buildTelegramChatsByUserId(linkedChats);
 
     const notificationPromises: Promise<void>[] = [];
     for (const task of dueOrOverdueTasks) {
       notificationPromises.push(pushWebNotification(task));
-      notificationPromises.push(pushTelegramNotification(task, telegramChatByUserId));
+      notificationPromises.push(pushTelegramNotification(task, telegramChatsByUserId));
     }
 
     let notificationsSentCount = 0;
@@ -52,14 +57,6 @@ export const sendDueOrOverdueMaintenanceTaskNotifications = internalAction({
       notificationsSent: notificationsSentCount,
       notificationsFailedToSend: notificationsFailedToSendCount,
     };
-  },
-});
-
-export const listLinkedChats = internalQuery({
-  args: {},
-  handler: async (ctx) => {
-    const all = await ctx.db.query("telegramChats").collect();
-    return all.filter((c) => c.userId !== undefined);
   },
 });
 
@@ -119,13 +116,17 @@ function pushWebNotification(task: MaintenanceTaskForNotification): Promise<void
 
 function pushTelegramNotification(
   task: MaintenanceTaskForNotification,
-  telegramChatByUserId: Map<string, string>,
+  telegramChatsByUserId: Map<string, string[]>,
 ): Promise<void> {
-  const chatId = telegramChatByUserId.get(task.userId);
-  if (chatId === undefined) {
+  const chatIds = telegramChatsByUserId.get(task.userId);
+  if (chatIds === undefined || chatIds.length === 0) {
     return Promise.resolve();
   }
-  return sendTelegramMessage(chatId, `⚠️ ${task.name} is ${task.state.toLowerCase()}`);
+  return Promise.all(
+    chatIds.map(async (chatId) =>
+      sendTelegramMessage(chatId, `⚠️ ${task.name} is ${task.state.toLowerCase()}`),
+    ),
+  ).then(() => undefined);
 }
 
 const oneSignalAppIdEnvVarName = "ONESIGNAL_APP_ID";

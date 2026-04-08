@@ -27,3 +27,23 @@ jobs:
         run: npx convex deploy
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
+  sync_telegram_commands:
+    runs-on: blacksmith-4vcpu-ubuntu-2404
+    environment: production
+    needs: deploy_prod
+    if: needs.deploy_prod.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Sync Telegram bot commands
+        run: npm run telegram:sync-commands
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
