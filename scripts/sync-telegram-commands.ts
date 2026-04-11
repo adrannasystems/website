@@ -13,7 +13,9 @@ export function buildSetMyCommandsPayload() {
 }
 
 export function buildSetMyCommandsUrl(token: string): string {
-  return new URL(`bot${token}/setMyCommands`, TELEGRAM_API_BASE).toString();
+  const url = new URL(TELEGRAM_API_BASE);
+  url.pathname = `bot${token}/setMyCommands`;
+  return url.toString();
 }
 
 export function readTelegramBotToken(env: NodeJS.ProcessEnv = process.env): string {
