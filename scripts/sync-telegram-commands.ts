@@ -1,7 +1,6 @@
 import { z } from "zod";
+import { buildTelegramApiUrl } from "../convex/telegram/apiUrls.ts";
 import { telegramBotCommands } from "../convex/telegram/commands.ts";
-
-const TELEGRAM_API_BASE = "https://api.telegram.org";
 
 export function buildSetMyCommandsPayload() {
   return {
@@ -13,7 +12,7 @@ export function buildSetMyCommandsPayload() {
 }
 
 export function buildSetMyCommandsUrl(token: string): string {
-  return new URL(`./bot${token}/setMyCommands`, TELEGRAM_API_BASE).toString();
+  return buildTelegramApiUrl(token, "setMyCommands");
 }
 
 export function readTelegramBotToken(env: NodeJS.ProcessEnv = process.env): string {
