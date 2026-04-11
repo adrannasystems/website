@@ -96,8 +96,8 @@ async function sendOneSignalNotification(input: {
 
 function pushWebNotification(task: MaintenanceTaskForNotification): Promise<void> {
   return sendOneSignalNotification({
-    appId: oneSignalAppId,
-    restApiKey: oneSignalRestApiKey,
+    appId: getOneSignalAppId(),
+    restApiKey: getOneSignalRestApiKey(),
     openUrl: maintenanceTaskDeepLink(task.id),
     userId: task.userId,
     webPushTopic: `task-${task.id}-state`,
@@ -129,17 +129,21 @@ function pushTelegramNotification(
   ).then(() => undefined);
 }
 
-const oneSignalAppIdEnvVarName = "ONESIGNAL_APP_ID";
-const oneSignalAppId = z
-  .string({ message: `${oneSignalAppIdEnvVarName} is required` })
-  .nonempty()
-  .parse(process.env[oneSignalAppIdEnvVarName]);
+function getOneSignalAppId() {
+  const key = "ONESIGNAL_APP_ID";
+  return z
+    .string({ message: `${key} is required` })
+    .nonempty()
+    .parse(process.env[key]);
+}
 
-const oneSignalRestApiKeyEnvVarName = "ONESIGNAL_REST_API_KEY";
-const oneSignalRestApiKey = z
-  .string({ message: `${oneSignalRestApiKeyEnvVarName} is required` })
-  .nonempty()
-  .parse(process.env[oneSignalRestApiKeyEnvVarName]);
+function getOneSignalRestApiKey() {
+  const key = "ONESIGNAL_REST_API_KEY";
+  return z
+    .string({ message: `${key} is required` })
+    .nonempty()
+    .parse(process.env[key]);
+}
 
 function maintenanceTaskDeepLink(taskId: Id<"maintenanceTasks">): string {
   return new URL(

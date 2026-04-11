@@ -18,6 +18,8 @@ import type * as maintenanceTaskQueries from "../maintenanceTaskQueries.js";
 import type * as maintenanceTasks from "../maintenanceTasks.js";
 import type * as telegram_agent from "../telegram/agent.js";
 import type * as telegram_api from "../telegram/api.js";
+import type * as telegram_chatLinks from "../telegram/chatLinks.js";
+import type * as telegram_commands from "../telegram/commands.js";
 import type * as telegram_tasks from "../telegram/tasks.js";
 import type * as telegram_users from "../telegram/users.js";
 
@@ -38,6 +40,8 @@ declare const fullApi: ApiFromModules<{
   maintenanceTasks: typeof maintenanceTasks;
   "telegram/agent": typeof telegram_agent;
   "telegram/api": typeof telegram_api;
+  "telegram/chatLinks": typeof telegram_chatLinks;
+  "telegram/commands": typeof telegram_commands;
   "telegram/tasks": typeof telegram_tasks;
   "telegram/users": typeof telegram_users;
 }>;

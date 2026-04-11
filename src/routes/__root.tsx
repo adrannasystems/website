@@ -54,7 +54,7 @@ function getClerkPublishableKey() {
 }
 
 function getPostHogApiKey() {
-  const key = "VITE_PUBLIC_POSTHOG_KEY";
+  const key = "VITE_PUBLIC_POSTHOG_PROJECT_TOKEN";
   return z
     .string({ message: `${key} is required` })
     .nonempty()
