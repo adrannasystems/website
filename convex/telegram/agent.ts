@@ -1,26 +1,26 @@
+import Anthropic from "@anthropic-ai/sdk";
+import type {
+  ContentBlock,
+  ContentBlockParam,
+  MessageParam,
+  Tool,
+  ToolResultBlockParam,
+} from "@anthropic-ai/sdk/resources/messages";
 import { v } from "convex/values";
 import { z } from "zod";
 import { internalAction, type ActionCtx } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { sendTelegramMessage } from "./api";
 import type { Id } from "../_generated/dataModel";
+import {
+  extractTelegramCommand,
+  formatLinkConfirmationMessage,
+  formatTelegramHelpMessage,
+  telegramHelpCommand,
+  telegramUnlinkCommand,
+} from "./commands";
 
 import { publicAppOrigin } from "../env";
-
-type AnthropicMessage = {
-  role: "user" | "assistant";
-  content: AnthropicContentBlock[] | string;
-};
-
-type AnthropicContentBlock =
-  | { type: "text"; text: string }
-  | { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
-  | { type: "tool_result"; tool_use_id: string; content: string };
-
-type AnthropicResponse = {
-  stop_reason: "end_turn" | "tool_use" | string;
-  content: AnthropicContentBlock[];
-};
 
 type ToolHandler = (
   ctx: ActionCtx,
@@ -28,12 +28,7 @@ type ToolHandler = (
   input: Record<string, unknown>,
 ) => Promise<string>;
 
-const TOOLS: {
-  name: string;
-  description: string;
-  input_schema: { type: string; properties: Record<string, unknown>; required: string[] };
-  handler: ToolHandler;
-}[] = [
+const TOOLS = [
   {
     name: "list_tasks",
     description:
@@ -149,21 +144,24 @@ const TOOLS: {
       return "Task archived.";
     },
   },
-];
+] satisfies {
+  name: string;
+  description: string;
+  input_schema: Tool["input_schema"];
+  handler: ToolHandler;
+}[];
 
-const SYSTEM_PROMPT = `You are a maintenance task assistant. You help users manage recurring household or personal tasks — things like cleaning filters, changing batteries, or doing backups.
+function buildSystemPrompt(): string {
+  return `You are a maintenance task assistant. You help users manage recurring household or personal tasks — things like cleaning filters, changing batteries, or doing backups.
 
-You can list tasks, create new ones, log executions, and archive tasks. Tasks can be private (only you see them) or shared (all household members see them).
+  You can list tasks, create new ones, log executions, and archive tasks. Tasks can be private (only you see them) or shared (all household members see them).
 
-Be concise and friendly. When listing tasks, include their state (All Good / Due / Overdue / Never Done) and period. When confirming actions, be brief.`;
+  Be concise and friendly. When listing tasks, include their state (All Good / Due / Overdue / Never Done) and period. When confirming actions, be brief.
 
-function getSystemPromptNowUtc(nowIsoUtc: string): string {
-  return `${SYSTEM_PROMPT}
+  When a user refers to relative time (for example: "today", "yesterday", "tomorrow"), resolve it against the current UTC time above.
+  For log_execution.executedAt, pass a UTC ISO-8601 string with trailing "Z" (for example: 2026-04-07T12:34:56.789Z).
 
-Current UTC time: ${nowIsoUtc}
-
-When a user refers to relative time (for example: "today", "yesterday", "tomorrow"), resolve it against the current UTC time above.
-For log_execution.executedAt, pass a UTC ISO-8601 string with trailing "Z" (for example: 2026-04-07T12:34:56.789Z).`;
+  Current UTC time: ${new Date().toISOString()}`;
 }
 
 export const processMessage = internalAction({
@@ -173,103 +171,163 @@ export const processMessage = internalAction({
   },
   handler: async (ctx, args): Promise<void> => {
     const trimmedText = args.text.trim();
+    const command = extractTelegramCommand(trimmedText);
+    const linkUrl = buildTelegramLinkUrl(args.chatId);
 
-    const userId = await ctx.runQuery(internal.telegram.users.getLinkedUserId, {
+    const linkedUserId = await ctx.runQuery(internal.telegram.users.getLinkedUserId, {
       chatId: args.chatId,
     });
+    const isLinked = linkedUserId !== null;
 
-    if (userId === null) {
-      const linkUrl = `${publicAppOrigin.replace(/\/$/, "")}/telegram-link?chat=${encodeURIComponent(args.chatId)}`;
+    if (command === telegramHelpCommand) {
       await sendTelegramMessage(
         args.chatId,
-        `This chat is not linked to a Taskologist account.\n\nTap the link to link it:\n${linkUrl}`,
+        formatTelegramHelpMessage({ isLinked, linkUrl: isLinked ? undefined : linkUrl }),
       );
       return;
-    }
-
-    const envVarName = "ANTHROPIC_API_KEY";
-    const apiKey = z
-      .string({ message: `${envVarName} is required` })
-      .nonempty()
-      .parse(process.env[envVarName]);
-
-    const messages: AnthropicMessage[] = [{ role: "user", content: trimmedText }];
-
-    for (let i = 0; i < 10; i++) {
-      const nowIsoUtc = new Date().toISOString();
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 1024,
-          system: getSystemPromptNowUtc(nowIsoUtc),
-          tools: TOOLS.map(({ handler: _, ...schema }) => schema),
-          messages,
-        }),
+    } else if (command === telegramUnlinkCommand) {
+      const unlinked = await ctx.runMutation(internal.telegram.users.unlinkChat, {
+        chatId: args.chatId,
       });
-
-      if (!response.ok) {
-        const body = await response.text();
-        await sendTelegramMessage(args.chatId, "Sorry, something went wrong.");
-        console.error("Anthropic API error:", response.status, body);
-        return;
-      }
-
-      const result = (await response.json()) as AnthropicResponse;
-
-      if (result.stop_reason === "end_turn") {
-        const textBlock = result.content.find((b) => b.type === "text");
-        const replyText = textBlock?.type === "text" ? textBlock.text : "Done.";
-        await sendTelegramMessage(args.chatId, replyText);
-        return;
-      }
-
-      if (result.stop_reason === "tool_use") {
-        messages.push({ role: "assistant", content: result.content });
-
-        const toolResults: AnthropicContentBlock[] = [];
-
-        for (const block of result.content) {
-          if (block.type !== "tool_use") continue;
-
-          let toolResultContent: string;
-          try {
-            toolResultContent = await executeTool(ctx, userId, block.name, block.input);
-          } catch (err) {
-            toolResultContent = `Error: ${err instanceof Error ? err.message : String(err)}`;
-          }
-
-          toolResults.push({
-            type: "tool_result",
-            tool_use_id: block.id,
-            content: toolResultContent,
-          });
-        }
-
-        messages.push({ role: "user", content: toolResults });
-        continue;
-      }
-
-      // Unexpected stop reason
-      await sendTelegramMessage(args.chatId, "Sorry, something went wrong.");
+      await sendTelegramMessage(
+        args.chatId,
+        unlinked
+          ? `This chat has been unlinked from your account.\n\nUse the link flow to reconnect it later.\nUse ${telegramHelpCommand} to see available commands.`
+          : `This chat is not currently linked.\n\nLink it here:\n${linkUrl}\n\nUse ${telegramHelpCommand} to see available commands.`,
+      );
       return;
+    } else if (!isLinked) {
+      await sendTelegramMessage(
+        args.chatId,
+        `This chat is not linked to a Taskologist account.\n\nTap the link to link it:\n${linkUrl}\n\nAfter linking, use ${telegramHelpCommand} to see commands, including ${telegramUnlinkCommand} for disconnecting this chat later.`,
+      );
+      return;
+    } else {
+      await processLlmMessage(ctx, {
+        chatId: args.chatId,
+        text: trimmedText,
+        userId: linkedUserId,
+      });
     }
-
-    await sendTelegramMessage(args.chatId, "Sorry, I got confused. Please try again.");
   },
 });
 
 export const sendLinkConfirmation = internalAction({
   args: { chatId: v.string(), userName: v.string() },
   handler: async (_ctx, args): Promise<void> => {
-    await sendTelegramMessage(args.chatId, `✅ ${args.userName} is now linked to this chat.`);
+    await sendTelegramMessage(args.chatId, formatLinkConfirmationMessage(args.userName));
   },
 });
+
+function buildTelegramLinkUrl(chatId: string): string {
+  const url = new URL("telegram-link", publicAppOrigin);
+  url.searchParams.set("chat", chatId);
+  return url.toString();
+}
+
+async function processLlmMessage(
+  ctx: ActionCtx,
+  args: { chatId: string; text: string; userId: string },
+): Promise<void> {
+  const envVarName = "ANTHROPIC_API_KEY";
+  const apiKey = z
+    .string({ message: `${envVarName} is required` })
+    .nonempty()
+    .parse(process.env[envVarName]);
+  const anthropic = new Anthropic({ apiKey });
+
+  const messages: MessageParam[] = [{ role: "user", content: args.text }];
+
+  for (let i = 0; i < 10; i++) {
+    let result;
+    try {
+      result = await anthropic.messages.create({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1024,
+        system: buildSystemPrompt(),
+        tools: anthropicToolDefinitions(),
+        messages,
+      });
+    } catch (err) {
+      await sendTelegramMessage(args.chatId, "Sorry, something went wrong.");
+      console.error("Anthropic API error:", err);
+      return;
+    }
+
+    if (result.stop_reason === "end_turn") {
+      const textBlock = result.content.find((b) => b.type === "text");
+      const replyText = textBlock?.type === "text" ? textBlock.text : "Done.";
+      await sendTelegramMessage(args.chatId, replyText);
+      return;
+    } else if (result.stop_reason === "tool_use") {
+      messages.push({ role: "assistant", content: toAssistantContentBlocks(result.content) });
+      messages.push({
+        role: "user",
+        content: await executeToolCalls(ctx, args.userId, result.content),
+      });
+    } else {
+      await sendTelegramMessage(args.chatId, "Sorry, something went wrong.");
+      return;
+    }
+  }
+
+  await sendTelegramMessage(args.chatId, "Sorry, I got confused. Please try again.");
+}
+
+function anthropicToolDefinitions(): Tool[] {
+  return TOOLS.map((tool) => ({
+    name: tool.name,
+    description: tool.description,
+    input_schema: tool.input_schema,
+  }));
+}
+
+function toAssistantContentBlocks(contentBlocks: ContentBlock[]): ContentBlockParam[] {
+  return contentBlocks.flatMap((block): ContentBlockParam[] => {
+    if (block.type === "text") {
+      return [{ type: "text", text: block.text }];
+    } else if (block.type === "tool_use") {
+      return [
+        {
+          type: "tool_use",
+          id: block.id,
+          name: block.name,
+          input: block.input,
+        },
+      ];
+    } else {
+      return [];
+    }
+  });
+}
+
+async function executeToolCalls(
+  ctx: ActionCtx,
+  userId: string,
+  contentBlocks: ContentBlock[],
+): Promise<ToolResultBlockParam[]> {
+  const toolResults: ToolResultBlockParam[] = [];
+
+  for (const block of contentBlocks) {
+    if (block.type === "tool_use") {
+      let toolResultContent: string;
+      try {
+        const toolInput = z.record(z.string(), z.unknown()).parse(block.input);
+        toolResultContent = await executeTool(ctx, userId, block.name, toolInput);
+      } catch (err) {
+        toolResultContent = `Error: ${err instanceof Error ? err.message : String(err)}`;
+      }
+
+      toolResults.push({
+        type: "tool_result",
+        tool_use_id: block.id,
+        content: toolResultContent,
+      });
+    }
+  }
+
+  return toolResults;
+}
 
 async function executeTool(
   ctx: ActionCtx,
