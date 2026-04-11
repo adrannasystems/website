@@ -259,7 +259,11 @@ async function processLlmMessage(
         model: "claude-haiku-4-5-20251001",
         max_tokens: 1024,
         system: getSystemPromptNowUtc(nowIsoUtc),
-        tools: TOOLS.map(({ handler: _, ...schema }) => schema),
+        tools: TOOLS.map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          input_schema: tool.input_schema,
+        })),
         messages,
       }),
     });
