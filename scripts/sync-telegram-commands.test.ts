@@ -23,8 +23,8 @@ describe("syncTelegramCommands", () => {
   });
 
   it("builds the correct setMyCommands URL", () => {
-    expect(buildSetMyCommandsUrl("token-123")).toBe(
-      "https://api.telegram.org/bottoken-123/setMyCommands",
+    expect(buildSetMyCommandsUrl("123:token-abc")).toBe(
+      "https://api.telegram.org/bot123:token-abc/setMyCommands",
     );
   });
 
@@ -40,11 +40,11 @@ describe("syncTelegramCommands", () => {
 
     await syncTelegramCommands({
       fetchImpl,
-      env: { TELEGRAM_BOT_TOKEN: "token-123" },
+      env: { TELEGRAM_BOT_TOKEN: "123:token-abc" },
     });
 
     expect(fetchImpl).toHaveBeenCalledWith(
-      "https://api.telegram.org/bottoken-123/setMyCommands",
+      "https://api.telegram.org/bot123:token-abc/setMyCommands",
       expect.objectContaining({
         method: "POST",
         headers: { "content-type": "application/json" },
