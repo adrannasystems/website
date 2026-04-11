@@ -1,6 +1,5 @@
 import { z } from "zod";
-
-const TELEGRAM_API_BASE = "https://api.telegram.org";
+import { buildTelegramApiUrl } from "./apiUrls";
 
 export async function sendTelegramMessage(chatId: string, text: string): Promise<void> {
   const envVarName = "TELEGRAM_BOT_TOKEN";
@@ -9,7 +8,7 @@ export async function sendTelegramMessage(chatId: string, text: string): Promise
     .nonempty()
     .parse(process.env[envVarName]);
 
-  const response = await fetch(new URL(`bot${token}/sendMessage`, TELEGRAM_API_BASE), {
+  const response = await fetch(buildTelegramApiUrl(token, "sendMessage"), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, text }),
