@@ -8,6 +8,8 @@ import {
   extractTelegramCommand,
   formatLinkConfirmationMessage,
   formatTelegramHelpMessage,
+  telegramHelpCommand,
+  telegramUnlinkCommand,
 } from "./commands";
 
 import { publicAppOrigin } from "../env";
@@ -186,27 +188,27 @@ export const processMessage = internalAction({
     });
     const isLinked = linkedUserId !== null;
 
-    if (command === "/help") {
+    if (command === telegramHelpCommand) {
       await sendTelegramMessage(
         args.chatId,
         formatTelegramHelpMessage({ isLinked, linkUrl: isLinked ? undefined : linkUrl }),
       );
       return;
-    } else if (command === "/unlink") {
+    } else if (command === telegramUnlinkCommand) {
       const unlinked = await ctx.runMutation(internal.telegram.users.unlinkChat, {
         chatId: args.chatId,
       });
       await sendTelegramMessage(
         args.chatId,
         unlinked
-          ? "This chat has been unlinked from your account.\n\nUse the link flow to reconnect it later.\nUse /help to see available commands."
-          : `This chat is not currently linked.\n\nLink it here:\n${linkUrl}\n\nUse /help to see available commands.`,
+          ? `This chat has been unlinked from your account.\n\nUse the link flow to reconnect it later.\nUse ${telegramHelpCommand} to see available commands.`
+          : `This chat is not currently linked.\n\nLink it here:\n${linkUrl}\n\nUse ${telegramHelpCommand} to see available commands.`,
       );
       return;
     } else if (!isLinked) {
       await sendTelegramMessage(
         args.chatId,
-        `This chat is not linked to a Taskologist account.\n\nTap the link to link it:\n${linkUrl}\n\nAfter linking, use /help to see commands, including /unlink for disconnecting this chat later.`,
+        `This chat is not linked to a Taskologist account.\n\nTap the link to link it:\n${linkUrl}\n\nAfter linking, use ${telegramHelpCommand} to see commands, including ${telegramUnlinkCommand} for disconnecting this chat later.`,
       );
       return;
     } else {
@@ -227,7 +229,9 @@ export const sendLinkConfirmation = internalAction({
 });
 
 function buildTelegramLinkUrl(chatId: string): string {
-  return `${publicAppOrigin.replace(/\/$/, "")}/telegram-link?chat=${encodeURIComponent(chatId)}`;
+  const url = new URL("telegram-link", publicAppOrigin);
+  url.searchParams.set("chat", chatId);
+  return url.toString();
 }
 
 async function processLlmMessage(

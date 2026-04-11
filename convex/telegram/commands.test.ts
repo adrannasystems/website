@@ -4,6 +4,9 @@ import {
   formatLinkConfirmationMessage,
   formatTelegramHelpMessage,
   telegramBotCommands,
+  telegramHelpCommand,
+  telegramLinkCommand,
+  telegramUnlinkCommand,
 } from "./commands";
 
 describe("telegram commands helpers", () => {
@@ -21,8 +24,10 @@ describe("telegram commands helpers", () => {
   });
 
   it("extracts slash commands with or without bot usernames", () => {
-    expect(extractTelegramCommand("/help")).toBe("/help");
-    expect(extractTelegramCommand("/unlink@TaskologistBot please")).toBe("/unlink");
+    expect(extractTelegramCommand(telegramHelpCommand)).toBe(telegramHelpCommand);
+    expect(extractTelegramCommand(`${telegramUnlinkCommand}@TaskologistBot please`)).toBe(
+      telegramUnlinkCommand,
+    );
   });
 
   it("returns null when the message is not a slash command", () => {
@@ -35,17 +40,21 @@ describe("telegram commands helpers", () => {
       linkUrl: "https://example.com/telegram-link?chat=1",
     });
 
-    expect(message).toContain("/help");
-    expect(message).toContain("/unlink");
+    expect(message).toContain(telegramHelpCommand);
+    expect(message).toContain(telegramUnlinkCommand);
     expect(message).toContain("https://example.com/telegram-link?chat=1");
-    expect(message).toContain("After linking, you can use /unlink");
+    expect(message).toContain(`After linking, you can use ${telegramUnlinkCommand}`);
   });
 
   it("formats link confirmations with help and unlink guidance", () => {
     const message = formatLinkConfirmationMessage("Andreas");
 
     expect(message).toContain("Andreas is now linked");
-    expect(message).toContain("/help");
-    expect(message).toContain("/unlink");
+    expect(message).toContain(telegramHelpCommand);
+    expect(message).toContain(telegramUnlinkCommand);
+  });
+
+  it("defines the link command for link-related copy", () => {
+    expect(telegramLinkCommand).toBe("/link");
   });
 });

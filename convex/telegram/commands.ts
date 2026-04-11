@@ -3,13 +3,17 @@ export type TelegramBotCommand = {
   description: string;
 };
 
+export const telegramHelpCommand = "/help";
+export const telegramLinkCommand = "/link";
+export const telegramUnlinkCommand = "/unlink";
+
 export const telegramBotCommands: readonly TelegramBotCommand[] = [
   {
-    command: "help",
+    command: telegramHelpCommand.slice(1),
     description: "Show available commands and how to use the bot",
   },
   {
-    command: "unlink",
+    command: telegramUnlinkCommand.slice(1),
     description: "Unlink this chat from your account",
   },
 ];
@@ -34,8 +38,8 @@ export function formatTelegramHelpMessage(input: {
 }): string {
   const commandLines = [
     "Available commands:",
-    "/help — show this help",
-    "/unlink — unlink only this chat from your account",
+    `${telegramHelpCommand} — show this help`,
+    `${telegramUnlinkCommand} — unlink only this chat from your account`,
     "",
     "You can also send natural-language messages to list tasks, create tasks, and log completed work.",
   ];
@@ -47,7 +51,10 @@ export function formatTelegramHelpMessage(input: {
     if (input.linkUrl !== undefined) {
       commandLines.push("", `Link this chat here:\n${input.linkUrl}`);
     }
-    commandLines.push("", "After linking, you can use /unlink to disconnect this chat again.");
+    commandLines.push(
+      "",
+      `After linking, you can use ${telegramUnlinkCommand} to disconnect this chat again.`,
+    );
   }
 
   return commandLines.join("\n");
@@ -58,7 +65,7 @@ export function formatLinkConfirmationMessage(userName: string | undefined): str
   return [
     `✅ ${resolvedUserName} is now linked to this chat.`,
     "",
-    "Use /help to see what the bot can do.",
-    "Use /unlink to disconnect only this chat later.",
+    `Use ${telegramHelpCommand} to see what the bot can do.`,
+    `Use ${telegramUnlinkCommand} to disconnect only this chat later.`,
   ].join("\n");
 }

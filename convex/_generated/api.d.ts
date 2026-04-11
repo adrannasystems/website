@@ -16,6 +16,7 @@ import type * as http from "../http.js";
 import type * as maintenanceTaskNotifications from "../maintenanceTaskNotifications.js";
 import type * as maintenanceTaskQueries from "../maintenanceTaskQueries.js";
 import type * as maintenanceTasks from "../maintenanceTasks.js";
+import type * as publicAppUrls from "../publicAppUrls.js";
 import type * as telegram_agent from "../telegram/agent.js";
 import type * as telegram_api from "../telegram/api.js";
 import type * as telegram_chatLinks from "../telegram/chatLinks.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   maintenanceTaskNotifications: typeof maintenanceTaskNotifications;
   maintenanceTaskQueries: typeof maintenanceTaskQueries;
   maintenanceTasks: typeof maintenanceTasks;
+  publicAppUrls: typeof publicAppUrls;
   "telegram/agent": typeof telegram_agent;
   "telegram/api": typeof telegram_api;
   "telegram/chatLinks": typeof telegram_chatLinks;

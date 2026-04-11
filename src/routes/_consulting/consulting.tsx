@@ -19,10 +19,10 @@ export function ConsultingLandingPage() {
     const subject = subjectValue !== "" ? subjectValue : "Contact from Adranna Systems website";
     const body = messageValue;
 
-    const mailtoUrl = `mailto:a.buchel@outlook.com?subject=${encodeURIComponent(
-      subject,
-    )}&body=${encodeURIComponent(body)}`;
-    window.location.href = mailtoUrl;
+    const mailtoUrl = new URL("mailto:a.buchel@outlook.com");
+    mailtoUrl.searchParams.set("subject", subject);
+    mailtoUrl.searchParams.set("body", body);
+    window.location.href = mailtoUrl.toString();
   }, []);
 
   return (

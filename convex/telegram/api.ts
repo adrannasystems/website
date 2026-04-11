@@ -9,7 +9,7 @@ export async function sendTelegramMessage(chatId: string, text: string): Promise
     .nonempty()
     .parse(process.env[envVarName]);
 
-  const response = await fetch(`${TELEGRAM_API_BASE}/bot${token}/sendMessage`, {
+  const response = await fetch(new URL(`bot${token}/sendMessage`, TELEGRAM_API_BASE), {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, text }),
