@@ -12,7 +12,7 @@ permissions:
 jobs:
   deploy_prod:
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    environment: production
+    environment: convex-prod
     steps:
       - uses: actions/checkout@v4
 
@@ -30,7 +30,7 @@ jobs:
 
   sync_telegram_commands:
     runs-on: blacksmith-4vcpu-ubuntu-2404
-    environment: production
+    environment: telegram-prod
     needs: deploy_prod
     if: needs.deploy_prod.result == 'success'
     steps:
