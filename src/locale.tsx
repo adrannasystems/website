@@ -1,5 +1,5 @@
 import * as React from "react";
-import { setLocale } from "@/paraglide/runtime.js";
+import { setLocale as setParaglideLocale } from "@/paraglide/runtime.js";
 import { objectKeys } from "./object-helpers";
 
 export const SUPPORTED_LOCALES = {
@@ -15,25 +15,28 @@ const LocaleContext = React.createContext<{
   locale: Locale;
   changeLocale: (locale: Locale) => void;
 } | null>(null);
+LocaleContext.displayName = "LocaleContext";
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = React.useState<Locale>(() => {
+  const [locale, setLocale] = React.useState<Locale>(() => {
     const initial = detectInitialLocale();
-    void setLocale(initial);
+    void setParaglideLocale(initial);
     return initial;
   });
 
   const changeLocale = React.useCallback((newLocale: Locale) => {
     localStorage.setItem(STORAGE_KEY, newLocale);
-    void setLocale(newLocale, { reload: false });
-    setLocaleState(newLocale);
+    void setParaglideLocale(newLocale, { reload: false });
+    setLocale(newLocale);
   }, []);
 
-  return <LocaleContext value={{ locale, changeLocale }}>{children}</LocaleContext>;
+  const contextValue = React.useMemo(() => ({ locale, changeLocale }), [changeLocale, locale]);
+
+  return <LocaleContext value={contextValue}>{children}</LocaleContext>;
 }
 
 export function useLocale() {
-  const ctx = React.useContext(LocaleContext);
+  const ctx = React.use(LocaleContext);
   if (ctx === null) {
     throw new Error("useLocale must be used within LocaleProvider");
   }

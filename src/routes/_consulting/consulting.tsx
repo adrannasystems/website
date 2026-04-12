@@ -10,7 +10,9 @@ function ConsultingPage() {
 }
 
 export function ConsultingLandingPage() {
-  const handleSubmit = React.useCallback((event: React.FormEvent<HTMLFormElement>) => {
+  const currentYear = useCurrentYear();
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const subjectValue = String(formData.get("subject") ?? "").trim();
@@ -23,7 +25,7 @@ export function ConsultingLandingPage() {
     mailtoUrl.searchParams.set("subject", subject);
     mailtoUrl.searchParams.set("body", body);
     window.location.href = mailtoUrl.toString();
-  }, []);
+  };
 
   return (
     <div>
@@ -137,11 +139,40 @@ export function ConsultingLandingPage() {
           <div className="flex flex-col items-center justify-between md:flex-row">
             <div className="mb-4 text-xl font-bold md:mb-0">Adranna Systems</div>
             <div className="text-sm text-gray-400">
-              © 2024-{new Date().getFullYear()} Adranna Systems. All rights reserved.
+              © 2024-{currentYear} Adranna Systems. All rights reserved.
             </div>
           </div>
         </div>
       </footer>
     </div>
   );
+}
+
+function useCurrentYear() {
+  const [currentYear, setCurrentYear] = React.useState(() => new Date().getFullYear());
+
+  React.useEffect(() => {
+    let timeoutId: number | undefined;
+
+    const scheduleNextYearUpdate = () => {
+      const now = new Date();
+      const nextYear = now.getFullYear() + 1;
+      const nextYearStartsAt = new Date(nextYear, 0, 1).getTime();
+      const delayMs = nextYearStartsAt - now.getTime();
+
+      timeoutId = window.setTimeout(() => {
+        setCurrentYear(new Date().getFullYear());
+        scheduleNextYearUpdate();
+      }, delayMs);
+    };
+
+    scheduleNextYearUpdate();
+    return () => {
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, []);
+
+  return currentYear;
 }
