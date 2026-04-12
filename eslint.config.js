@@ -2,15 +2,14 @@
 
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import eslintReactPlugin from "@eslint-react/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
-import reactPlugin from "eslint-plugin-react";
-import reactHooksPlugin from "eslint-plugin-react-hooks";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-/** @type {import('eslint/use-at-your-own-risk').FlatConfig[]} */
+/** @type {import('eslint').Linter.Config[]} */
 const config = [
   {
     ignores: ["dist", "node_modules", ".output", "convex/_generated", ".claude", "src/paraglide"],
@@ -28,12 +27,17 @@ const config = [
       },
     },
     plugins: {
+      "@eslint-react": eslintReactPlugin,
       "@typescript-eslint": tsPlugin,
-      react: reactPlugin,
-      "react-hooks": reactHooksPlugin,
     },
     settings: {
-      react: { version: "detect" },
+      // Change these if the app moves away from React's automatic JSX runtime
+      // or starts using a custom polymorphic prop instead of `as`.
+      "react-x": {
+        version: "detect",
+        importSource: "react",
+        polymorphicPropName: "as",
+      },
     },
     rules: {
       "no-unused-vars": "off",
@@ -86,11 +90,20 @@ const config = [
       "@typescript-eslint/array-type": ["error", { default: "array" }],
       "@typescript-eslint/ban-ts-comment": "error",
 
-      "react/react-in-jsx-scope": "off",
-      "react/jsx-uses-react": "off",
-      "react/jsx-uses-vars": "error",
-      "react-hooks/rules-of-hooks": "error",
-      "react-hooks/exhaustive-deps": "error",
+      // ESLint React's normal TypeScript preset covers React core, hooks, JSX,
+      // React DOM, Web APIs, and naming conventions. Keep its warning levels
+      // intact so noisy adoption checks do not fail CI until intentionally
+      // promoted.
+      ...eslintReactPlugin.configs["recommended-typescript"].rules,
+
+      // Likely tuning points if the preset is too noisy:
+      // - @eslint-react/no-use-context: React 19 prefers `use(context)`.
+      // - @eslint-react/set-state-in-effect: flags state synced from props/data.
+      // - @eslint-react/no-array-index-key: flags index keys in static lists.
+      // - @eslint-react/no-clone-element: flags React.cloneElement usage.
+      // - @eslint-react/dom-no-dangerously-set-innerhtml: flags raw HTML sinks.
+      // - @eslint-react/naming-convention-*: naming preference warnings.
+      "@eslint-react/use-state": "error",
     },
   },
   {

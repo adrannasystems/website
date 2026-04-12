@@ -19,6 +19,7 @@ import type * as maintenanceTasks from "../maintenanceTasks.js";
 import type * as publicAppUrls from "../publicAppUrls.js";
 import type * as telegram_agent from "../telegram/agent.js";
 import type * as telegram_api from "../telegram/api.js";
+import type * as telegram_apiUrls from "../telegram/apiUrls.js";
 import type * as telegram_chatLinks from "../telegram/chatLinks.js";
 import type * as telegram_commands from "../telegram/commands.js";
 import type * as telegram_tasks from "../telegram/tasks.js";
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   publicAppUrls: typeof publicAppUrls;
   "telegram/agent": typeof telegram_agent;
   "telegram/api": typeof telegram_api;
+  "telegram/apiUrls": typeof telegram_apiUrls;
   "telegram/chatLinks": typeof telegram_chatLinks;
   "telegram/commands": typeof telegram_commands;
   "telegram/tasks": typeof telegram_tasks;

@@ -128,8 +128,11 @@ function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
   const { task: highlightTaskIdFromUrl } = Route.useSearch();
   const navigate = Route.useNavigate();
   const navigateRef = React.useRef(navigate);
-  navigateRef.current = navigate;
   const [pulseTaskId, setPulseTaskId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    navigateRef.current = navigate;
+  }, [navigate]);
 
   const createTask = useMutation(api.maintenanceTasks.createTask);
   const reorderTasks = useMutation(api.maintenanceTasks.reorderTasks);
@@ -653,7 +656,7 @@ function MaintenanceTaskRow(props: {
   const [isArchivingTask, setIsArchivingTask] = React.useState(false);
 
   const [executionDialogOpen, setExecutionDialogOpen] = React.useState(false);
-  const [executionDialogValue, setExecutionDialogValue] = React.useState(
+  const [executionDialogValue, setExecutionDialogValue] = React.useState(() =>
     getNowDateTimeLocalValue(),
   );
   const [isSavingExecutionCustom, setIsSavingExecutionCustom] = React.useState(false);
