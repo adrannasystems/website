@@ -45,12 +45,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { type Locale, useLocale } from "@/locale";
 import { m } from "@/paraglide/messages.js";
+import { z } from "zod";
 
 type MaintenanceTask = FunctionReturnType<
   typeof api.maintenanceTasks.listTasksForMaintenanceOverview
 >[number];
 
+const taskologistIndexSearchSchema = z.object({
+  task: z
+    .string()
+    .trim()
+    .transform((v) => (v.length > 0 ? v : undefined))
+    .optional(),
+});
+
 export const Route = createFileRoute("/_taskologist/")({
+  validateSearch: taskologistIndexSearchSchema,
   component: IndexPage,
 });
 
@@ -114,6 +124,8 @@ function TaskologistLandingPage() {
 
 function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
   const { locale } = useLocale();
+  const { task: openTaskIdFromUrl } = Route.useSearch();
+  const navigate = Route.useNavigate();
 
   const createTask = useMutation(api.maintenanceTasks.createTask);
   const reorderTasks = useMutation(api.maintenanceTasks.reorderTasks);
@@ -318,6 +330,25 @@ function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
   const tasksLoading = authLoading || activeTasksResult === undefined;
   const archivedTasksLoading = authLoading || archivedTasksResult === undefined;
 
+  const openTask =
+    openTaskIdFromUrl === undefined || activeTasksResult === undefined
+      ? undefined
+      : activeTasksResult.find((t) => t.id === openTaskIdFromUrl);
+
+  const closeTaskModal = React.useCallback(() => {
+    void navigate({ search: {}, replace: true, resetScroll: false });
+  }, [navigate]);
+
+  React.useEffect(() => {
+    if (
+      openTaskIdFromUrl !== undefined &&
+      activeTasksResult !== undefined &&
+      openTask === undefined
+    ) {
+      closeTaskModal();
+    }
+  }, [activeTasksResult, closeTaskModal, openTask, openTaskIdFromUrl]);
+
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-20" lang={locale}>
       <div className="mx-auto max-w-4xl">
@@ -493,6 +524,26 @@ function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
             </div>
           </div>
         </section>
+
+        <Dialog
+          open={openTaskIdFromUrl !== undefined}
+          onOpenChange={(open) => {
+            if (!open) {
+              closeTaskModal();
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-2xl" showCloseButton={openTask !== undefined}>
+            <DialogTitle className="sr-only">
+              {openTask === undefined ? m.loading() : openTask.name}
+            </DialogTitle>
+            {openTask === undefined ? (
+              <div className="px-6 py-10 text-center text-sm text-gray-500">{m.loading()}</div>
+            ) : (
+              <MaintenanceTaskRow task={openTask} onError={setErrorMessage} />
+            )}
+          </DialogContent>
+        </Dialog>
 
         <section>
           <h2 className="mb-3 text-lg font-medium text-gray-900">{m.archivedTasks()}</h2>
