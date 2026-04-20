@@ -36,7 +36,7 @@
     "neverthrow": "^8.2.0",
     "posthog-js": "^1.366.0",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4",
+    "react-dom": "^19.2.5",
     "react-onesignal": "^3.5.1",
     "tailwind-merge": "^3.5.0",
     "zod": "^4.3.6"
