@@ -5,6 +5,10 @@ import { createUnauthorizedError, authedUserIdOrThrow } from "./auth";
 import { MaintenanceTaskModelImpl } from "./MaintenanceTaskModel";
 import { queryActiveTasksForUser } from "./maintenanceTaskQueries";
 import { executeTask } from "../domain/operations/executeTask";
+import {
+  archiveTask as archiveTaskDomain,
+  unarchiveTask as unarchiveTaskDomain,
+} from "../domain/operations/archiveTask";
 
 export const listTasksForMaintenanceOverview = query({
   args: {},
@@ -95,7 +99,7 @@ export const archiveTask = mutation({
   args: { taskId: v.id("maintenanceTasks") },
   handler: async (ctx, args) => {
     const userId = await authedUserIdOrThrow(ctx);
-    return archiveTaskImpl(ctx, userId, args.taskId);
+    await archiveTaskForActor(ctx, userId, args.taskId);
   },
 });
 
@@ -104,20 +108,43 @@ export const archiveTaskForUser = internalMutation({
     userId: v.string(),
     taskId: v.id("maintenanceTasks"),
   },
-  handler: (ctx, args) => archiveTaskImpl(ctx, args.userId, args.taskId),
+  handler: (ctx, args) => archiveTaskForActor(ctx, args.userId, args.taskId),
 });
+
+async function archiveTaskForActor(
+  ctx: MutationCtx,
+  actorId: string,
+  taskId: Id<"maintenanceTasks">,
+): Promise<void> {
+  const raw = await ctx.db.get(taskId);
+  if (raw === null) {
+    throw createMaintenanceTaskNotFoundError();
+  } else {
+    const task = new MaintenanceTaskModelImpl(raw);
+    const result = archiveTaskDomain(task, actorId, Date.now());
+    if (result.isErr()) {
+      throw createUnauthorizedError();
+    } else {
+      await ctx.db.patch(taskId, { deletedAt: result.value.archivedAt });
+    }
+  }
+}
 
 export const unarchiveTask = mutation({
   args: { taskId: v.id("maintenanceTasks") },
   handler: async (ctx, args) => {
     const userId = await authedUserIdOrThrow(ctx);
-    const task = await ctx.db.get(args.taskId);
-    if (task === null) {
+    const raw = await ctx.db.get(args.taskId);
+    if (raw === null) {
       throw createMaintenanceTaskNotFoundError();
-    } else if (task.userId !== userId && task.shared !== true) {
-      throw createUnauthorizedError();
     } else {
-      await ctx.db.patch(args.taskId, { deletedAt: null });
+      const task = new MaintenanceTaskModelImpl(raw);
+      const result = unarchiveTaskDomain(task, userId);
+      if (result.isOk()) {
+        await ctx.db.patch(args.taskId, { deletedAt: result.value.archivedAt });
+      } else {
+        throw createUnauthorizedError();
+      }
     }
   },
 });
@@ -274,21 +301,6 @@ async function createTaskImpl(
     shared,
     ...(shared ? { lastSharedAt: Date.now() } : {}),
   });
-}
-
-async function archiveTaskImpl(
-  ctx: MutationCtx,
-  userId: string,
-  taskId: Id<"maintenanceTasks">,
-): Promise<void> {
-  const task = await ctx.db.get(taskId);
-  if (task === null) {
-    throw createMaintenanceTaskNotFoundError();
-  } else if (task.userId !== userId && task.shared !== true) {
-    throw createUnauthorizedError();
-  } else {
-    await ctx.db.patch(taskId, { deletedAt: Date.now() });
-  }
 }
 
 async function logExecutionImpl(
