@@ -43,8 +43,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import { z } from "zod";
 import { type Locale, useLocale } from "@/locale";
 import { m } from "@/paraglide/messages.js";
 
@@ -52,16 +50,7 @@ type MaintenanceTask = FunctionReturnType<
   typeof api.maintenanceTasks.listTasksForMaintenanceOverview
 >[number];
 
-const taskologistIndexSearchSchema = z.object({
-  task: z
-    .string()
-    .trim()
-    .transform((v) => (v.length > 0 ? v : undefined))
-    .optional(),
-});
-
 export const Route = createFileRoute("/_taskologist/")({
-  validateSearch: taskologistIndexSearchSchema,
   component: IndexPage,
 });
 
@@ -125,14 +114,6 @@ function TaskologistLandingPage() {
 
 function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
   const { locale } = useLocale();
-  const { task: highlightTaskIdFromUrl } = Route.useSearch();
-  const navigate = Route.useNavigate();
-  const navigateRef = React.useRef(navigate);
-  const [pulseTaskId, setPulseTaskId] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    navigateRef.current = navigate;
-  }, [navigate]);
 
   const createTask = useMutation(api.maintenanceTasks.createTask);
   const reorderTasks = useMutation(api.maintenanceTasks.reorderTasks);
@@ -159,40 +140,6 @@ function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
     api.maintenanceTasks.getMyTaskPositions,
     authLoading ? "skip" : {},
   );
-
-  React.useLayoutEffect(() => {
-    if (highlightTaskIdFromUrl === undefined) {
-      return;
-    }
-    if (activeTasksResult === undefined) {
-      return;
-    }
-    const found = activeTasksResult.some((t) => t.id === highlightTaskIdFromUrl);
-    if (!found) {
-      return;
-    }
-
-    setPulseTaskId(highlightTaskIdFromUrl);
-
-    const rowId = `maintenance-task-${highlightTaskIdFromUrl}`;
-    const scrollFrame = window.requestAnimationFrame(() => {
-      document.getElementById(rowId)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-
-    const finishHighlightTimer = window.setTimeout(() => {
-      setPulseTaskId(null);
-      void navigateRef.current({
-        search: {},
-        replace: true,
-        resetScroll: false,
-      });
-    }, 2800);
-
-    return () => {
-      window.cancelAnimationFrame(scrollFrame);
-      window.clearTimeout(finishHighlightTimer);
-    };
-  }, [activeTasksResult, highlightTaskIdFromUrl]);
 
   const handleCreateTask = React.useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -532,12 +479,7 @@ function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
                       strategy={verticalListSortingStrategy}
                     >
                       {orderedTasks.map((task) => (
-                        <SortableTaskRow
-                          key={task.id}
-                          task={task}
-                          onError={setErrorMessage}
-                          isPulseHighlighted={pulseTaskId === task.id}
-                        />
+                        <SortableTaskRow key={task.id} task={task} onError={setErrorMessage} />
                       ))}
                     </SortableContext>
                   </DndContext>
@@ -600,11 +542,7 @@ function getPushSubscriptionToggleLabel(
   }
 }
 
-function SortableTaskRow(props: {
-  task: MaintenanceTask;
-  onError: (message: string) => void;
-  isPulseHighlighted?: boolean;
-}) {
+function SortableTaskRow(props: { task: MaintenanceTask; onError: (message: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: props.task.id,
   });
@@ -623,9 +561,6 @@ function SortableTaskRow(props: {
       <MaintenanceTaskRow
         task={props.task}
         onError={props.onError}
-        {...(props.isPulseHighlighted !== undefined
-          ? { isPulseHighlighted: props.isPulseHighlighted }
-          : {})}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
@@ -635,7 +570,6 @@ function SortableTaskRow(props: {
 function MaintenanceTaskRow(props: {
   task: MaintenanceTask;
   onError: (message: string) => void;
-  isPulseHighlighted?: boolean;
   dragHandleProps?: Record<string, unknown>;
 }) {
   const { locale } = useLocale();
@@ -760,15 +694,7 @@ function MaintenanceTaskRow(props: {
   const executions = executionsResult ?? [];
 
   return (
-    <div
-      id={`maintenance-task-${props.task.id}`}
-      className={cn(
-        "px-6 py-4",
-        props.isPulseHighlighted === true
-          ? "scroll-mt-24 rounded-md border-l-4 border-sky-600 bg-sky-100 shadow-[inset_0_0_0_2px_rgba(2,132,199,0.35)] transition-colors duration-300"
-          : undefined,
-      )}
-    >
+    <div className="px-6 py-4">
       <div className="flex gap-1">
         {props.dragHandleProps !== undefined ? (
           <button
