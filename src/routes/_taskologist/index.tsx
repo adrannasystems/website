@@ -540,7 +540,7 @@ function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
             {openTask === undefined ? (
               <div className="px-6 py-10 text-center text-sm text-gray-500">{m.loading()}</div>
             ) : (
-              <MaintenanceTaskRow task={openTask} onError={setErrorMessage} />
+              <MaintenanceTaskRow key={openTask.id} task={openTask} onError={setErrorMessage} />
             )}
           </DialogContent>
         </Dialog>
