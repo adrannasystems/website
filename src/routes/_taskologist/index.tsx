@@ -43,10 +43,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import { z } from "zod";
 import { type Locale, useLocale } from "@/locale";
 import { m } from "@/paraglide/messages.js";
+import { z } from "zod";
 
 type MaintenanceTask = FunctionReturnType<
   typeof api.maintenanceTasks.listTasksForMaintenanceOverview
@@ -125,14 +124,8 @@ function TaskologistLandingPage() {
 
 function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
   const { locale } = useLocale();
-  const { task: highlightTaskIdFromUrl } = Route.useSearch();
+  const { task: openTaskIdFromUrl } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const navigateRef = React.useRef(navigate);
-  const [pulseTaskId, setPulseTaskId] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    navigateRef.current = navigate;
-  }, [navigate]);
 
   const createTask = useMutation(api.maintenanceTasks.createTask);
   const reorderTasks = useMutation(api.maintenanceTasks.reorderTasks);
@@ -159,40 +152,6 @@ function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
     api.maintenanceTasks.getMyTaskPositions,
     authLoading ? "skip" : {},
   );
-
-  React.useLayoutEffect(() => {
-    if (highlightTaskIdFromUrl === undefined) {
-      return;
-    }
-    if (activeTasksResult === undefined) {
-      return;
-    }
-    const found = activeTasksResult.some((t) => t.id === highlightTaskIdFromUrl);
-    if (!found) {
-      return;
-    }
-
-    setPulseTaskId(highlightTaskIdFromUrl);
-
-    const rowId = `maintenance-task-${highlightTaskIdFromUrl}`;
-    const scrollFrame = window.requestAnimationFrame(() => {
-      document.getElementById(rowId)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    });
-
-    const finishHighlightTimer = window.setTimeout(() => {
-      setPulseTaskId(null);
-      void navigateRef.current({
-        search: {},
-        replace: true,
-        resetScroll: false,
-      });
-    }, 2800);
-
-    return () => {
-      window.cancelAnimationFrame(scrollFrame);
-      window.clearTimeout(finishHighlightTimer);
-    };
-  }, [activeTasksResult, highlightTaskIdFromUrl]);
 
   const handleCreateTask = React.useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -371,6 +330,25 @@ function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
   const tasksLoading = authLoading || activeTasksResult === undefined;
   const archivedTasksLoading = authLoading || archivedTasksResult === undefined;
 
+  const openTask =
+    openTaskIdFromUrl === undefined || activeTasksResult === undefined
+      ? undefined
+      : activeTasksResult.find((t) => t.id === openTaskIdFromUrl);
+
+  const closeTaskModal = React.useCallback(() => {
+    void navigate({ search: {}, replace: true, resetScroll: false });
+  }, [navigate]);
+
+  React.useEffect(() => {
+    if (
+      openTaskIdFromUrl !== undefined &&
+      activeTasksResult !== undefined &&
+      openTask === undefined
+    ) {
+      closeTaskModal();
+    }
+  }, [activeTasksResult, closeTaskModal, openTask, openTaskIdFromUrl]);
+
   return (
     <main className="min-h-screen bg-gray-50 px-6 py-20" lang={locale}>
       <div className="mx-auto max-w-4xl">
@@ -532,12 +510,7 @@ function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
                       strategy={verticalListSortingStrategy}
                     >
                       {orderedTasks.map((task) => (
-                        <SortableTaskRow
-                          key={task.id}
-                          task={task}
-                          onError={setErrorMessage}
-                          isPulseHighlighted={pulseTaskId === task.id}
-                        />
+                        <SortableTaskRow key={task.id} task={task} onError={setErrorMessage} />
                       ))}
                     </SortableContext>
                   </DndContext>
@@ -551,6 +524,26 @@ function MaintenanceTasksContent({ authLoading }: { authLoading: boolean }) {
             </div>
           </div>
         </section>
+
+        <Dialog
+          open={openTaskIdFromUrl !== undefined}
+          onOpenChange={(open) => {
+            if (!open) {
+              closeTaskModal();
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-2xl" showCloseButton={openTask !== undefined}>
+            <DialogTitle className="sr-only">
+              {openTask === undefined ? m.loading() : openTask.name}
+            </DialogTitle>
+            {openTask === undefined ? (
+              <div className="px-6 py-10 text-center text-sm text-gray-500">{m.loading()}</div>
+            ) : (
+              <MaintenanceTaskRow key={openTask.id} task={openTask} onError={setErrorMessage} />
+            )}
+          </DialogContent>
+        </Dialog>
 
         <section>
           <h2 className="mb-3 text-lg font-medium text-gray-900">{m.archivedTasks()}</h2>
@@ -600,11 +593,7 @@ function getPushSubscriptionToggleLabel(
   }
 }
 
-function SortableTaskRow(props: {
-  task: MaintenanceTask;
-  onError: (message: string) => void;
-  isPulseHighlighted?: boolean;
-}) {
+function SortableTaskRow(props: { task: MaintenanceTask; onError: (message: string) => void }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: props.task.id,
   });
@@ -623,9 +612,6 @@ function SortableTaskRow(props: {
       <MaintenanceTaskRow
         task={props.task}
         onError={props.onError}
-        {...(props.isPulseHighlighted !== undefined
-          ? { isPulseHighlighted: props.isPulseHighlighted }
-          : {})}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
@@ -635,7 +621,6 @@ function SortableTaskRow(props: {
 function MaintenanceTaskRow(props: {
   task: MaintenanceTask;
   onError: (message: string) => void;
-  isPulseHighlighted?: boolean;
   dragHandleProps?: Record<string, unknown>;
 }) {
   const { locale } = useLocale();
@@ -760,15 +745,7 @@ function MaintenanceTaskRow(props: {
   const executions = executionsResult ?? [];
 
   return (
-    <div
-      id={`maintenance-task-${props.task.id}`}
-      className={cn(
-        "px-6 py-4",
-        props.isPulseHighlighted === true
-          ? "scroll-mt-24 rounded-md border-l-4 border-sky-600 bg-sky-100 shadow-[inset_0_0_0_2px_rgba(2,132,199,0.35)] transition-colors duration-300"
-          : undefined,
-      )}
-    >
+    <div className="px-6 py-4">
       <div className="flex gap-1">
         {props.dragHandleProps !== undefined ? (
           <button
@@ -782,181 +759,119 @@ function MaintenanceTaskRow(props: {
         ) : null}
         <div className="flex flex-1 flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            {isEditing ? (
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div className="grid gap-1.5">
-                  <Label htmlFor={`edit-name-${props.task.id}`}>{m.taskName()}</Label>
-                  <Input
-                    id={`edit-name-${props.task.id}`}
-                    value={editName}
-                    onChange={(event) => {
-                      setEditName(event.target.value);
-                    }}
-                  />
-                </div>
-                <div className="grid gap-1.5">
-                  <Label htmlFor={`edit-period-${props.task.id}`}>{m.taskPeriodHours()}</Label>
-                  <Input
-                    id={`edit-period-${props.task.id}`}
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={editPeriodHours}
-                    onChange={(event) => {
-                      setEditPeriodHours(event.target.value);
-                    }}
-                  />
-                </div>
-                <div className="flex items-center gap-2 sm:col-span-2">
-                  <input
-                    id={`edit-shared-${props.task.id}`}
-                    type="checkbox"
-                    checked={editShared}
-                    onChange={(e) => {
-                      setEditShared(e.target.checked);
-                    }}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  <Label htmlFor={`edit-shared-${props.task.id}`}>{m.taskShared()}</Label>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="text-lg font-medium text-gray-900">{props.task.name}</div>
-                <div className="text-sm text-gray-500">
-                  {m.periodHours({ hours: String(props.task.periodHours) })}
-                </div>
-                <div className="text-sm text-gray-500">
-                  {props.task.lastExecutedAt === null
-                    ? m.lastExecutionNever()
-                    : m.lastExecution({ date: formatDateTime(props.task.lastExecutedAt, locale) })}
-                </div>
-                <div className="text-sm text-gray-500">
-                  {m.periodsDue({ value: formatDecimal(props.task.periodsDue, locale) })}
-                </div>
-                <div className="mt-1 flex flex-wrap gap-2">
-                  <span className={getStateClassName(props.task.state)}>
-                    {getStateLabel(props.task.state)}
-                  </span>
-                  {props.task.shared ? (
-                    <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
-                      {m.sharedBadge()}
-                    </span>
-                  ) : null}
-                  {props.task.actions.toggleNotifications === "hidden" &&
-                  !props.task.notificationsEnabled ? (
-                    <span className="flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-medium text-gray-500">
-                      <BellOff className="h-3 w-3" />
-                      {m.notificationsOff()}
-                    </span>
-                  ) : null}
-                </div>
-              </>
-            )}
+            <div className="text-lg font-medium text-gray-900">{props.task.name}</div>
+            <div className="text-sm text-gray-500">
+              {m.periodHours({ hours: String(props.task.periodHours) })}
+            </div>
+            <div className="text-sm text-gray-500">
+              {props.task.lastExecutedAt === null
+                ? m.lastExecutionNever()
+                : m.lastExecution({ date: formatDateTime(props.task.lastExecutedAt, locale) })}
+            </div>
+            <div className="text-sm text-gray-500">
+              {m.periodsDue({ value: formatDecimal(props.task.periodsDue, locale) })}
+            </div>
+            <div className="mt-1 flex flex-wrap gap-2">
+              <span className={getStateClassName(props.task.state)}>
+                {getStateLabel(props.task.state)}
+              </span>
+              {props.task.shared ? (
+                <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
+                  {m.sharedBadge()}
+                </span>
+              ) : null}
+              {props.task.actions.toggleNotifications === "hidden" &&
+              !props.task.notificationsEnabled ? (
+                <span className="flex items-center gap-1 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-medium text-gray-500">
+                  <BellOff className="h-3 w-3" />
+                  {m.notificationsOff()}
+                </span>
+              ) : null}
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {isEditing ? (
-              <>
-                <Button type="button" onClick={() => void handleSaveEdit()} disabled={isSavingEdit}>
-                  {isSavingEdit ? m.saving() : m.save()}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setEditName(props.task.name);
-                    setEditPeriodHours(String(props.task.periodHours));
-                    setEditShared(props.task.shared);
-                  }}
-                  disabled={isSavingEdit}
-                >
-                  {m.cancel()}
-                </Button>
-              </>
-            ) : (
-              <>
-                {props.task.actions.toggleNotifications !== "hidden" ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    disabled={props.task.actions.toggleNotifications === "restricted"}
-                    aria-label={
-                      props.task.notificationsEnabled
-                        ? m.disableNotifications()
-                        : m.enableNotifications()
-                    }
-                    title={
-                      props.task.notificationsEnabled
-                        ? m.disableNotifications()
-                        : m.enableNotifications()
-                    }
-                    onClick={() =>
-                      void setNotificationsEnabled({
-                        taskId: props.task.id,
-                        enabled: !props.task.notificationsEnabled,
-                      })
-                    }
-                  >
-                    {props.task.notificationsEnabled ? (
-                      <Bell className="h-4 w-4 text-blue-600" />
-                    ) : (
-                      <BellOff className="h-4 w-4 text-gray-500" />
-                    )}
-                  </Button>
-                ) : null}
-                <Button
-                  type="button"
-                  variant="outline"
-                  aria-label={m.editTask()}
-                  onClick={() => {
-                    setIsEditing(true);
-                  }}
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    void handleAddExecutionNow();
-                  }}
-                  disabled={isSavingExecutionNow}
-                >
-                  {isSavingExecutionNow ? m.saving() : m.addExecutionNow()}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setExecutionDialogValue(getNowDateTimeLocalValue());
-                    setExecutionDialogOpen(true);
-                  }}
-                >
-                  {m.addExecutionCustom()}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowExecutions((currentValue) => !currentValue);
-                  }}
-                >
-                  {showExecutions ? m.hideExecutions() : m.showExecutions()}
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  aria-label={m.archiveTask()}
-                  onClick={() => void handleArchiveTask()}
-                  disabled={isArchivingTask}
-                >
-                  <Archive className="h-4 w-4" />
-                </Button>
-              </>
-            )}
+            {props.task.actions.toggleNotifications !== "hidden" ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                disabled={props.task.actions.toggleNotifications === "restricted"}
+                aria-label={
+                  props.task.notificationsEnabled
+                    ? m.disableNotifications()
+                    : m.enableNotifications()
+                }
+                title={
+                  props.task.notificationsEnabled
+                    ? m.disableNotifications()
+                    : m.enableNotifications()
+                }
+                onClick={() =>
+                  void setNotificationsEnabled({
+                    taskId: props.task.id,
+                    enabled: !props.task.notificationsEnabled,
+                  })
+                }
+              >
+                {props.task.notificationsEnabled ? (
+                  <Bell className="h-4 w-4 text-blue-600" />
+                ) : (
+                  <BellOff className="h-4 w-4 text-gray-500" />
+                )}
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              aria-label={m.editTask()}
+              onClick={() => {
+                setEditName(props.task.name);
+                setEditPeriodHours(String(props.task.periodHours));
+                setEditShared(props.task.shared);
+                setIsEditing(true);
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                void handleAddExecutionNow();
+              }}
+              disabled={isSavingExecutionNow}
+            >
+              {isSavingExecutionNow ? m.saving() : m.addExecutionNow()}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setExecutionDialogValue(getNowDateTimeLocalValue());
+                setExecutionDialogOpen(true);
+              }}
+            >
+              {m.addExecutionCustom()}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowExecutions((currentValue) => !currentValue);
+              }}
+            >
+              {showExecutions ? m.hideExecutions() : m.showExecutions()}
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              aria-label={m.archiveTask()}
+              onClick={() => void handleArchiveTask()}
+              disabled={isArchivingTask}
+            >
+              <Archive className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       </div>
@@ -994,6 +909,79 @@ function MaintenanceTaskRow(props: {
           )}
         </div>
       ) : null}
+
+      <Dialog
+        open={isEditing}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsEditing(false);
+            setEditName(props.task.name);
+            setEditPeriodHours(String(props.task.periodHours));
+            setEditShared(props.task.shared);
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{m.editTask()}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-1.5">
+              <Label htmlFor={`edit-name-${props.task.id}`}>{m.taskName()}</Label>
+              <Input
+                id={`edit-name-${props.task.id}`}
+                value={editName}
+                onChange={(event) => {
+                  setEditName(event.target.value);
+                }}
+              />
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor={`edit-period-${props.task.id}`}>{m.taskPeriodHours()}</Label>
+              <Input
+                id={`edit-period-${props.task.id}`}
+                type="number"
+                min="1"
+                step="1"
+                value={editPeriodHours}
+                onChange={(event) => {
+                  setEditPeriodHours(event.target.value);
+                }}
+              />
+            </div>
+            <div className="flex items-center gap-2 sm:col-span-2">
+              <input
+                id={`edit-shared-${props.task.id}`}
+                type="checkbox"
+                checked={editShared}
+                onChange={(e) => {
+                  setEditShared(e.target.checked);
+                }}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor={`edit-shared-${props.task.id}`}>{m.taskShared()}</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsEditing(false);
+                setEditName(props.task.name);
+                setEditPeriodHours(String(props.task.periodHours));
+                setEditShared(props.task.shared);
+              }}
+              disabled={isSavingEdit}
+            >
+              {m.cancel()}
+            </Button>
+            <Button type="button" onClick={() => void handleSaveEdit()} disabled={isSavingEdit}>
+              {isSavingEdit ? m.saving() : m.save()}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={executionDialogOpen}
