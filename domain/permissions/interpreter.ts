@@ -12,6 +12,10 @@ function resolveValue<R>(
       return expr.value;
     case "currentUser":
       return ctx.currentUserId;
+    default: {
+      const _exhaustiveCheck: never = expr;
+      throw new Error("Unhandled ValueExpr kind: " + String(_exhaustiveCheck));
+    }
   }
 }
 
@@ -37,6 +41,10 @@ export function evaluatePermission<R>(
       return expr.conditions.some((c) => evaluatePermission(c, resource, ctx));
     case "not":
       return !evaluatePermission(expr.condition, resource, ctx);
+    default: {
+      const _exhaustiveCheck: never = expr;
+      throw new Error("Unhandled PermissionExpr kind: " + String(_exhaustiveCheck));
+    }
   }
 }
 
