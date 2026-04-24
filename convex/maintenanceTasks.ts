@@ -9,6 +9,8 @@ import {
   archiveTask as archiveTaskDomain,
   unarchiveTask as unarchiveTaskDomain,
 } from "../domain/operations/archiveTask";
+import { evaluatePermission } from "../domain/permissions/interpreter";
+import { taskPermissions } from "../domain/permissions/task";
 
 export const listTasksForMaintenanceOverview = query({
   args: {},
@@ -67,7 +69,9 @@ export const updateTask = mutation({
     const task = await ctx.db.get(args.taskId);
     if (task === null) {
       throw createMaintenanceTaskNotFoundError();
-    } else if (task.userId !== userId && task.shared !== true) {
+    } else if (
+      !evaluatePermission(taskPermissions.view, toTaskResource(task), { currentUserId: userId })
+    ) {
       throw createUnauthorizedError();
     } else if (args.periodHours <= 0) {
       throw new Error("periodHours must be greater than 0");
@@ -156,7 +160,9 @@ export const deleteArchivedTaskPermanently = mutation({
     const task = await ctx.db.get(args.taskId);
     if (task === null) {
       throw createMaintenanceTaskNotFoundError();
-    } else if (task.userId !== userId && task.shared !== true) {
+    } else if (
+      !evaluatePermission(taskPermissions.view, toTaskResource(task), { currentUserId: userId })
+    ) {
       throw createUnauthorizedError();
     } else if (task.deletedAt === null) {
       throw new Error("Cannot permanently delete an active maintenance task");
@@ -229,7 +235,11 @@ export const logExecutionForUser = internalMutation({
     const task = await ctx.db.get(args.taskId);
     if (task?.deletedAt !== null) {
       throw createMaintenanceTaskNotFoundError();
-    } else if (task.userId !== args.userId && task.shared !== true) {
+    } else if (
+      !evaluatePermission(taskPermissions.view, toTaskResource(task), {
+        currentUserId: args.userId,
+      })
+    ) {
       throw createUnauthorizedError();
     } else {
       await logExecutionImpl(ctx, args.taskId, args.executedAt ?? Date.now());
@@ -246,7 +256,10 @@ export const deleteExecution = mutation({
       throw new Error("Maintenance execution not found");
     } else {
       const task = await ctx.db.get(execution.taskId);
-      if (task === null || (task.userId !== userId && task.shared !== true)) {
+      if (
+        task === null ||
+        !evaluatePermission(taskPermissions.view, toTaskResource(task), { currentUserId: userId })
+      ) {
         throw new Error("Maintenance execution not found");
       }
       await ctx.db.delete(args.executionId);
@@ -270,7 +283,10 @@ export const findTaskExecutions = query({
   ): Promise<{ id: Id<"maintenanceExecutions">; executedAt: number }[]> => {
     const userId = await authedUserIdOrThrow(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (task === null || (task.userId !== userId && task.shared !== true)) {
+    if (
+      task === null ||
+      !evaluatePermission(taskPermissions.view, toTaskResource(task), { currentUserId: userId })
+    ) {
       throw createMaintenanceTaskNotFoundError();
     }
     const executions = await ctx.db
@@ -281,6 +297,14 @@ export const findTaskExecutions = query({
     return executions.map((execution) => ({ id: execution._id, executedAt: execution.executedAt }));
   },
 });
+
+function toTaskResource(task: Doc<"maintenanceTasks">) {
+  return {
+    ownerId: task.userId,
+    isShared: task.shared === true,
+    isArchived: task.deletedAt !== null,
+  };
+}
 
 async function createTaskImpl(
   ctx: MutationCtx,
