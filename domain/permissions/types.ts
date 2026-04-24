@@ -2,12 +2,10 @@ import type { UserId } from "../models/MaintenanceTask";
 
 export type ScalarValue = string | number | boolean | null;
 
-export type Resource = TaskResource | ExecutionResource;
+// A permission is an expression tree (not a plain function) so it can be both evaluated
+// in-process and translated into a database query filter.
 
-// --- Resource descriptors ---
-// Each resource type exposes the properties available for permission checks.
-// The Record<string, ScalarValue> constraint lets the interpreter index into
-// any resource without a cast — TypeScript can prove R[k] extends ScalarValue.
+export type Resource = TaskResource | ExecutionResource;
 
 export type TaskResource = {
   readonly ownerId: UserId;
@@ -20,17 +18,11 @@ export type ExecutionResource = {
   readonly isTaskShared: boolean;
 };
 
-// --- Expression tree ---
-// A permission is an expression tree (not a plain function) so it can be
-// both evaluated in-process and translated into a database query filter.
-
-// Leaf value that can appear on either side of a comparison.
 export type ValueExpr<R extends Resource> =
   | { readonly kind: "field"; readonly path: keyof R }
   | { readonly kind: "literal"; readonly value: ScalarValue }
   | { readonly kind: "currentUser" };
 
-// Boolean condition node.
 export type PermissionExpr<R extends Resource> =
   | { readonly kind: "always" }
   | { readonly kind: "never" }
@@ -41,13 +33,10 @@ export type PermissionExpr<R extends Resource> =
   | { readonly kind: "or"; readonly conditions: readonly PermissionExpr<R>[] }
   | { readonly kind: "not"; readonly condition: PermissionExpr<R> };
 
-// Runtime context supplied to the interpreter.
 export type PermissionContext = {
   readonly currentUserId: UserId;
 };
 
-// Maps action names to their permission expressions for a resource type.
-export type ResourcePermissions<
-  R extends Resource,
-  A extends string,
-> = Readonly<Record<A, PermissionExpr<R>>>;
+export type ResourcePermissions<R extends Resource, A extends string> = Readonly<
+  Record<A, PermissionExpr<R>>
+>;

@@ -12,10 +12,7 @@ export const executionPermissions: ResourcePermissions<ExecutionResource, Execut
   // Visible to the task owner and to any authenticated user when the task is shared.
   view: {
     kind: "or",
-    conditions: [
-      ownerOnly,
-      { kind: "isTrue", expr: { kind: "field", path: "isTaskShared" } },
-    ],
+    conditions: [ownerOnly, { kind: "isTrue", expr: { kind: "field", path: "isTaskShared" } }],
   },
   delete: ownerOnly,
 };

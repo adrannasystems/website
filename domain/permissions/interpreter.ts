@@ -1,21 +1,5 @@
 import type { PermissionContext, PermissionExpr, Resource, ValueExpr } from "./types";
 
-function resolveValue<R extends Resource>(expr: ValueExpr<R>, resource: R, ctx: PermissionContext) {
-  switch (expr.kind) {
-    case "field": {
-      return resource[expr.path];
-    }
-    case "literal":
-      return expr.value;
-    case "currentUser":
-      return ctx.currentUserId;
-    default: {
-      const _exhaustiveCheck: never = expr;
-      throw new Error("Unhandled ValueExpr kind: " + String(_exhaustiveCheck));
-    }
-  }
-}
-
 export function evaluatePermission<R extends Resource>(
   expr: PermissionExpr<R>,
   resource: R,
@@ -33,14 +17,36 @@ export function evaluatePermission<R extends Resource>(
     case "isTrue":
       return resolveValue(expr.expr, resource, ctx) === true;
     case "and":
-      return expr.conditions.every((c) => evaluatePermission(c, resource, ctx));
+      return expr.conditions.every((condition) => evaluatePermission(condition, resource, ctx));
     case "or":
-      return expr.conditions.some((c) => evaluatePermission(c, resource, ctx));
+      return expr.conditions.some((condition) => evaluatePermission(condition, resource, ctx));
     case "not":
       return !evaluatePermission(expr.condition, resource, ctx);
     default: {
       const _exhaustiveCheck: never = expr;
       throw new Error("Unhandled PermissionExpr kind: " + String(_exhaustiveCheck));
+    }
+  }
+}
+
+export function makePermissionPredicate<R extends Resource>(
+  expr: PermissionExpr<R>,
+  ctx: PermissionContext,
+): (resource: R) => boolean {
+  return (resource) => evaluatePermission(expr, resource, ctx);
+}
+
+function resolveValue<R extends Resource>(expr: ValueExpr<R>, resource: R, ctx: PermissionContext) {
+  switch (expr.kind) {
+    case "field":
+      return resource[expr.path];
+    case "literal":
+      return expr.value;
+    case "currentUser":
+      return ctx.currentUserId;
+    default: {
+      const _exhaustiveCheck: never = expr;
+      throw new Error("Unhandled ValueExpr kind: " + String(_exhaustiveCheck));
     }
   }
 }

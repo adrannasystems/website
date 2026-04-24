@@ -10,10 +10,7 @@ const ownerOnly: PermissionExpr<TaskResource> = {
 
 const ownerOrShared: PermissionExpr<TaskResource> = {
   kind: "or",
-  conditions: [
-    ownerOnly,
-    { kind: "isTrue", expr: { kind: "field", path: "isShared" } },
-  ],
+  conditions: [ownerOnly, { kind: "isTrue", expr: { kind: "field", path: "isShared" } }],
 };
 
 export const taskPermissions: ResourcePermissions<TaskResource, TaskAction> = {
