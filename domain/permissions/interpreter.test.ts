@@ -7,18 +7,6 @@ import type { ExecutionResource, PermissionContext, TaskResource } from "./types
 const owner = "user-owner";
 const other = "user-other";
 
-function ctx(currentUserId: string): PermissionContext {
-  return { currentUserId };
-}
-
-function task(overrides: Partial<TaskResource> = {}): TaskResource {
-  return { ownerId: owner, isShared: false, isArchived: false, ...overrides };
-}
-
-function execution(overrides: Partial<ExecutionResource> = {}): ExecutionResource {
-  return { taskOwnerId: owner, isTaskShared: false, ...overrides };
-}
-
 describe("evaluatePermission — expression kinds", () => {
   const resource = task();
 
@@ -216,3 +204,15 @@ describe("executionPermissions.delete", () => {
     ).toBe(false);
   });
 });
+
+function ctx(currentUserId: string): PermissionContext {
+  return { currentUserId };
+}
+
+function task(overrides: Partial<TaskResource> = {}): TaskResource {
+  return { ownerId: owner, isShared: false, isArchived: false, ...overrides };
+}
+
+function execution(overrides: Partial<ExecutionResource> = {}): ExecutionResource {
+  return { taskOwnerId: owner, isTaskShared: false, ...overrides };
+}
