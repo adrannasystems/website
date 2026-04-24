@@ -1,5 +1,12 @@
 import type { PermissionContext, PermissionExpr, Resource, ValueExpr } from "./types";
 
+export function makePermissionPredicate<R extends Resource>(
+  expr: PermissionExpr<R>,
+  ctx: PermissionContext,
+): (resource: R) => boolean {
+  return (resource) => evaluatePermission(expr, resource, ctx);
+}
+
 export function evaluatePermission<R extends Resource>(
   expr: PermissionExpr<R>,
   resource: R,
@@ -27,13 +34,6 @@ export function evaluatePermission<R extends Resource>(
       throw new Error("Unhandled PermissionExpr kind: " + String(_exhaustiveCheck));
     }
   }
-}
-
-export function makePermissionPredicate<R extends Resource>(
-  expr: PermissionExpr<R>,
-  ctx: PermissionContext,
-): (resource: R) => boolean {
-  return (resource) => evaluatePermission(expr, resource, ctx);
 }
 
 function resolveValue<R extends Resource>(expr: ValueExpr<R>, resource: R, ctx: PermissionContext) {
