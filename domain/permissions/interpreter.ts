@@ -1,13 +1,13 @@
-import type { PermissionContext, PermissionExpr, ValueExpr } from "./types";
+import type { PermissionContext, PermissionExpr, ScalarValue, ValueExpr } from "./types";
 
-function resolveValue<R>(
+function resolveValue<R extends Record<string, ScalarValue>>(
   expr: ValueExpr<R>,
   resource: R,
   ctx: PermissionContext,
-): string | number | boolean | null {
+): ScalarValue {
   switch (expr.kind) {
     case "field":
-      return resource[expr.path] as string | number | boolean | null;
+      return resource[expr.path];
     case "literal":
       return expr.value;
     case "currentUser":
@@ -19,7 +19,7 @@ function resolveValue<R>(
   }
 }
 
-export function evaluatePermission<R>(
+export function evaluatePermission<R extends Record<string, ScalarValue>>(
   expr: PermissionExpr<R>,
   resource: R,
   ctx: PermissionContext,
@@ -49,7 +49,7 @@ export function evaluatePermission<R>(
 }
 
 // Returns a predicate closed over the context, ready to use with Array.filter etc.
-export function makePermissionPredicate<R>(
+export function makePermissionPredicate<R extends Record<string, ScalarValue>>(
   expr: PermissionExpr<R>,
   ctx: PermissionContext,
 ): (resource: R) => boolean {
