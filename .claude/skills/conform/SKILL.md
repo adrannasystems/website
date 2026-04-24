@@ -60,7 +60,8 @@ Apply every rule below to the changed files. When a rule conflicts with preservi
 
 ### File structure (top-to-bottom)
 
-- Order members top-down: exports first, then the members they use, with helpers placed below their callers.
+- Place each function below the last function that calls it directly, and as close to it as possible. Do not hoist all exports to the top as a block — interleave helpers immediately below the caller that introduces them. Exported functions naturally tend to appear near the top since nothing inside the file calls them, but that is a consequence of the rule, not the rule itself.
+- Example ordering: exported `A`, helper `B` (called only by `A`), exported `C`, helper `D` (called by both `B` and `C` — placed below the later caller `C`).
 - Keep files readable from top to bottom — high-level intent at the top, low-level detail at the bottom.
 - When ordering conflicts with JavaScript/TypeScript hoisting rules, prefer `function` declarations over `const` arrow functions so the top-down order can be maintained.
 
