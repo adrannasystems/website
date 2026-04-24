@@ -70,7 +70,7 @@ export const updateTask = mutation({
     if (task === null) {
       throw createMaintenanceTaskNotFoundError();
     } else if (
-      !evaluatePermission(taskPermissions.view, toTaskResource(task), { currentUserId: userId })
+      !evaluatePermission(taskPermissions.edit, toTaskResource(task), { currentUserId: userId })
     ) {
       throw createUnauthorizedError();
     } else if (args.periodHours <= 0) {
@@ -161,7 +161,7 @@ export const deleteArchivedTaskPermanently = mutation({
     if (task === null) {
       throw createMaintenanceTaskNotFoundError();
     } else if (
-      !evaluatePermission(taskPermissions.view, toTaskResource(task), { currentUserId: userId })
+      !evaluatePermission(taskPermissions.delete, toTaskResource(task), { currentUserId: userId })
     ) {
       throw createUnauthorizedError();
     } else if (task.deletedAt === null) {
