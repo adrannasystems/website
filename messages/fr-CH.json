@@ -72,5 +72,8 @@
   "landingFeature2Title": "Historique d'exécution",
   "landingFeature2Body": "Enregistrez chaque fois qu'une tâche est effectuée — avec l'horodatage exact — pour un audit complet.",
   "landingFeature3Title": "Alertes de retard",
-  "landingFeature3Body": "Les tâches sont clairement signalées comme en retard, dues ou à jour — rien ne passe entre les mailles."
+  "landingFeature3Body": "Les tâches sont clairement signalées comme en retard, dues ou à jour — rien ne passe entre les mailles.",
+  "allTasks": "Toutes les tâches",
+  "executions": "Exécutions",
+  "taskNotFound": "Tâche introuvable."
 }
