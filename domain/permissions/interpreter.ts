@@ -6,12 +6,10 @@ function resolveValue<R extends Record<string, ScalarValue>>(
   ctx: PermissionContext,
 ): ScalarValue {
   switch (expr.kind) {
-    case "field": {
-      // Upcast to the constraint's upper bound so the indexed access resolves to ScalarValue.
-      // TypeScript keeps R[keyof R & string] opaque in generic context even with the constraint.
-      const scalars: Record<string, ScalarValue> = resource;
-      return scalars[expr.path];
-    }
+    case "field":
+      // R extends Record<string, ScalarValue> guarantees every field is a ScalarValue,
+      // but TypeScript can't prove R[keyof R & string] extends ScalarValue in generic context.
+      return resource[expr.path] as ScalarValue;
     case "literal":
       return expr.value;
     case "currentUser":
