@@ -209,9 +209,7 @@ function TaskDetailContent() {
               aria-label={
                 task.notificationsEnabled ? m.disableNotifications() : m.enableNotifications()
               }
-              title={
-                task.notificationsEnabled ? m.disableNotifications() : m.enableNotifications()
-              }
+              title={task.notificationsEnabled ? m.disableNotifications() : m.enableNotifications()}
               onClick={() =>
                 void setNotificationsEnabled({ taskId, enabled: !task.notificationsEnabled })
               }
@@ -273,9 +271,7 @@ function TaskDetailContent() {
                 {m.loadingExecutions()}
               </div>
             ) : executions.length === 0 ? (
-              <div className="px-6 py-10 text-center text-sm text-gray-500">
-                {m.noExecutions()}
-              </div>
+              <div className="px-6 py-10 text-center text-sm text-gray-500">{m.noExecutions()}</div>
             ) : (
               <div className="divide-y divide-gray-200">
                 {executions.map((execution) => (
@@ -298,7 +294,12 @@ function TaskDetailContent() {
           </div>
         </section>
 
-        <Dialog open={isEditing} onOpenChange={(open) => { if (!open) setIsEditing(false); }}>
+        <Dialog
+          open={isEditing}
+          onOpenChange={(open) => {
+            if (!open) setIsEditing(false);
+          }}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{m.editTask()}</DialogTitle>
