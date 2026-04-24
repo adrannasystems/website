@@ -11,6 +11,7 @@ export type TaskResource = {
 
 export type ExecutionResource = {
   readonly taskOwnerId: UserId;
+  readonly isTaskShared: boolean;
 };
 
 // --- Expression tree ---
