@@ -17,11 +17,13 @@ export const getTaskForDetail = query({
   handler: async (ctx, args) => {
     const userId = await authedUserIdOrThrow(ctx);
     const task = await ctx.db.get(args.taskId);
-    if (
-      task === null ||
-      task.deletedAt !== null ||
-      (task.userId !== userId && task.shared !== true)
-    ) {
+    if (task === null) {
+      return null;
+    }
+    if (task.deletedAt !== null) {
+      return null;
+    }
+    if (task.userId !== userId && task.shared !== true) {
       return null;
     }
     return toTaskWithState(task, userId);
