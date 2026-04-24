@@ -1,15 +1,10 @@
-import type { PermissionContext, PermissionExpr, ScalarValue, ValueExpr } from "./types";
+import type { PermissionContext, PermissionExpr, Resource, ValueExpr } from "./types";
 
-function resolveValue<R extends Record<string, ScalarValue>>(
-  expr: ValueExpr<R>,
-  resource: R,
-  ctx: PermissionContext,
-): ScalarValue {
+function resolveValue<R extends Resource>(expr: ValueExpr<R>, resource: R, ctx: PermissionContext) {
   switch (expr.kind) {
-    case "field":
-      // R extends Record<string, ScalarValue> guarantees every field is a ScalarValue,
-      // but TypeScript can't prove R[keyof R & string] extends ScalarValue in generic context.
-      return resource[expr.path] as ScalarValue;
+    case "field": {
+      return resource[expr.path];
+    }
     case "literal":
       return expr.value;
     case "currentUser":
@@ -21,7 +16,7 @@ function resolveValue<R extends Record<string, ScalarValue>>(
   }
 }
 
-export function evaluatePermission<R extends Record<string, ScalarValue>>(
+export function evaluatePermission<R extends Resource>(
   expr: PermissionExpr<R>,
   resource: R,
   ctx: PermissionContext,
@@ -48,12 +43,4 @@ export function evaluatePermission<R extends Record<string, ScalarValue>>(
       throw new Error("Unhandled PermissionExpr kind: " + String(_exhaustiveCheck));
     }
   }
-}
-
-// Returns a predicate closed over the context, ready to use with Array.filter etc.
-export function makePermissionPredicate<R extends Record<string, ScalarValue>>(
-  expr: PermissionExpr<R>,
-  ctx: PermissionContext,
-): (resource: R) => boolean {
-  return (resource) => evaluatePermission(expr, resource, ctx);
 }
