@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Link, Outlet, createFileRoute, linkOptions } from "@tanstack/react-router";
+import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
 import { UserButton } from "@clerk/clerk-react";
 import { Globe } from "lucide-react";
 import { AuthButtons } from "./-header-shared";
@@ -12,8 +12,6 @@ export const Route = createFileRoute("/_taskologist")({
   component: TaskologistLayout,
 });
 
-const taskologistHomeLink = linkOptions({ to: "/" });
-
 function TaskologistLayout() {
   const { locale } = useLocale();
 
@@ -22,7 +20,7 @@ function TaskologistLayout() {
       <header className="fixed z-10 w-full bg-white shadow-sm" lang={locale}>
         <nav className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between gap-4">
-            <Link {...taskologistHomeLink} className="text-2xl font-bold text-gray-800">
+            <Link to="/" className="text-2xl font-bold text-gray-800">
               Taskologist
             </Link>
             <div className="flex items-center gap-3 md:gap-4">
