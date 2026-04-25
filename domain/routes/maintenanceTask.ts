@@ -1,15 +1,20 @@
-export const taskSearchParam = "task" as const;
-
 const path = "/" as const;
 
+const buildSearch = (taskId: string): { readonly task: string } => ({ task: taskId });
+
+type NavArgs = { readonly to: typeof path; readonly search: ReturnType<typeof buildSearch> };
+
 export const maintenanceTaskRoute = {
-  buildNavArgs: (taskId: string): { to: typeof path; search: Record<typeof taskSearchParam, string> } => ({
+  buildSearch,
+  buildNavArgs: (taskId: string): NavArgs => ({
     to: path,
-    search: { [taskSearchParam]: taskId },
+    search: buildSearch(taskId),
   }),
   buildUrl: (origin: string, taskId: string): string => {
     const url = new URL(origin);
-    url.searchParams.set(taskSearchParam, taskId);
+    for (const [k, v] of Object.entries(buildSearch(taskId))) {
+      url.searchParams.set(k, v);
+    }
     return url.toString();
   },
 };
