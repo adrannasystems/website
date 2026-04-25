@@ -1,5 +1,5 @@
 import * as React from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, linkOptions } from "@tanstack/react-router";
 import { Authenticated, AuthLoading, Unauthenticated, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -64,6 +64,8 @@ export const Route = createFileRoute("/_taskologist/")({
   component: IndexPage,
 });
 
+const signInLink = linkOptions({ to: "/sign-in" });
+
 function IndexPage() {
   return (
     <>
@@ -90,7 +92,7 @@ function TaskologistLandingPage() {
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="mb-6 text-5xl font-bold text-gray-900">{m.landingHeroTitle()}</h1>
           <p className="mb-10 text-xl text-gray-600">{m.landingHeroSubtitle()}</p>
-          <Link to="/sign-in">
+          <Link {...signInLink}>
             <Button size="lg" className="px-8 py-3 text-base">
               {m.landingHeroCta()}
             </Button>
