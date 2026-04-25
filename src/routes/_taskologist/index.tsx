@@ -1,6 +1,6 @@
 import * as React from "react";
 import { createFileRoute, Link, linkOptions } from "@tanstack/react-router";
-import { maintenanceTaskRoute } from "../../../domain/routes/maintenanceTask";
+import { maintenanceTaskRoute, taskSearchParam } from "../../../domain/routes/maintenanceTask";
 import { Authenticated, AuthLoading, Unauthenticated, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -53,7 +53,7 @@ type MaintenanceTask = FunctionReturnType<
 >[number];
 
 const taskologistIndexSearchSchema = z.object({
-  [maintenanceTaskRoute.taskSearchParam]: z
+  [taskSearchParam]: z
     .string()
     .trim()
     .transform((v) => (v.length > 0 ? v : undefined))
@@ -66,10 +66,7 @@ export const Route = createFileRoute("/_taskologist/")({
 });
 
 export function taskDeepLinkOptions(taskId: string) {
-  return linkOptions({
-    to: maintenanceTaskRoute.path,
-    search: { [maintenanceTaskRoute.taskSearchParam]: taskId },
-  });
+  return linkOptions(maintenanceTaskRoute.buildNavArgs(taskId));
 }
 
 function IndexPage() {
