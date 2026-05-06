@@ -72,5 +72,8 @@
   "landingFeature2Title": "Ausführungshistorie",
   "landingFeature2Body": "Protokollieren Sie jede erledigte Aufgabe mit dem genauen Zeitstempel — für eine lückenlose Nachverfolgung.",
   "landingFeature3Title": "Überfälligkeitswarnungen",
-  "landingFeature3Body": "Aufgaben werden klar als überfällig, fällig oder erledigt markiert — damit nichts vergessen wird."
+  "landingFeature3Body": "Aufgaben werden klar als überfällig, fällig oder erledigt markiert — damit nichts vergessen wird.",
+  "allTasks": "Alle Aufgaben",
+  "executions": "Ausführungen",
+  "taskNotFound": "Aufgabe nicht gefunden."
 }

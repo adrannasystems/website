@@ -72,5 +72,8 @@
   "landingFeature2Title": "Cronologia esecuzioni",
   "landingFeature2Body": "Registra ogni volta che un'attività viene completata — con il timestamp esatto — per un audit completo.",
   "landingFeature3Title": "Avvisi di scadenza",
-  "landingFeature3Body": "Le attività sono chiaramente contrassegnate come scadute, in scadenza o a posto — niente sfugge."
+  "landingFeature3Body": "Le attività sono chiaramente contrassegnate come scadute, in scadenza o a posto — niente sfugge.",
+  "allTasks": "Tutti i compiti",
+  "executions": "Esecuzioni",
+  "taskNotFound": "Attività non trovata."
 }

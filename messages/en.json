@@ -72,5 +72,8 @@
   "landingFeature2Title": "Execution History",
   "landingFeature2Body": "Log each time a task is completed — with the exact timestamp — so you always have a clear audit trail.",
   "landingFeature3Title": "Overdue Alerts",
-  "landingFeature3Body": "Tasks are clearly flagged as overdue, due, or all good — so nothing slips through the cracks."
+  "landingFeature3Body": "Tasks are clearly flagged as overdue, due, or all good — so nothing slips through the cracks.",
+  "allTasks": "All tasks",
+  "executions": "Executions",
+  "taskNotFound": "Task not found."
 }

@@ -12,6 +12,24 @@ import {
 import { evaluatePermission } from "../domain/permissions/interpreter";
 import { taskPermissions } from "../domain/permissions/task";
 
+export const getTaskForDetail = query({
+  args: { taskId: v.id("maintenanceTasks") },
+  handler: async (ctx, args) => {
+    const userId = await authedUserIdOrThrow(ctx);
+    const task = await ctx.db.get(args.taskId);
+    if (task === null) {
+      return null;
+    }
+    if (task.deletedAt !== null) {
+      return null;
+    }
+    if (task.userId !== userId && task.shared !== true) {
+      return null;
+    }
+    return toTaskWithState(task, userId);
+  },
+});
+
 export const listTasksForMaintenanceOverview = query({
   args: {},
   handler: async (ctx) => {
