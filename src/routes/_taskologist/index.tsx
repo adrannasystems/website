@@ -1,5 +1,6 @@
 import * as React from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, linkOptions } from "@tanstack/react-router";
+import { maintenanceTaskRoute } from "../../../domain/routes/maintenanceTask";
 import { Authenticated, AuthLoading, Unauthenticated, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -59,10 +60,24 @@ const taskologistIndexSearchSchema = z.object({
     .optional(),
 });
 
+// Compile-time assertion: every key buildSearch produces must exist in the schema.
+// If the domain adds or renames a search param without updating this schema, this errors.
+type _AssertDomainSearchFitsSchema =
+  keyof ReturnType<typeof maintenanceTaskRoute.buildSearch> extends keyof z.input<
+    typeof taskologistIndexSearchSchema
+  >
+    ? true
+    : never;
+void (true as _AssertDomainSearchFitsSchema);
+
 export const Route = createFileRoute("/_taskologist/")({
   validateSearch: taskologistIndexSearchSchema,
   component: IndexPage,
 });
+
+export function taskDeepLinkOptions(taskId: string) {
+  return linkOptions(maintenanceTaskRoute.buildNavArgs(taskId));
+}
 
 function IndexPage() {
   return (

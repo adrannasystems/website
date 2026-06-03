@@ -7,7 +7,7 @@ import { MaintenanceTaskModelImpl } from "./MaintenanceTaskModel";
 import { sendTelegramMessage } from "./telegram/api";
 import { buildTelegramChatsByUserId } from "./telegram/chatLinks";
 import { publicAppOrigin } from "./env";
-import { buildMaintenanceTaskDeepLink } from "./publicAppUrls";
+import { maintenanceTaskRoute } from "../domain/routes/maintenanceTask";
 
 export type MaintenanceTaskForNotification = {
   id: Id<"maintenanceTasks">;
@@ -99,7 +99,7 @@ function pushWebNotification(task: MaintenanceTaskForNotification): Promise<void
   return sendOneSignalNotification({
     appId: getOneSignalAppId(),
     restApiKey: getOneSignalRestApiKey(),
-    openUrl: buildMaintenanceTaskDeepLink(publicAppOrigin, task.id),
+    openUrl: maintenanceTaskRoute.buildUrl(publicAppOrigin, task.id),
     userId: task.userId,
     webPushTopic: `task-${task.id}-state`,
     title: `Task is ${task.state.toLowerCase()}: ${task.name}`,
