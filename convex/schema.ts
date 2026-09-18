@@ -41,4 +41,36 @@ export default defineSchema({
   })
     .index("by_chatId", ["chatId"])
     .index("by_userId", ["userId"]),
+  ingredientCategories: defineTable({
+    name: v.string(),
+    /** Lower = earlier in the shop. Veggies is seeded at 0. */
+    sortRank: v.number(),
+  }).index("by_name", ["name"]),
+  ingredients: defineTable({
+    name: v.string(),
+    normalizedName: v.string(),
+    categoryId: v.optional(v.id("ingredientCategories")),
+    /** Extra amount to buy, in addition to planned recipes. Missing means 0. */
+    manualAmount: v.optional(v.number()),
+    /** Amount already covered this shop. Missing means 0. Cleared by New shop. */
+    haveAmount: v.optional(v.number()),
+    /** Unused leftover from the old tick list. Do not write. */
+    checked: v.optional(v.boolean()),
+  }).index("by_normalizedName", ["normalizedName"]),
+  recipes: defineTable({
+    name: v.string(),
+    deletedAt: v.union(v.number(), v.null()),
+    /** When set and > 0, this recipe is planned at that scale. */
+    plannedScale: v.optional(v.number()),
+  }).index("by_deletedAt", ["deletedAt"]),
+  recipeSteps: defineTable({
+    recipeId: v.id("recipes"),
+    sortOrder: v.number(),
+    text: v.string(),
+  }).index("by_recipeId", ["recipeId"]),
+  recipeStepIngredients: defineTable({
+    stepId: v.id("recipeSteps"),
+    ingredientId: v.id("ingredients"),
+    amount: v.number(),
+  }).index("by_stepId", ["stepId"]),
 });
