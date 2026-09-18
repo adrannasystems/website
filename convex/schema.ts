@@ -50,10 +50,18 @@ export default defineSchema({
     name: v.string(),
     normalizedName: v.string(),
     categoryId: v.optional(v.id("ingredientCategories")),
+    /** Extra amount to buy, in addition to planned recipes. Missing means 0. */
+    manualAmount: v.optional(v.number()),
+    /** Amount already covered this shop. Missing means 0. Cleared by New shop. */
+    haveAmount: v.optional(v.number()),
+    /** Unused leftover from the old tick list. Do not write. */
+    checked: v.optional(v.boolean()),
   }).index("by_normalizedName", ["normalizedName"]),
   recipes: defineTable({
     name: v.string(),
     deletedAt: v.union(v.number(), v.null()),
+    /** When set and > 0, this recipe is planned at that scale. */
+    plannedScale: v.optional(v.number()),
   }).index("by_deletedAt", ["deletedAt"]),
   recipeSteps: defineTable({
     recipeId: v.id("recipes"),
@@ -64,12 +72,5 @@ export default defineSchema({
     stepId: v.id("recipeSteps"),
     ingredientId: v.id("ingredients"),
     amount: v.number(),
-    unit: v.string(),
   }).index("by_stepId", ["stepId"]),
-  shoppingListItems: defineTable({
-    ingredientId: v.id("ingredients"),
-    amount: v.number(),
-    unit: v.string(),
-    checked: v.boolean(),
-  }).index("by_ingredientId_unit", ["ingredientId", "unit"]),
 });

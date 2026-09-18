@@ -2,14 +2,10 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import { authedUserIdOrThrow } from "./auth";
-import { aggregateRecipeIngredients } from "../domain/operations/aggregateRecipeIngredients";
-import {
-  annotateRecipeIngredientsWithPresence,
-  recipeIngredientLinesAtScale,
-} from "../domain/operations/shoppingList";
 import {
   createStepNotFoundError,
   findOrCreateIngredient,
+  recipeReplaceValue,
   requireActiveRecipe,
   requireStep,
 } from "./recipeHelpers";
@@ -19,7 +15,6 @@ const stepIngredientValidator = v.object({
   ingredientId: v.id("ingredients"),
   name: v.string(),
   amount: v.number(),
-  unit: v.string(),
 });
 
 const recipeStepValidator = v.object({
@@ -32,20 +27,14 @@ const recipeStepValidator = v.object({
 const recipeSummaryValidator = v.object({
   _id: v.id("recipes"),
   name: v.string(),
+  plannedScale: v.union(v.number(), v.null()),
 });
 
 const recipeDetailValidator = v.object({
   _id: v.id("recipes"),
   name: v.string(),
+  plannedScale: v.union(v.number(), v.null()),
   steps: v.array(recipeStepValidator),
-});
-
-const shoppingPreviewItemValidator = v.object({
-  ingredientId: v.id("ingredients"),
-  name: v.string(),
-  amount: v.number(),
-  unit: v.string(),
-  onList: v.boolean(),
 });
 
 export const list = query({
@@ -58,7 +47,11 @@ export const list = query({
       .withIndex("by_deletedAt", (q) => q.eq("deletedAt", null))
       .collect();
     return recipes
-      .map((recipe) => ({ _id: recipe._id, name: recipe.name }))
+      .map((recipe) => ({
+        _id: recipe._id,
+        name: recipe.name,
+        plannedScale: recipe.plannedScale ?? null,
+      }))
       .sort((a, b) => a.name.localeCompare(b.name));
   },
 });
@@ -73,56 +66,12 @@ export const get = query({
       return null;
     } else {
       const steps = await loadRecipeSteps(ctx, recipe._id);
-      return { _id: recipe._id, name: recipe.name, steps };
-    }
-  },
-});
-
-export const shoppingPreview = query({
-  args: { recipeId: v.id("recipes"), scaleFactor: v.number() },
-  returns: v.union(v.array(shoppingPreviewItemValidator), v.null()),
-  handler: async (ctx, args) => {
-    await authedUserIdOrThrow(ctx);
-    const recipe = await ctx.db.get(args.recipeId);
-    if (recipe?.deletedAt !== null) {
-      return null;
-    } else if (args.scaleFactor <= 0) {
-      throw new Error("Scale factor must be greater than 0");
-    } else {
-      const steps = await loadRecipeSteps(ctx, recipe._id);
-      const lines = steps.flatMap((step) =>
-        step.ingredients.map((ingredient) => ({
-          ingredientId: ingredient.ingredientId,
-          unit: ingredient.unit,
-          amount: ingredient.amount,
-        })),
-      );
-      const aggregated = aggregateRecipeIngredients(
-        recipeIngredientLinesAtScale(lines, args.scaleFactor),
-      );
-      const shoppingItems = await ctx.db.query("shoppingListItems").collect();
-      const withPresence = annotateRecipeIngredientsWithPresence(
-        aggregated,
-        shoppingItems.map((item) => item.ingredientId),
-      );
-      const preview: {
-        ingredientId: Id<"ingredients">;
-        name: string;
-        amount: number;
-        unit: string;
-        onList: boolean;
-      }[] = [];
-      for (const line of withPresence) {
-        const ingredient = await ctx.db.get(line.ingredientId as Id<"ingredients">);
-        preview.push({
-          ingredientId: line.ingredientId as Id<"ingredients">,
-          name: ingredient === null ? "" : ingredient.name,
-          amount: line.amount,
-          unit: line.unit,
-          onList: line.onList,
-        });
-      }
-      return preview;
+      return {
+        _id: recipe._id,
+        name: recipe.name,
+        plannedScale: recipe.plannedScale ?? null,
+        steps,
+      };
     }
   },
 });
@@ -164,6 +113,36 @@ export const archive = mutation({
     await authedUserIdOrThrow(ctx);
     await requireActiveRecipe(ctx, args.recipeId);
     await ctx.db.patch(args.recipeId, { deletedAt: Date.now() });
+    return null;
+  },
+});
+
+export const setPlannedScale = mutation({
+  args: { recipeId: v.id("recipes"), plannedScale: v.number() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await authedUserIdOrThrow(ctx);
+    await requireActiveRecipe(ctx, args.recipeId);
+    if (args.plannedScale <= 0) {
+      throw new Error("Scale factor must be greater than 0");
+    } else {
+      await ctx.db.patch(args.recipeId, { plannedScale: args.plannedScale });
+      return null;
+    }
+  },
+});
+
+export const clearPlannedScale = mutation({
+  args: { recipeId: v.id("recipes") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await authedUserIdOrThrow(ctx);
+    const recipe = await requireActiveRecipe(ctx, args.recipeId);
+    const stored = recipeReplaceValue(recipe);
+    await ctx.db.replace(args.recipeId, {
+      name: stored.name,
+      deletedAt: stored.deletedAt,
+    });
     return null;
   },
 });
@@ -248,7 +227,6 @@ export const addStepIngredient = mutation({
     stepId: v.id("recipeSteps"),
     name: v.string(),
     amount: v.number(),
-    unit: v.string(),
   },
   returns: v.id("recipeStepIngredients"),
   handler: async (ctx, args) => {
@@ -262,7 +240,6 @@ export const addStepIngredient = mutation({
         stepId: args.stepId,
         ingredientId,
         amount: args.amount,
-        unit: args.unit.trim(),
       });
     }
   },
@@ -273,7 +250,6 @@ export const updateStepIngredient = mutation({
     stepIngredientId: v.id("recipeStepIngredients"),
     name: v.string(),
     amount: v.number(),
-    unit: v.string(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -285,10 +261,10 @@ export const updateStepIngredient = mutation({
       throw new Error("Amount must be greater than 0");
     } else {
       const ingredientId = await findOrCreateIngredient(ctx, args.name);
-      await ctx.db.patch(args.stepIngredientId, {
+      await ctx.db.replace(args.stepIngredientId, {
+        stepId: line.stepId,
         ingredientId,
         amount: args.amount,
-        unit: args.unit.trim(),
       });
       return null;
     }
@@ -325,7 +301,6 @@ async function loadRecipeSteps(ctx: QueryCtx | MutationCtx, recipeId: Id<"recipe
       ingredientId: Id<"ingredients">;
       name: string;
       amount: number;
-      unit: string;
     }[];
   }[] = [];
   for (const step of sorted) {
@@ -338,7 +313,6 @@ async function loadRecipeSteps(ctx: QueryCtx | MutationCtx, recipeId: Id<"recipe
       ingredientId: Id<"ingredients">;
       name: string;
       amount: number;
-      unit: string;
     }[] = [];
     for (const line of lines) {
       const ingredient = await ctx.db.get(line.ingredientId);
@@ -347,7 +321,6 @@ async function loadRecipeSteps(ctx: QueryCtx | MutationCtx, recipeId: Id<"recipe
         ingredientId: line.ingredientId,
         name: ingredient === null ? "" : ingredient.name,
         amount: line.amount,
-        unit: line.unit,
       });
     }
     result.push({

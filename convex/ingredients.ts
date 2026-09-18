@@ -5,6 +5,8 @@ import {
   createCategoryNotFoundError,
   createIngredientNotFoundError,
   ensureDefaultCategories,
+  findOrCreateIngredient,
+  ingredientReplaceValue,
 } from "./recipeHelpers";
 
 const categoryValidator = v.object({
@@ -54,6 +56,16 @@ export const listIngredients = query({
         categoryId: ingredient.categoryId ?? null,
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
+  },
+});
+
+export const create = mutation({
+  args: { name: v.string() },
+  returns: v.id("ingredients"),
+  handler: async (ctx, args) => {
+    await authedUserIdOrThrow(ctx);
+    const ingredientId = await findOrCreateIngredient(ctx, args.name);
+    return ingredientId;
   },
 });
 
@@ -110,9 +122,13 @@ export const setCategory = mutation({
     if (ingredient === null) {
       throw createIngredientNotFoundError();
     } else if (args.categoryId === null) {
+      const stored = ingredientReplaceValue(ingredient);
       await ctx.db.replace(args.ingredientId, {
-        name: ingredient.name,
-        normalizedName: ingredient.normalizedName,
+        name: stored.name,
+        normalizedName: stored.normalizedName,
+        ...(stored.manualAmount === undefined ? {} : { manualAmount: stored.manualAmount }),
+        ...(stored.haveAmount === undefined ? {} : { haveAmount: stored.haveAmount }),
+        ...(stored.checked === undefined ? {} : { checked: stored.checked }),
       });
       return null;
     } else {

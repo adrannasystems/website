@@ -1,44 +1,28 @@
-import type { RecipeIngredientLine, ShoppingSortItem } from "../models/recipe";
+import type {
+  RecipeIngredientLine,
+  ShoppingCategoryGroup,
+  ShoppingGroupItem,
+  ShoppingSortItem,
+} from "../models/recipe";
 
-export type MergeShoppingItem = {
-  ingredientId: string;
-  unit: string;
-  amount: number;
-};
-
-export function mergeShoppingAdd(
-  existing: readonly MergeShoppingItem[],
-  add: MergeShoppingItem,
-): MergeShoppingItem[] {
-  const index = existing.findIndex(
-    (item) => item.ingredientId === add.ingredientId && item.unit === add.unit,
-  );
-  if (index === -1) {
-    return [...existing, add];
+export function amountOrZero(value: number | undefined): number {
+  if (value === undefined) {
+    return 0;
   } else {
-    return existing.map((item, itemIndex) => {
-      if (itemIndex === index) {
-        return {
-          ingredientId: item.ingredientId,
-          unit: item.unit,
-          amount: item.amount + add.amount,
-        };
-      } else {
-        return item;
-      }
-    });
+    return value;
   }
 }
 
-export function annotateRecipeIngredientsWithPresence<T extends { ingredientId: string }>(
-  recipeIngredients: readonly T[],
-  shoppingIngredientIds: readonly string[],
-): (T & { onList: boolean })[] {
-  const onListIds = new Set(shoppingIngredientIds);
-  return recipeIngredients.map((item) => ({
-    ...item,
-    onList: onListIds.has(item.ingredientId),
-  }));
+export function neededAmount(manualAmount: number, plannedAmount: number): number {
+  return manualAmount + plannedAmount;
+}
+
+export function toBuyAmount(needed: number, haveAmount: number): number {
+  return Math.max(0, needed - haveAmount);
+}
+
+export function markDoneHave(needed: number): number {
+  return needed;
 }
 
 export function recipeIngredientLinesAtScale(
@@ -47,18 +31,19 @@ export function recipeIngredientLinesAtScale(
 ): RecipeIngredientLine[] {
   return lines.map((line) => ({
     ingredientId: line.ingredientId,
-    unit: line.unit,
     amount: line.amount * factor,
   }));
 }
 
 export function sortShoppingList(items: readonly ShoppingSortItem[]): ShoppingSortItem[] {
   return [...items].sort((a, b) => {
-    if (a.checked !== b.checked) {
-      if (a.checked) {
-        return 1;
-      } else {
+    const aNeedsBuy = a.toBuy > 0;
+    const bNeedsBuy = b.toBuy > 0;
+    if (aNeedsBuy !== bNeedsBuy) {
+      if (aNeedsBuy) {
         return -1;
+      } else {
+        return 1;
       }
     } else {
       const rankA = a.categorySortRank;
@@ -76,4 +61,41 @@ export function sortShoppingList(items: readonly ShoppingSortItem[]): ShoppingSo
       }
     }
   });
+}
+
+export function groupShoppingList<T extends ShoppingGroupItem>(
+  items: readonly T[],
+): { toBuy: ShoppingCategoryGroup<T>[]; rest: ShoppingCategoryGroup<T>[] } {
+  const toBuyItems: T[] = [];
+  const restItems: T[] = [];
+  for (const item of items) {
+    if (item.toBuy > 0) {
+      toBuyItems.push(item);
+    } else {
+      restItems.push(item);
+    }
+  }
+  return {
+    toBuy: groupByAdjacentCategory(toBuyItems),
+    rest: groupByAdjacentCategory(restItems),
+  };
+}
+
+function groupByAdjacentCategory<T extends ShoppingGroupItem>(
+  items: readonly T[],
+): ShoppingCategoryGroup<T>[] {
+  const groups: ShoppingCategoryGroup<T>[] = [];
+  for (const item of items) {
+    const lastGroup = groups[groups.length - 1];
+    if (lastGroup?.categoryId === item.categoryId) {
+      lastGroup.items.push(item);
+    } else {
+      groups.push({
+        categoryId: item.categoryId,
+        categoryName: item.categoryName,
+        items: [item],
+      });
+    }
+  }
+  return groups;
 }

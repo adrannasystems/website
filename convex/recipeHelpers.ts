@@ -1,4 +1,4 @@
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { VEGGIES_CATEGORY_NAME, VEGGIES_SORT_RANK } from "../domain/models/recipe";
 import { normalizeIngredientName } from "../domain/operations/normalizeIngredientName";
@@ -13,10 +13,6 @@ export function createStepNotFoundError() {
 
 export function createIngredientNotFoundError() {
   return new Error("Ingredient not found");
-}
-
-export function createShoppingItemNotFoundError() {
-  return new Error("Shopping list item not found");
 }
 
 export function createCategoryNotFoundError() {
@@ -84,4 +80,23 @@ export async function findOrCreateIngredient(
       return existing._id;
     }
   }
+}
+
+export function ingredientReplaceValue(ingredient: Doc<"ingredients">) {
+  return {
+    name: ingredient.name,
+    normalizedName: ingredient.normalizedName,
+    ...(ingredient.categoryId === undefined ? {} : { categoryId: ingredient.categoryId }),
+    ...(ingredient.manualAmount === undefined ? {} : { manualAmount: ingredient.manualAmount }),
+    ...(ingredient.haveAmount === undefined ? {} : { haveAmount: ingredient.haveAmount }),
+    ...(ingredient.checked === undefined ? {} : { checked: ingredient.checked }),
+  };
+}
+
+export function recipeReplaceValue(recipe: Doc<"recipes">) {
+  return {
+    name: recipe.name,
+    deletedAt: recipe.deletedAt,
+    ...(recipe.plannedScale === undefined ? {} : { plannedScale: recipe.plannedScale }),
+  };
 }

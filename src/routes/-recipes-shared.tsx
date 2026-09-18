@@ -14,12 +14,8 @@ export function formatAmount(amount: number): string {
   return rounded.toString();
 }
 
-export function formatIngredientLine(amount: number, unit: string, name: string): string {
-  if (unit === "") {
-    return `${formatAmount(amount)} ${name}`;
-  } else {
-    return `${formatAmount(amount)} ${unit} ${name}`;
-  }
+export function formatIngredientLine(amount: number, name: string): string {
+  return `${formatAmount(amount)} ${name}`;
 }
 
 export function parsePositiveNumber(value: string): number | null {
@@ -28,6 +24,20 @@ export function parsePositiveNumber(value: string): number | null {
     return parsed;
   } else {
     return null;
+  }
+}
+
+export function parseNonNegativeNumber(value: string): number | null {
+  const trimmed = value.trim();
+  if (trimmed === "") {
+    return 0;
+  } else {
+    const parsed = Number.parseFloat(trimmed);
+    if (Number.isFinite(parsed) && parsed >= 0) {
+      return parsed;
+    } else {
+      return null;
+    }
   }
 }
 

@@ -17,6 +17,7 @@ export const importCatalog = internalMutation({
       v.object({
         name: v.string(),
         categoryName: v.union(v.string(), v.null()),
+        checked: v.boolean(),
       }),
     ),
   },
@@ -25,6 +26,7 @@ export const importCatalog = internalMutation({
     categoriesUpdated: v.number(),
     ingredientsCreated: v.number(),
     ingredientsSkipped: v.number(),
+    checkedUpdated: v.number(),
   }),
   handler: async (ctx, args) => {
     await mergeEnglishVeggiesIntoGemuese(ctx);
@@ -52,6 +54,7 @@ export const importCatalog = internalMutation({
 
     let ingredientsCreated = 0;
     let ingredientsSkipped = 0;
+    let checkedUpdated = 0;
     for (const ingredient of args.ingredients) {
       const normalizedName = normalizeIngredientName(ingredient.name);
       const existing = await ctx.db
@@ -77,6 +80,7 @@ export const importCatalog = internalMutation({
       categoriesUpdated,
       ingredientsCreated,
       ingredientsSkipped,
+      checkedUpdated,
     };
   },
 });
@@ -85,10 +89,11 @@ async function findCategoryByName(
   ctx: MutationCtx,
   name: string,
 ): Promise<Doc<"ingredientCategories"> | null> {
-  return await ctx.db
+  const category = await ctx.db
     .query("ingredientCategories")
     .withIndex("by_name", (q) => q.eq("name", name))
     .first();
+  return category;
 }
 
 async function mergeEnglishVeggiesIntoGemuese(ctx: MutationCtx): Promise<void> {

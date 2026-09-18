@@ -3,13 +3,11 @@ export const VEGGIES_SORT_RANK = 0;
 
 export type RecipeIngredientLine = {
   ingredientId: string;
-  unit: string;
   amount: number;
 };
 
 export type AggregatedIngredient = {
   ingredientId: string;
-  unit: string;
   amount: number;
 };
 
@@ -17,6 +15,18 @@ export type ShoppingSortItem = {
   id: string;
   ingredientId: string;
   name: string;
-  checked: boolean;
+  toBuy: number;
   categorySortRank: number | null;
+};
+
+export type ShoppingGroupItem = {
+  toBuy: number;
+  categoryId: string | null;
+  categoryName: string | null;
+};
+
+export type ShoppingCategoryGroup<T extends ShoppingGroupItem> = {
+  categoryId: string | null;
+  categoryName: string | null;
+  items: T[];
 };

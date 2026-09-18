@@ -9,6 +9,7 @@ export type EinkaufCategory = {
 export type EinkaufIngredient = {
   name: string;
   categoryName: string | null;
+  checked: boolean;
 };
 
 export type EinkaufCatalog = {
@@ -22,9 +23,11 @@ export function parseEinkaufCsv(csvText: string): EinkaufCatalog {
   if (header === undefined) {
     throw new Error("einkauf.csv is empty");
   }
-  const itemIndex = header.indexOf("Item");
-  const sectionIndex = header.indexOf("Section");
-  const laterIndex = header.indexOf("later");
+  const headerCells = header.map((cell) => stripBom(cell));
+  const itemIndex = headerCells.indexOf("Item");
+  const sectionIndex = headerCells.indexOf("Section");
+  const laterIndex = headerCells.indexOf("later");
+  const doneIndex = headerCells.indexOf("Done");
   if (itemIndex === -1 || sectionIndex === -1) {
     throw new Error("einkauf.csv must have Item and Section columns");
   }
@@ -54,6 +57,9 @@ export function parseEinkaufCsv(csvText: string): EinkaufCatalog {
     const categoryName =
       rawSection === undefined || rawSection.trim() === "" ? null : rawSection.trim();
     const later = laterIndex === -1 ? "No" : (row[laterIndex] ?? "No").trim();
+    const rawDone = doneIndex === -1 ? "No" : (row[doneIndex] ?? "No").trim();
+    // Done !== "Yes" means unchecked (missing column, empty, No, or any other value).
+    const checked = rawDone === "Yes";
     if (categoryName !== null) {
       if (seenSections.has(categoryName) === false) {
         seenSections.add(categoryName);
@@ -64,7 +70,7 @@ export function parseEinkaufCsv(csvText: string): EinkaufCatalog {
         primarySectionOrder.push(categoryName);
       }
     }
-    ingredients.push({ name, categoryName });
+    ingredients.push({ name, categoryName, checked });
   }
 
   const trailingSections = allSectionOrder.filter(
