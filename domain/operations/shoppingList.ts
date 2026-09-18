@@ -13,6 +13,10 @@ export function amountOrZero(value: number | undefined): number {
   }
 }
 
+export function isParked(value: boolean | undefined): boolean {
+  return value === true;
+}
+
 export function neededAmount(manualAmount: number, plannedAmount: number): number {
   return manualAmount + plannedAmount;
 }
@@ -45,38 +49,58 @@ export function sortShoppingList(items: readonly ShoppingSortItem[]): ShoppingSo
       } else {
         return 1;
       }
-    } else {
-      const rankA = a.categorySortRank;
-      const rankB = b.categorySortRank;
-      if (rankA === null && rankB === null) {
-        return a.name.localeCompare(b.name);
-      } else if (rankA === null) {
+    } else if (aNeedsBuy && a.parked !== b.parked) {
+      if (a.parked) {
         return 1;
-      } else if (rankB === null) {
-        return -1;
-      } else if (rankA !== rankB) {
-        return rankA - rankB;
       } else {
-        return a.name.localeCompare(b.name);
+        return -1;
       }
+    } else {
+      return compareCategoryThenName(a, b);
     }
   });
 }
 
+function compareCategoryThenName(a: ShoppingSortItem, b: ShoppingSortItem): number {
+  const rankA = a.categorySortRank;
+  const rankB = b.categorySortRank;
+  if (rankA === null && rankB === null) {
+    return a.name.localeCompare(b.name);
+  } else if (rankA === null) {
+    return 1;
+  } else if (rankB === null) {
+    return -1;
+  } else if (rankA !== rankB) {
+    return rankA - rankB;
+  } else {
+    return a.name.localeCompare(b.name);
+  }
+}
+
 export function groupShoppingList<T extends ShoppingGroupItem>(
   items: readonly T[],
-): { toBuy: ShoppingCategoryGroup<T>[]; rest: ShoppingCategoryGroup<T>[] } {
+): {
+  toBuy: ShoppingCategoryGroup<T>[];
+  parked: ShoppingCategoryGroup<T>[];
+  rest: ShoppingCategoryGroup<T>[];
+} {
   const toBuyItems: T[] = [];
+  const parkedItems: T[] = [];
   const restItems: T[] = [];
   for (const item of items) {
     if (item.toBuy > 0) {
-      toBuyItems.push(item);
+      if (isParked(item.parked)) {
+        parkedItems.push(item);
+      } else {
+        toBuyItems.push(item);
+      }
     } else {
       restItems.push(item);
     }
   }
   return {
     toBuy: groupByAdjacentCategory(toBuyItems),
+    parked: groupByAdjacentCategory(parkedItems),
     rest: groupByAdjacentCategory(restItems),
   };
 }

@@ -16,11 +16,13 @@ export type ShoppingSortItem = {
   ingredientId: string;
   name: string;
   toBuy: number;
+  parked: boolean;
   categorySortRank: number | null;
 };
 
 export type ShoppingGroupItem = {
   toBuy: number;
+  parked: boolean;
   categoryId: string | null;
   categoryName: string | null;
 };

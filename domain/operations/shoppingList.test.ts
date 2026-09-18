@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   amountOrZero,
   groupShoppingList,
+  isParked,
   markDoneHave,
   neededAmount,
   recipeIngredientLinesAtScale,
@@ -9,6 +10,14 @@ import {
   toBuyAmount,
 } from "./shoppingList";
 import { VEGGIES_SORT_RANK } from "../models/recipe";
+
+describe("isParked", () => {
+  it("is true only for explicit true", () => {
+    expect(isParked(true)).toBe(true);
+    expect(isParked(false)).toBe(false);
+    expect(isParked(undefined)).toBe(false);
+  });
+});
 
 describe("amountOrZero", () => {
   it("treats missing as 0", () => {
@@ -46,6 +55,7 @@ describe("sortShoppingList", () => {
       ingredientId: "tomato",
       name: "Tomato",
       toBuy: 2,
+      parked: false,
       categorySortRank: VEGGIES_SORT_RANK,
     };
     const cucumber = {
@@ -53,6 +63,7 @@ describe("sortShoppingList", () => {
       ingredientId: "cucumber",
       name: "Cucumber",
       toBuy: 1,
+      parked: false,
       categorySortRank: VEGGIES_SORT_RANK,
     };
     const soy = {
@@ -60,6 +71,7 @@ describe("sortShoppingList", () => {
       ingredientId: "soy",
       name: "Soy sauce",
       toBuy: 4,
+      parked: false,
       categorySortRank: null,
     };
     const doneVeg = {
@@ -67,6 +79,7 @@ describe("sortShoppingList", () => {
       ingredientId: "onion",
       name: "Onion",
       toBuy: 0,
+      parked: false,
       categorySortRank: VEGGIES_SORT_RANK,
     };
 
@@ -77,6 +90,48 @@ describe("sortShoppingList", () => {
       "4",
     ]);
   });
+
+  it("puts parked to-buy after non-parked to-buy, and ignores parked for rest", () => {
+    const tomato = {
+      id: "1",
+      ingredientId: "tomato",
+      name: "Tomato",
+      toBuy: 2,
+      parked: true,
+      categorySortRank: VEGGIES_SORT_RANK,
+    };
+    const soy = {
+      id: "3",
+      ingredientId: "soy",
+      name: "Soy sauce",
+      toBuy: 4,
+      parked: false,
+      categorySortRank: null,
+    };
+    const onion = {
+      id: "4",
+      ingredientId: "onion",
+      name: "Onion",
+      toBuy: 0,
+      parked: true,
+      categorySortRank: VEGGIES_SORT_RANK,
+    };
+    const flour = {
+      id: "5",
+      ingredientId: "flour",
+      name: "Flour",
+      toBuy: 0,
+      parked: false,
+      categorySortRank: 14,
+    };
+
+    expect(sortShoppingList([tomato, flour, onion, soy]).map((item) => item.id)).toEqual([
+      "3",
+      "1",
+      "4",
+      "5",
+    ]);
+  });
 });
 
 describe("groupShoppingList", () => {
@@ -84,6 +139,7 @@ describe("groupShoppingList", () => {
     id: "1",
     name: "Tomato",
     toBuy: 2,
+    parked: false,
     categoryId: "veg",
     categoryName: "Gemüse",
   };
@@ -91,6 +147,7 @@ describe("groupShoppingList", () => {
     id: "2",
     name: "Cucumber",
     toBuy: 1,
+    parked: false,
     categoryId: "veg",
     categoryName: "Gemüse",
   };
@@ -98,6 +155,7 @@ describe("groupShoppingList", () => {
     id: "3",
     name: "Soy sauce",
     toBuy: 4,
+    parked: false,
     categoryId: null,
     categoryName: null,
   };
@@ -105,6 +163,7 @@ describe("groupShoppingList", () => {
     id: "4",
     name: "Onion",
     toBuy: 0,
+    parked: false,
     categoryId: "veg",
     categoryName: "Gemüse",
   };
@@ -112,8 +171,25 @@ describe("groupShoppingList", () => {
     id: "5",
     name: "Flour",
     toBuy: 0,
+    parked: false,
     categoryId: "bake",
     categoryName: "Backen",
+  };
+  const parkedTomato = {
+    id: "6",
+    name: "Parked tomato",
+    toBuy: 3,
+    parked: true,
+    categoryId: "veg",
+    categoryName: "Gemüse",
+  };
+  const parkedOnion = {
+    id: "7",
+    name: "Parked onion",
+    toBuy: 0,
+    parked: true,
+    categoryId: "veg",
+    categoryName: "Gemüse",
   };
 
   it("splits by toBuy and groups adjacent categories in input order", () => {
@@ -121,20 +197,30 @@ describe("groupShoppingList", () => {
     expect(grouped.toBuy.map((group) => group.categoryId)).toEqual(["veg", null]);
     expect(grouped.toBuy[0]?.items.map((item) => item.id)).toEqual(["2", "1"]);
     expect(grouped.toBuy[1]?.items.map((item) => item.id)).toEqual(["3"]);
+    expect(grouped.parked).toEqual([]);
     expect(grouped.rest.map((group) => group.categoryId)).toEqual(["veg", "bake"]);
     expect(grouped.rest[0]?.items.map((item) => item.id)).toEqual(["4"]);
     expect(grouped.rest[1]?.items.map((item) => item.id)).toEqual(["5"]);
   });
 
+  it("puts parked to-buy in the parked section and keeps parked rest in rest", () => {
+    const grouped = groupShoppingList([parkedTomato, cucumber, parkedOnion, onion]);
+    expect(grouped.toBuy[0]?.items.map((item) => item.id)).toEqual(["2"]);
+    expect(grouped.parked[0]?.items.map((item) => item.id)).toEqual(["6"]);
+    expect(grouped.rest[0]?.items.map((item) => item.id)).toEqual(["7", "4"]);
+  });
+
   it("keeps uncategorized as its own group", () => {
     const grouped = groupShoppingList([soy]);
     expect(grouped.toBuy).toEqual([{ categoryId: null, categoryName: null, items: [soy] }]);
+    expect(grouped.parked).toEqual([]);
     expect(grouped.rest).toEqual([]);
   });
 
   it("returns empty super-sections when there are no matching items", () => {
     expect(groupShoppingList([onion])).toEqual({
       toBuy: [],
+      parked: [],
       rest: [{ categoryId: "veg", categoryName: "Gemüse", items: [onion] }],
     });
   });

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { sortRanksForCategoryOrder } from "../domain/operations/ingredientCategories";
 import { authedUserIdOrThrow } from "./auth";
 import {
   createCategoryNotFoundError,
@@ -110,6 +111,65 @@ export const createCategory = mutation({
   },
 });
 
+export const renameCategory = mutation({
+  args: {
+    categoryId: v.id("ingredientCategories"),
+    name: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await authedUserIdOrThrow(ctx);
+    const name = args.name.trim();
+    if (name === "") {
+      throw new Error("Category name is required");
+    } else {
+      const category = await ctx.db.get(args.categoryId);
+      if (category === null) {
+        throw createCategoryNotFoundError();
+      } else if (category.name === name) {
+        return null;
+      } else {
+        const existing = await ctx.db
+          .query("ingredientCategories")
+          .withIndex("by_name", (q) => q.eq("name", name))
+          .unique();
+        if (existing !== null) {
+          throw new Error("Category name already exists");
+        } else {
+          await ctx.db.patch(args.categoryId, { name });
+          return null;
+        }
+      }
+    }
+  },
+});
+
+export const reorderCategories = mutation({
+  args: { orderedCategoryIds: v.array(v.id("ingredientCategories")) },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await authedUserIdOrThrow(ctx);
+    const categories = await ctx.db.query("ingredientCategories").collect();
+    const ranks = sortRanksForCategoryOrder(
+      categories.map((category) => category._id),
+      args.orderedCategoryIds,
+    );
+    if (ranks === null) {
+      throw new Error("Category order does not match existing categories");
+    } else {
+      for (const category of categories) {
+        const sortRank = ranks.get(category._id);
+        if (sortRank === undefined) {
+          throw new Error("Category order does not match existing categories");
+        } else if (category.sortRank !== sortRank) {
+          await ctx.db.patch(category._id, { sortRank });
+        }
+      }
+      return null;
+    }
+  },
+});
+
 export const setCategory = mutation({
   args: {
     ingredientId: v.id("ingredients"),
@@ -128,6 +188,7 @@ export const setCategory = mutation({
         normalizedName: stored.normalizedName,
         ...(stored.manualAmount === undefined ? {} : { manualAmount: stored.manualAmount }),
         ...(stored.haveAmount === undefined ? {} : { haveAmount: stored.haveAmount }),
+        ...(stored.parked === undefined ? {} : { parked: stored.parked }),
         ...(stored.checked === undefined ? {} : { checked: stored.checked }),
       });
       return null;

@@ -19,6 +19,7 @@ import { Route as RecipesRecipesRouteImport } from './routes/_recipes/recipes'
 import { Route as ConsultingConsultingRouteImport } from './routes/_consulting/consulting'
 import { Route as TaskologistSignInSplatRouteImport } from './routes/_taskologist/sign-in.$'
 import { Route as RecipesRecipesShoppingRouteImport } from './routes/_recipes/recipes_.shopping'
+import { Route as RecipesRecipesCategoriesRouteImport } from './routes/_recipes/recipes_.categories'
 import { Route as RecipesRecipesRecipeIdRouteImport } from './routes/_recipes/recipes_.$recipeId'
 
 const TaskologistRoute = TaskologistRouteImport.update({
@@ -68,6 +69,12 @@ const RecipesRecipesShoppingRoute = RecipesRecipesShoppingRouteImport.update({
   path: '/recipes/shopping',
   getParentRoute: () => RecipesRoute,
 } as any)
+const RecipesRecipesCategoriesRoute =
+  RecipesRecipesCategoriesRouteImport.update({
+    id: '/recipes_/categories',
+    path: '/recipes/categories',
+    getParentRoute: () => RecipesRoute,
+  } as any)
 const RecipesRecipesRecipeIdRoute = RecipesRecipesRecipeIdRouteImport.update({
   id: '/recipes_/$recipeId',
   path: '/recipes/$recipeId',
@@ -81,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/sign-in': typeof TaskologistSignInRouteWithChildren
   '/telegram-link': typeof TaskologistTelegramLinkRoute
   '/recipes/$recipeId': typeof RecipesRecipesRecipeIdRoute
+  '/recipes/categories': typeof RecipesRecipesCategoriesRoute
   '/recipes/shopping': typeof RecipesRecipesShoppingRoute
   '/sign-in/$': typeof TaskologistSignInSplatRoute
 }
@@ -91,6 +99,7 @@ export interface FileRoutesByTo {
   '/sign-in': typeof TaskologistSignInRouteWithChildren
   '/telegram-link': typeof TaskologistTelegramLinkRoute
   '/recipes/$recipeId': typeof RecipesRecipesRecipeIdRoute
+  '/recipes/categories': typeof RecipesRecipesCategoriesRoute
   '/recipes/shopping': typeof RecipesRecipesShoppingRoute
   '/sign-in/$': typeof TaskologistSignInSplatRoute
 }
@@ -105,6 +114,7 @@ export interface FileRoutesById {
   '/_taskologist/telegram-link': typeof TaskologistTelegramLinkRoute
   '/_taskologist/': typeof TaskologistIndexRoute
   '/_recipes/recipes_/$recipeId': typeof RecipesRecipesRecipeIdRoute
+  '/_recipes/recipes_/categories': typeof RecipesRecipesCategoriesRoute
   '/_recipes/recipes_/shopping': typeof RecipesRecipesShoppingRoute
   '/_taskologist/sign-in/$': typeof TaskologistSignInSplatRoute
 }
@@ -117,6 +127,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/telegram-link'
     | '/recipes/$recipeId'
+    | '/recipes/categories'
     | '/recipes/shopping'
     | '/sign-in/$'
   fileRoutesByTo: FileRoutesByTo
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/sign-in'
     | '/telegram-link'
     | '/recipes/$recipeId'
+    | '/recipes/categories'
     | '/recipes/shopping'
     | '/sign-in/$'
   id:
@@ -140,6 +152,7 @@ export interface FileRouteTypes {
     | '/_taskologist/telegram-link'
     | '/_taskologist/'
     | '/_recipes/recipes_/$recipeId'
+    | '/_recipes/recipes_/categories'
     | '/_recipes/recipes_/shopping'
     | '/_taskologist/sign-in/$'
   fileRoutesById: FileRoutesById
@@ -222,6 +235,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecipesRecipesShoppingRouteImport
       parentRoute: typeof RecipesRoute
     }
+    '/_recipes/recipes_/categories': {
+      id: '/_recipes/recipes_/categories'
+      path: '/recipes/categories'
+      fullPath: '/recipes/categories'
+      preLoaderRoute: typeof RecipesRecipesCategoriesRouteImport
+      parentRoute: typeof RecipesRoute
+    }
     '/_recipes/recipes_/$recipeId': {
       id: '/_recipes/recipes_/$recipeId'
       path: '/recipes/$recipeId'
@@ -247,12 +267,14 @@ const ConsultingRouteWithChildren = ConsultingRoute._addFileChildren(
 interface RecipesRouteChildren {
   RecipesRecipesRoute: typeof RecipesRecipesRoute
   RecipesRecipesRecipeIdRoute: typeof RecipesRecipesRecipeIdRoute
+  RecipesRecipesCategoriesRoute: typeof RecipesRecipesCategoriesRoute
   RecipesRecipesShoppingRoute: typeof RecipesRecipesShoppingRoute
 }
 
 const RecipesRouteChildren: RecipesRouteChildren = {
   RecipesRecipesRoute: RecipesRecipesRoute,
   RecipesRecipesRecipeIdRoute: RecipesRecipesRecipeIdRoute,
+  RecipesRecipesCategoriesRoute: RecipesRecipesCategoriesRoute,
   RecipesRecipesShoppingRoute: RecipesRecipesShoppingRoute,
 }
 

@@ -22,12 +22,12 @@ function RecipesLayout() {
       <header className="fixed z-10 w-full bg-white shadow-sm" lang={locale}>
         <nav className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 md:gap-6">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 md:gap-x-6">
               <Link to="/recipes" className="text-2xl font-bold text-gray-800">
                 {m.recipesBrand()}
               </Link>
               <Authenticated>
-                <div className="flex items-center gap-3 text-sm font-medium">
+                <div className="flex flex-wrap items-center gap-3 text-sm font-medium">
                   <Link
                     to="/recipes"
                     activeOptions={{ exact: true }}
@@ -42,6 +42,13 @@ function RecipesLayout() {
                     activeProps={{ className: "text-gray-900" }}
                   >
                     {m.recipesNavShopping()}
+                  </Link>
+                  <Link
+                    to="/recipes/categories"
+                    className="text-gray-600 hover:text-gray-900"
+                    activeProps={{ className: "text-gray-900" }}
+                  >
+                    {m.recipesNavCategories()}
                   </Link>
                 </div>
               </Authenticated>

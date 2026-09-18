@@ -4,7 +4,7 @@ import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Check } from "lucide-react";
+import { Check, CircleParking } from "lucide-react";
 import { m } from "@/paraglide/messages.js";
 import {
   ErrorBanner,
@@ -29,6 +29,7 @@ type ShoppingListItem = {
   haveAmount: number;
   needed: number;
   toBuy: number;
+  parked: boolean;
   categoryId: Id<"ingredientCategories"> | null;
   categoryName: string | null;
 };
@@ -51,7 +52,7 @@ const amountInputClassName =
   "h-8 w-full min-w-0 justify-self-end px-1.5 text-right text-sm tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none";
 
 const itemGridClassName =
-  "grid grid-cols-[1.75rem_repeat(4,minmax(0,1fr))_minmax(6.5rem,auto)] items-center gap-x-1.5 gap-y-1 px-3 py-1.5 sm:grid-cols-[2rem_minmax(0,1fr)_4rem_4rem_4rem_4rem_minmax(8rem,9.5rem)] sm:gap-x-2 sm:py-1";
+  "grid grid-cols-[1.75rem_1.75rem_repeat(4,minmax(0,1fr))_minmax(6.5rem,auto)] items-center gap-x-1.5 gap-y-1 px-3 py-1.5 sm:grid-cols-[2rem_2rem_minmax(0,1fr)_4rem_4rem_4rem_4rem_minmax(8rem,9.5rem)] sm:gap-x-2 sm:py-1";
 
 function ShoppingPage() {
   const items = useQuery(api.shoppingList.list);
@@ -160,7 +161,8 @@ function ShoppingPage() {
           <div>
             <div className="sticky top-16 z-[1] border-b border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600">
               <p className="sm:hidden">{`${m.shoppingExtra()} · ${m.shoppingPlanned()} · ${m.shoppingHave()} · ${m.shoppingToBuy()}`}</p>
-              <div className="hidden grid-cols-[2rem_minmax(0,1fr)_4rem_4rem_4rem_4rem_minmax(8rem,9.5rem)] items-end gap-x-2 sm:grid">
+              <div className="hidden grid-cols-[2rem_2rem_minmax(0,1fr)_4rem_4rem_4rem_4rem_minmax(8rem,9.5rem)] items-end gap-x-2 sm:grid">
+                <span />
                 <span />
                 <span className="min-w-0" />
                 <span className="truncate text-right" title={m.shoppingExtra()}>
@@ -181,6 +183,18 @@ function ShoppingPage() {
             <ShoppingSuperSection
               title={m.shoppingToBuy()}
               groups={grouped.toBuy}
+              categories={categories}
+              muted={false}
+              onCategoryChange={(ingredientId, categoryId) => {
+                void setCategory({ ingredientId, categoryId }).catch(() => {
+                  setErrorMessage(m.errorUpdateRecipe());
+                });
+              }}
+              onError={setErrorMessage}
+            />
+            <ShoppingSuperSection
+              title={m.shoppingParked()}
+              groups={grouped.parked}
               categories={categories}
               muted={false}
               onCategoryChange={(ingredientId, categoryId) => {
@@ -280,14 +294,17 @@ function ShoppingItemRow(props: {
           <DoneButton ingredientId={item.ingredientId} onError={props.onError} />
         ) : null}
       </div>
+      <div className="col-start-2 row-start-1 flex h-8 items-center justify-center">
+        <ParkButton ingredientId={item.ingredientId} parked={item.parked} onError={props.onError} />
+      </div>
       <span
-        className="col-span-4 col-start-2 row-start-1 min-w-0 truncate text-sm text-gray-900 sm:col-span-1"
+        className="col-span-4 col-start-3 row-start-1 min-w-0 truncate text-sm text-gray-900 sm:col-span-1"
         title={item.name}
       >
         {item.name}
       </span>
-      <div className="col-span-6 col-start-1 row-start-2 grid grid-cols-4 items-center gap-x-1.5 sm:contents">
-        <div className="sm:col-start-3 sm:row-start-1">
+      <div className="col-span-7 col-start-1 row-start-2 grid grid-cols-4 items-center gap-x-1.5 sm:contents">
+        <div className="sm:col-start-4 sm:row-start-1">
           <ShoppingAmountField
             key={`${item._id}-manual-${formatAmount(item.manualAmount)}`}
             label={m.shoppingExtra()}
@@ -297,10 +314,10 @@ function ShoppingItemRow(props: {
             onError={props.onError}
           />
         </div>
-        <span className="h-8 text-right text-sm leading-8 text-gray-600 tabular-nums sm:col-start-4 sm:row-start-1">
+        <span className="h-8 text-right text-sm leading-8 text-gray-600 tabular-nums sm:col-start-5 sm:row-start-1">
           {formatAmount(item.plannedAmount)}
         </span>
-        <div className="sm:col-start-5 sm:row-start-1">
+        <div className="sm:col-start-6 sm:row-start-1">
           <ShoppingAmountField
             key={`${item._id}-have-${formatAmount(item.haveAmount)}`}
             label={m.shoppingHave()}
@@ -313,8 +330,8 @@ function ShoppingItemRow(props: {
         <span
           className={
             item.toBuy > 0
-              ? "h-8 text-right text-sm leading-8 font-medium text-gray-900 tabular-nums sm:col-start-6 sm:row-start-1"
-              : "h-8 text-right text-sm leading-8 text-gray-400 tabular-nums sm:col-start-6 sm:row-start-1"
+              ? "h-8 text-right text-sm leading-8 font-medium text-gray-900 tabular-nums sm:col-start-7 sm:row-start-1"
+              : "h-8 text-right text-sm leading-8 text-gray-400 tabular-nums sm:col-start-7 sm:row-start-1"
           }
         >
           {formatAmount(item.toBuy)}
@@ -322,7 +339,7 @@ function ShoppingItemRow(props: {
       </div>
       <select
         aria-label={m.shoppingCategory()}
-        className="col-start-6 row-start-1 h-8 w-full min-w-0 rounded-md border border-input bg-transparent px-1.5 text-xs sm:col-start-7"
+        className="col-start-7 row-start-1 h-8 w-full min-w-0 rounded-md border border-input bg-transparent px-1.5 text-xs sm:col-start-8"
         value={item.categoryId ?? ""}
         onChange={(event) => {
           const value = event.target.value;
@@ -408,6 +425,38 @@ function DoneButton(props: {
       }}
     >
       <Check />
+    </Button>
+  );
+}
+
+function ParkButton(props: {
+  ingredientId: Id<"ingredients">;
+  parked: boolean;
+  onError: (message: string | null) => void;
+}) {
+  const setParked = useMutation(api.shoppingList.setParked);
+  const [isSaving, setIsSaving] = React.useState(false);
+
+  return (
+    <Button
+      type="button"
+      size="icon-sm"
+      variant={props.parked ? "secondary" : "ghost"}
+      aria-pressed={props.parked}
+      aria-label={props.parked ? m.shoppingUnpark() : m.shoppingPark()}
+      disabled={isSaving}
+      onClick={() => {
+        setIsSaving(true);
+        void setParked({ ingredientId: props.ingredientId, parked: !props.parked })
+          .catch(() => {
+            props.onError(m.errorUpdateRecipe());
+          })
+          .finally(() => {
+            setIsSaving(false);
+          });
+      }}
+    >
+      <CircleParking />
     </Button>
   );
 }

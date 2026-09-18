@@ -54,6 +54,8 @@ export default defineSchema({
     manualAmount: v.optional(v.number()),
     /** Amount already covered this shop. Missing means 0. Cleared by New shop. */
     haveAmount: v.optional(v.number()),
+    /** When true, deprioritized among to-buy items. Missing means not parked. Not cleared by New shop. */
+    parked: v.optional(v.boolean()),
     /** Unused leftover from the old tick list. Do not write. */
     checked: v.optional(v.boolean()),
   }).index("by_normalizedName", ["normalizedName"]),
