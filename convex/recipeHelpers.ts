@@ -89,6 +89,7 @@ export function ingredientReplaceValue(ingredient: Doc<"ingredients">) {
     ...(ingredient.categoryId === undefined ? {} : { categoryId: ingredient.categoryId }),
     ...(ingredient.manualAmount === undefined ? {} : { manualAmount: ingredient.manualAmount }),
     ...(ingredient.haveAmount === undefined ? {} : { haveAmount: ingredient.haveAmount }),
+    ...(ingredient.parked === undefined ? {} : { parked: ingredient.parked }),
     ...(ingredient.checked === undefined ? {} : { checked: ingredient.checked }),
   };
 }

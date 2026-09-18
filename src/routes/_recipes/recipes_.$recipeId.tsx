@@ -84,11 +84,12 @@ function RecipeHeader(props: {
   const [isArchiving, setIsArchiving] = React.useState(false);
 
   return (
-    <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-        <Label htmlFor="recipe-detail-name">{m.recipesName()}</Label>
+    <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0 flex-1">
         <Input
           id="recipe-detail-name"
+          aria-label={m.recipesName()}
+          className="h-11 text-lg md:text-lg"
           value={name}
           onChange={(event) => {
             setName(event.target.value);
@@ -131,13 +132,6 @@ function ScalePanel(props: { recipe: RecipeDetail; onError: (message: string | n
   const [scaleInput, setScaleInput] = React.useState(
     props.recipe.plannedScale === null ? "" : String(props.recipe.plannedScale),
   );
-  const referenceOptions = uniqueReferenceIngredients(props.recipe);
-  const [referenceKey, setReferenceKey] = React.useState("");
-  const [desiredInput, setDesiredInput] = React.useState("");
-  const firstOption = referenceOptions[0];
-  const selectedReferenceKey = referenceOptions.some((option) => option.key === referenceKey)
-    ? referenceKey
-    : (firstOption?.key ?? "");
 
   async function persistScale(raw: string) {
     const parsed = parsePositiveNumber(raw);
@@ -155,79 +149,22 @@ function ScalePanel(props: { recipe: RecipeDetail; onError: (message: string | n
   }
 
   return (
-    <section className="mb-8 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <h2 className="mb-4 text-lg font-semibold text-gray-900">{m.recipesScale()}</h2>
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="scale-factor">{m.recipesScaleFactor()}</Label>
-          <Input
-            id="scale-factor"
-            type="number"
-            min="0"
-            step="any"
-            value={scaleInput}
-            onChange={(event) => {
-              setScaleInput(event.target.value);
-            }}
-            onBlur={(event) => {
-              void persistScale(event.target.value);
-            }}
-          />
-        </div>
-        {referenceOptions.length === 0 ? null : (
-          <div className="flex flex-col gap-3 md:flex-row md:items-end">
-            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-              <Label htmlFor="scale-reference">{m.recipesScaleReference()}</Label>
-              <select
-                id="scale-reference"
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                value={selectedReferenceKey}
-                onChange={(event) => {
-                  setReferenceKey(event.target.value);
-                }}
-              >
-                {referenceOptions.map((option) => (
-                  <option key={option.key} value={option.key}>
-                    {formatIngredientLine(option.amount, option.name)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="scale-desired">{m.recipesScaleDesired()}</Label>
-              <Input
-                id="scale-desired"
-                type="number"
-                min="0"
-                step="any"
-                value={desiredInput}
-                onChange={(event) => {
-                  setDesiredInput(event.target.value);
-                }}
-              />
-            </div>
-            <Button
-              type="button"
-              onClick={() => {
-                const option = referenceOptions.find(
-                  (candidate) => candidate.key === selectedReferenceKey,
-                );
-                const desired = parsePositiveNumber(desiredInput);
-                if (option === undefined || option.amount === 0 || desired === null) {
-                  props.onError(m.errorScaleReference());
-                } else {
-                  const next = (desired / option.amount).toString();
-                  props.onError(null);
-                  setScaleInput(next);
-                  void persistScale(next);
-                }
-              }}
-            >
-              {m.recipesApplyScale()}
-            </Button>
-          </div>
-        )}
-      </div>
+    <section className="mb-6 flex items-center gap-2">
+      <Label htmlFor="scale-factor">{m.recipesScale()}</Label>
+      <Input
+        id="scale-factor"
+        type="number"
+        min="0"
+        step="any"
+        className="w-20"
+        value={scaleInput}
+        onChange={(event) => {
+          setScaleInput(event.target.value);
+        }}
+        onBlur={(event) => {
+          void persistScale(event.target.value);
+        }}
+      />
     </section>
   );
 }
@@ -517,22 +454,4 @@ function IngredientDatalist(props: { id: string; names: string[] }) {
       ))}
     </datalist>
   );
-}
-
-function uniqueReferenceIngredients(recipe: RecipeDetail) {
-  const seen = new Set<string>();
-  const options: { key: string; name: string; amount: number }[] = [];
-  for (const step of recipe.steps) {
-    for (const ingredient of step.ingredients) {
-      if (!seen.has(ingredient.ingredientId)) {
-        seen.add(ingredient.ingredientId);
-        options.push({
-          key: ingredient.ingredientId,
-          name: ingredient.name,
-          amount: ingredient.amount,
-        });
-      }
-    }
-  }
-  return options;
 }

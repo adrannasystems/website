@@ -5,6 +5,7 @@ import { authedUserIdOrThrow } from "./auth";
 import { aggregateRecipeIngredients } from "../domain/operations/aggregateRecipeIngredients";
 import {
   amountOrZero,
+  isParked,
   markDoneHave,
   neededAmount,
   recipeIngredientLinesAtScale,
@@ -22,6 +23,7 @@ const shoppingItemValidator = v.object({
   haveAmount: v.number(),
   needed: v.number(),
   toBuy: v.number(),
+  parked: v.boolean(),
   categoryId: v.union(v.id("ingredientCategories"), v.null()),
   categoryName: v.union(v.string(), v.null()),
 });
@@ -43,6 +45,7 @@ export const list = query({
       const haveAmount = amountOrZero(ingredient.haveAmount);
       const needed = neededAmount(manualAmount, plannedAmount);
       const toBuy = toBuyAmount(needed, haveAmount);
+      const parked = isParked(ingredient.parked);
       return {
         _id: ingredient._id,
         ingredientId: ingredient._id,
@@ -52,6 +55,7 @@ export const list = query({
         haveAmount,
         needed,
         toBuy,
+        parked,
         categoryId: categoryId ?? null,
         categoryName: category === undefined ? null : category.name,
         categorySortRank: category === undefined ? null : category.sortRank,
@@ -64,6 +68,7 @@ export const list = query({
         ingredientId: item.ingredientId,
         name: item.name,
         toBuy: item.toBuy,
+        parked: item.parked,
         categorySortRank: item.categorySortRank,
       })),
     ).map((sorted) => {
@@ -80,6 +85,7 @@ export const list = query({
           haveAmount: item.haveAmount,
           needed: item.needed,
           toBuy: item.toBuy,
+          parked: item.parked,
           categoryId: item.categoryId,
           categoryName: item.categoryName,
         };
@@ -105,6 +111,21 @@ export const setHaveAmount = mutation({
     await authedUserIdOrThrow(ctx);
     await patchIngredientAmount(ctx, args.ingredientId, "haveAmount", args.amount);
     return null;
+  },
+});
+
+export const setParked = mutation({
+  args: { ingredientId: v.id("ingredients"), parked: v.boolean() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await authedUserIdOrThrow(ctx);
+    const ingredient = await ctx.db.get(args.ingredientId);
+    if (ingredient === null) {
+      throw createIngredientNotFoundError();
+    } else {
+      await ctx.db.patch(args.ingredientId, { parked: args.parked });
+      return null;
+    }
   },
 });
 
