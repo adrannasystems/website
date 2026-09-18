@@ -41,4 +41,35 @@ export default defineSchema({
   })
     .index("by_chatId", ["chatId"])
     .index("by_userId", ["userId"]),
+  ingredientCategories: defineTable({
+    name: v.string(),
+    /** Lower = earlier in the shop. Veggies is seeded at 0. */
+    sortRank: v.number(),
+  }).index("by_name", ["name"]),
+  ingredients: defineTable({
+    name: v.string(),
+    normalizedName: v.string(),
+    categoryId: v.optional(v.id("ingredientCategories")),
+  }).index("by_normalizedName", ["normalizedName"]),
+  recipes: defineTable({
+    name: v.string(),
+    deletedAt: v.union(v.number(), v.null()),
+  }).index("by_deletedAt", ["deletedAt"]),
+  recipeSteps: defineTable({
+    recipeId: v.id("recipes"),
+    sortOrder: v.number(),
+    text: v.string(),
+  }).index("by_recipeId", ["recipeId"]),
+  recipeStepIngredients: defineTable({
+    stepId: v.id("recipeSteps"),
+    ingredientId: v.id("ingredients"),
+    amount: v.number(),
+    unit: v.string(),
+  }).index("by_stepId", ["stepId"]),
+  shoppingListItems: defineTable({
+    ingredientId: v.id("ingredients"),
+    amount: v.number(),
+    unit: v.string(),
+    checked: v.boolean(),
+  }).index("by_ingredientId_unit", ["ingredientId", "unit"]),
 });
