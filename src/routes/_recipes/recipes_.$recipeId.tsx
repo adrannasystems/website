@@ -2,6 +2,24 @@ import * as React from "react";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, Pencil, Plus, Trash2, X } from "lucide-react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
@@ -17,6 +35,14 @@ import {
 } from "../-recipes-shared";
 
 type RecipeDetail = NonNullable<FunctionReturnType<typeof api.recipes.get>>;
+type RecipeStep = RecipeDetail["steps"][number];
+type RecipeIngredient = RecipeStep["ingredients"][number];
+
+type EditorTarget =
+  | { type: "title" }
+  | { type: "step"; id: Id<"recipeSteps"> }
+  | { type: "ingredient"; id: Id<"recipeStepIngredients"> }
+  | { type: "addIngredient"; stepId: Id<"recipeSteps"> };
 
 export const Route = createFileRoute("/_recipes/recipes_/$recipeId")({
   component: RecipeDetailPage,
@@ -28,6 +54,43 @@ function RecipeDetailPage() {
   const recipe = useQuery(api.recipes.get, { recipeId: typedRecipeId });
   const catalog = useQuery(api.ingredients.listIngredients);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
+  const [editor, setEditor] = React.useState<EditorTarget | null>(null);
+  const editorRef = React.useRef<EditorTarget | null>(null);
+  const commitBlockedRef = React.useRef(false);
+  editorRef.current = editor;
+
+  function requestEditor(next: EditorTarget | null) {
+    if (next !== null && isSameEditor(editor, next)) {
+      return;
+    } else if (next !== null && commitBlockedRef.current) {
+      return;
+    } else if (next === null) {
+      commitBlockedRef.current = false;
+      setEditor(null);
+    } else {
+      setEditor(next);
+    }
+  }
+
+  function closeIfCurrent(target: EditorTarget) {
+    if (isSameEditor(editorRef.current, target)) {
+      commitBlockedRef.current = false;
+      setEditor(null);
+    }
+  }
+
+  function forceCloseEditor() {
+    commitBlockedRef.current = false;
+    setEditor(null);
+  }
+
+  function markCommitBlocked() {
+    commitBlockedRef.current = true;
+  }
+
+  function clearCommitBlocked() {
+    commitBlockedRef.current = false;
+  }
 
   if (recipe === undefined) {
     return (
@@ -59,12 +122,31 @@ function RecipeDetailPage() {
             <ErrorBanner message={errorMessage} />
           </div>
         )}
-        <RecipeHeader recipeId={typedRecipeId} name={recipe.name} onError={setErrorMessage} />
+        <RecipeHeader
+          recipeId={typedRecipeId}
+          name={recipe.name}
+          isEditing={editor?.type === "title"}
+          onRequestEdit={() => {
+            requestEditor({ type: "title" });
+          }}
+          onForceClose={forceCloseEditor}
+          onMarkCommitBlocked={markCommitBlocked}
+          onSaved={() => {
+            closeIfCurrent({ type: "title" });
+          }}
+          onError={setErrorMessage}
+        />
         <ScalePanel key={String(recipe.plannedScale)} recipe={recipe} onError={setErrorMessage} />
         <StepsEditor
           recipe={recipe}
           scaleFactor={scaleFactor}
           catalogNames={catalog?.map((ingredient) => ingredient.name) ?? []}
+          editor={editor}
+          onRequestEditor={requestEditor}
+          onForceCloseEditor={forceCloseEditor}
+          onCloseIfCurrent={closeIfCurrent}
+          onMarkCommitBlocked={markCommitBlocked}
+          onClearCommitBlocked={clearCommitBlocked}
           onError={setErrorMessage}
         />
       </RecipesPageShell>
@@ -75,40 +157,57 @@ function RecipeDetailPage() {
 function RecipeHeader(props: {
   recipeId: Id<"recipes">;
   name: string;
+  isEditing: boolean;
+  onRequestEdit: () => void;
+  onForceClose: () => void;
+  onMarkCommitBlocked: () => void;
+  onSaved: () => void;
   onError: (message: string | null) => void;
 }) {
-  const rename = useMutation(api.recipes.rename);
   const archive = useMutation(api.recipes.archive);
   const navigate = useNavigate();
-  const [name, setName] = React.useState(props.name);
   const [isArchiving, setIsArchiving] = React.useState(false);
 
   return (
-    <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mb-4 flex items-start justify-between gap-3">
       <div className="min-w-0 flex-1">
-        <Input
-          id="recipe-detail-name"
-          aria-label={m.recipesName()}
-          className="h-11 text-lg md:text-lg"
-          value={name}
-          onChange={(event) => {
-            setName(event.target.value);
-          }}
-          onBlur={() => {
-            const trimmed = name.trim();
-            if (trimmed === "" || trimmed === props.name) {
-              setName(props.name);
-            } else {
-              void rename({ recipeId: props.recipeId, name: trimmed }).catch(() => {
-                props.onError(m.errorUpdateRecipe());
-              });
-            }
-          }}
-        />
+        {props.isEditing ? (
+          <TitleEditor
+            recipeId={props.recipeId}
+            name={props.name}
+            onForceClose={props.onForceClose}
+            onMarkCommitBlocked={props.onMarkCommitBlocked}
+            onSaved={props.onSaved}
+            onError={props.onError}
+          />
+        ) : (
+          <div className="flex items-start gap-1">
+            <h1 className="min-w-0 flex-1">
+              <button
+                type="button"
+                className="w-full text-left text-2xl font-bold text-gray-900"
+                onClick={props.onRequestEdit}
+              >
+                {props.name}
+              </button>
+            </h1>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label={m.recipesEdit()}
+              onClick={props.onRequestEdit}
+            >
+              <Pencil />
+            </Button>
+          </div>
+        )}
       </div>
       <Button
         type="button"
         variant="outline"
+        size="sm"
+        className="w-fit shrink-0"
         disabled={isArchiving}
         onClick={() => {
           setIsArchiving(true);
@@ -123,6 +222,67 @@ function RecipeHeader(props: {
         {isArchiving ? m.recipesArchiving() : m.recipesArchive()}
       </Button>
     </div>
+  );
+}
+
+function TitleEditor(props: {
+  recipeId: Id<"recipes">;
+  name: string;
+  onForceClose: () => void;
+  onMarkCommitBlocked: () => void;
+  onSaved: () => void;
+  onError: (message: string | null) => void;
+}) {
+  const rename = useMutation(api.recipes.rename);
+  const [draftName, setDraftName] = React.useState(props.name);
+
+  function saveTitle() {
+    const trimmed = draftName.trim();
+    if (trimmed === "") {
+      props.onMarkCommitBlocked();
+      props.onError(m.errorRecipeNameRequired());
+    } else if (trimmed === props.name) {
+      props.onSaved();
+    } else {
+      void rename({ recipeId: props.recipeId, name: trimmed })
+        .then(() => {
+          props.onError(null);
+          props.onSaved();
+        })
+        .catch(() => {
+          props.onMarkCommitBlocked();
+          props.onError(m.errorUpdateRecipe());
+        });
+    }
+  }
+
+  return (
+    <Input
+      id="recipe-detail-name"
+      aria-label={m.recipesName()}
+      className="h-10 text-lg md:text-lg"
+      autoFocus
+      value={draftName}
+      onFocus={(event) => {
+        event.currentTarget.select();
+      }}
+      onChange={(event) => {
+        setDraftName(event.target.value);
+      }}
+      onBlur={() => {
+        saveTitle();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          event.currentTarget.blur();
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          setDraftName(props.name);
+          props.onForceClose();
+        }
+      }}
+    />
   );
 }
 
@@ -149,7 +309,7 @@ function ScalePanel(props: { recipe: RecipeDetail; onError: (message: string | n
   }
 
   return (
-    <section className="mb-6 flex items-center gap-2">
+    <section className="mb-4 flex items-center gap-2">
       <Label htmlFor="scale-factor">{m.recipesScale()}</Label>
       <Input
         id="scale-factor"
@@ -173,176 +333,479 @@ function StepsEditor(props: {
   recipe: RecipeDetail;
   scaleFactor: number;
   catalogNames: string[];
+  editor: EditorTarget | null;
+  onRequestEditor: (next: EditorTarget | null) => void;
+  onForceCloseEditor: () => void;
+  onCloseIfCurrent: (target: EditorTarget) => void;
+  onMarkCommitBlocked: () => void;
+  onClearCommitBlocked: () => void;
   onError: (message: string | null) => void;
 }) {
   const addStep = useMutation(api.recipes.addStep);
-  const updateStep = useMutation(api.recipes.updateStep);
-  const deleteStep = useMutation(api.recipes.deleteStep);
   const reorderSteps = useMutation(api.recipes.reorderSteps);
-  const addStepIngredient = useMutation(api.recipes.addStepIngredient);
-  const updateStepIngredient = useMutation(api.recipes.updateStepIngredient);
-  const removeStepIngredient = useMutation(api.recipes.removeStepIngredient);
+  const [optimisticOrder, setOptimisticOrder] = React.useState<Id<"recipeSteps">[] | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
-  async function moveStep(index: number, direction: -1 | 1) {
-    const target = index + direction;
-    if (target < 0 || target >= props.recipe.steps.length) {
+  const serverOrder = React.useMemo(
+    () => props.recipe.steps.map((step) => step._id),
+    [props.recipe.steps],
+  );
+  const orderedIds = resolveOrderedStepIds(serverOrder, optimisticOrder);
+  const orderedSteps = React.useMemo(() => {
+    const byId = new Map(props.recipe.steps.map((step) => [step._id, step]));
+    return orderedIds.flatMap((id) => {
+      const step = byId.get(id);
+      return step === undefined ? [] : [step];
+    });
+  }, [orderedIds, props.recipe.steps]);
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (over === null || active.id === over.id) {
       return;
-    }
-    const stepIds = props.recipe.steps.map((step) => step._id);
-    const current = stepIds[index];
-    const swapWith = stepIds[target];
-    if (current === undefined || swapWith === undefined) {
-      return;
-    }
-    stepIds[index] = swapWith;
-    stepIds[target] = current;
-    try {
-      await reorderSteps({ recipeId: props.recipe._id, stepIds });
-    } catch {
-      props.onError(m.errorUpdateRecipe());
+    } else {
+      const activeId = orderedIds.find((id) => id === active.id);
+      const overId = orderedIds.find((id) => id === over.id);
+      if (activeId === undefined || overId === undefined) {
+        return;
+      } else {
+        const newOrder = arrayMove(
+          orderedIds,
+          orderedIds.indexOf(activeId),
+          orderedIds.indexOf(overId),
+        );
+        setOptimisticOrder(newOrder);
+        void reorderSteps({ recipeId: props.recipe._id, stepIds: newOrder }).catch(() => {
+          setOptimisticOrder(null);
+          props.onError(m.errorReorderSteps());
+        });
+      }
     }
   }
 
   return (
     <section className="mb-8">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-gray-900">{m.recipesSteps()}</h2>
+      <h2 className="mb-2 text-lg font-semibold text-gray-900">{m.recipesSteps()}</h2>
+      {orderedSteps.length === 0 ? null : (
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
+            <ul className="flex flex-col divide-y divide-gray-200">
+              {orderedSteps.map((step) => (
+                <SortableStep
+                  key={step._id}
+                  step={step}
+                  scaleFactor={props.scaleFactor}
+                  catalogNames={props.catalogNames}
+                  editor={props.editor}
+                  onRequestEditor={props.onRequestEditor}
+                  onForceCloseEditor={props.onForceCloseEditor}
+                  onCloseIfCurrent={props.onCloseIfCurrent}
+                  onMarkCommitBlocked={props.onMarkCommitBlocked}
+                  onClearCommitBlocked={props.onClearCommitBlocked}
+                  onError={props.onError}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
+      )}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="mt-2 w-fit"
+        onClick={() => {
+          void addStep({ recipeId: props.recipe._id }).catch(() => {
+            props.onError(m.errorAddStep());
+          });
+        }}
+      >
+        <Plus data-icon="inline-start" />
+        {m.recipesAddStep()}
+      </Button>
+    </section>
+  );
+}
+
+function SortableStep(props: {
+  step: RecipeStep;
+  scaleFactor: number;
+  catalogNames: string[];
+  editor: EditorTarget | null;
+  onRequestEditor: (next: EditorTarget | null) => void;
+  onForceCloseEditor: () => void;
+  onCloseIfCurrent: (target: EditorTarget) => void;
+  onMarkCommitBlocked: () => void;
+  onClearCommitBlocked: () => void;
+  onError: (message: string | null) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: props.step._id,
+  });
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : undefined,
+        position: "relative",
+        zIndex: isDragging ? 1 : undefined,
+      }}
+      className="py-3"
+    >
+      <StepBlock
+        step={props.step}
+        scaleFactor={props.scaleFactor}
+        catalogNames={props.catalogNames}
+        editor={props.editor}
+        onRequestEditor={props.onRequestEditor}
+        onForceCloseEditor={props.onForceCloseEditor}
+        onCloseIfCurrent={props.onCloseIfCurrent}
+        onMarkCommitBlocked={props.onMarkCommitBlocked}
+        onClearCommitBlocked={props.onClearCommitBlocked}
+        onError={props.onError}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </li>
+  );
+}
+
+function StepBlock(props: {
+  step: RecipeStep;
+  scaleFactor: number;
+  catalogNames: string[];
+  editor: EditorTarget | null;
+  onRequestEditor: (next: EditorTarget | null) => void;
+  onForceCloseEditor: () => void;
+  onCloseIfCurrent: (target: EditorTarget) => void;
+  onMarkCommitBlocked: () => void;
+  onClearCommitBlocked: () => void;
+  onError: (message: string | null) => void;
+  dragHandleProps: Record<string, unknown>;
+}) {
+  const updateStep = useMutation(api.recipes.updateStep);
+  const deleteStep = useMutation(api.recipes.deleteStep);
+  const addStepIngredient = useMutation(api.recipes.addStepIngredient);
+  const isEditingStep = props.editor?.type === "step" && props.editor.id === props.step._id;
+  const isAddingIngredient =
+    props.editor?.type === "addIngredient" && props.editor.stepId === props.step._id;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-start gap-1">
+        <button
+          type="button"
+          aria-label={m.dragToReorder()}
+          className="mt-0.5 cursor-grab touch-none rounded p-1 text-gray-400 hover:text-gray-600 active:cursor-grabbing"
+          {...props.dragHandleProps}
+        >
+          <GripVertical className="size-4" />
+        </button>
+        <StepText
+          step={props.step}
+          isEditing={isEditingStep}
+          onRequestEdit={() => {
+            props.onRequestEditor({ type: "step", id: props.step._id });
+          }}
+          onForceClose={props.onForceCloseEditor}
+          onSaved={() => {
+            props.onCloseIfCurrent({ type: "step", id: props.step._id });
+          }}
+          onSave={(text) => {
+            void updateStep({ stepId: props.step._id, text })
+              .then(() => {
+                props.onError(null);
+                props.onCloseIfCurrent({ type: "step", id: props.step._id });
+              })
+              .catch(() => {
+                props.onMarkCommitBlocked();
+                props.onError(m.errorUpdateRecipe());
+              });
+          }}
+        />
+        {isEditingStep ? (
+          <Button
+            type="button"
+            variant="destructive"
+            size="icon-sm"
+            className="shrink-0"
+            aria-label={m.recipesRemoveStep()}
+            onMouseDown={(event) => {
+              event.preventDefault();
+            }}
+            onClick={() => {
+              props.onForceCloseEditor();
+              void deleteStep({ stepId: props.step._id }).catch(() => {
+                props.onError(m.errorUpdateRecipe());
+              });
+            }}
+          >
+            <Trash2 />
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            className="shrink-0"
+            aria-label={m.recipesEdit()}
+            onClick={() => {
+              props.onRequestEditor({ type: "step", id: props.step._id });
+            }}
+          >
+            <Pencil />
+          </Button>
+        )}
+        {props.step.ingredients.length === 0 && !isAddingIngredient ? (
+          <AddIngredientButton
+            onClick={() => {
+              props.onRequestEditor({ type: "addIngredient", stepId: props.step._id });
+            }}
+          />
+        ) : null}
+      </div>
+      {props.step.ingredients.length > 0 || isAddingIngredient ? (
+        <ul className="flex flex-col gap-1 pl-8">
+          {props.step.ingredients.map((ingredient, index) => (
+            <IngredientRow
+              key={ingredient._id}
+              ingredient={ingredient}
+              scaleFactor={props.scaleFactor}
+              catalogNames={props.catalogNames}
+              isEditing={props.editor?.type === "ingredient" && props.editor.id === ingredient._id}
+              onRequestAdd={
+                index === props.step.ingredients.length - 1 && !isAddingIngredient
+                  ? () => {
+                      props.onRequestEditor({ type: "addIngredient", stepId: props.step._id });
+                    }
+                  : undefined
+              }
+              onRequestEdit={() => {
+                props.onRequestEditor({ type: "ingredient", id: ingredient._id });
+              }}
+              onForceClose={props.onForceCloseEditor}
+              onMarkCommitBlocked={props.onMarkCommitBlocked}
+              onCloseIfCurrent={props.onCloseIfCurrent}
+              onError={props.onError}
+            />
+          ))}
+          {isAddingIngredient ? (
+            <li>
+              <AddIngredientForm
+                catalogNames={props.catalogNames}
+                onAdd={(next) => {
+                  void addStepIngredient({
+                    stepId: props.step._id,
+                    name: next.name,
+                    amount: next.amount,
+                  })
+                    .then(() => {
+                      props.onError(null);
+                      props.onClearCommitBlocked();
+                    })
+                    .catch(() => {
+                      props.onMarkCommitBlocked();
+                      props.onError(m.errorAddIngredient());
+                    });
+                }}
+                onInvalid={() => {
+                  props.onMarkCommitBlocked();
+                  props.onError(m.errorAddIngredient());
+                }}
+                onCloseEmpty={props.onForceCloseEditor}
+              />
+            </li>
+          ) : null}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function StepText(props: {
+  step: RecipeStep;
+  isEditing: boolean;
+  onRequestEdit: () => void;
+  onForceClose: () => void;
+  onSaved: () => void;
+  onSave: (text: string) => void;
+}) {
+  if (props.isEditing) {
+    return (
+      <StepTextEditor
+        step={props.step}
+        onForceClose={props.onForceClose}
+        onSaved={props.onSaved}
+        onSave={props.onSave}
+      />
+    );
+  } else {
+    return (
+      <button
+        type="button"
+        className="min-w-0 flex-1 text-left text-sm text-gray-900"
+        onClick={props.onRequestEdit}
+      >
+        {props.step.text === "" ? (
+          <span className="text-gray-500">{m.recipesStepTextPlaceholder()}</span>
+        ) : (
+          props.step.text
+        )}
+      </button>
+    );
+  }
+}
+
+function StepTextEditor(props: {
+  step: RecipeStep;
+  onForceClose: () => void;
+  onSaved: () => void;
+  onSave: (text: string) => void;
+}) {
+  const [draftText, setDraftText] = React.useState(props.step.text);
+
+  return (
+    <textarea
+      id={`step-text-${props.step._id}`}
+      aria-label={m.recipesStepText()}
+      className="field-sizing-content min-h-8 w-full min-w-0 flex-1 resize-none rounded-lg border border-input bg-transparent px-2.5 py-1.5 text-base transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm"
+      autoFocus
+      value={draftText}
+      placeholder={m.recipesStepTextPlaceholder()}
+      onChange={(event) => {
+        setDraftText(event.target.value);
+      }}
+      onBlur={() => {
+        if (draftText === props.step.text) {
+          props.onSaved();
+        } else {
+          props.onSave(draftText);
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          setDraftText(props.step.text);
+          props.onForceClose();
+        }
+      }}
+    />
+  );
+}
+
+function AddIngredientButton(props: { onClick: () => void }) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon-sm"
+      className="shrink-0"
+      aria-label={m.recipesAddIngredient()}
+      onClick={props.onClick}
+    >
+      <Plus />
+    </Button>
+  );
+}
+
+function IngredientRow(props: {
+  ingredient: RecipeIngredient;
+  scaleFactor: number;
+  catalogNames: string[];
+  isEditing: boolean;
+  onRequestAdd?: () => void;
+  onRequestEdit: () => void;
+  onForceClose: () => void;
+  onMarkCommitBlocked: () => void;
+  onCloseIfCurrent: (target: EditorTarget) => void;
+  onError: (message: string | null) => void;
+}) {
+  const updateStepIngredient = useMutation(api.recipes.updateStepIngredient);
+  const removeStepIngredient = useMutation(api.recipes.removeStepIngredient);
+  const addButton =
+    props.onRequestAdd === undefined ? null : <AddIngredientButton onClick={props.onRequestAdd} />;
+
+  if (props.isEditing) {
+    return (
+      <li className="flex items-center gap-1.5">
+        <IngredientFields
+          amount={props.ingredient.amount}
+          name={props.ingredient.name}
+          catalogNames={props.catalogNames}
+          onSave={(next) => {
+            void updateStepIngredient({
+              stepIngredientId: props.ingredient._id,
+              name: next.name,
+              amount: next.amount,
+            })
+              .then(() => {
+                props.onError(null);
+                props.onCloseIfCurrent({ type: "ingredient", id: props.ingredient._id });
+              })
+              .catch(() => {
+                props.onMarkCommitBlocked();
+                props.onError(m.errorSaveIngredient());
+              });
+          }}
+          onUnchanged={() => {
+            props.onCloseIfCurrent({ type: "ingredient", id: props.ingredient._id });
+          }}
+          onInvalid={() => {
+            props.onMarkCommitBlocked();
+            props.onError(m.errorSaveIngredient());
+          }}
+          onCancel={props.onForceClose}
+        />
         <Button
           type="button"
-          variant="outline"
+          variant="destructive"
+          size="icon-sm"
+          className="shrink-0"
+          aria-label={m.remove()}
+          onMouseDown={(event) => {
+            event.preventDefault();
+          }}
           onClick={() => {
-            void addStep({ recipeId: props.recipe._id }).catch(() => {
-              props.onError(m.errorAddStep());
+            props.onForceClose();
+            void removeStepIngredient({ stepIngredientId: props.ingredient._id }).catch(() => {
+              props.onError(m.errorUpdateRecipe());
             });
           }}
         >
-          {m.recipesAddStep()}
+          <X />
         </Button>
-      </div>
-      <div className="flex flex-col gap-4">
-        {props.recipe.steps.map((step, index) => (
-          <article
-            key={step._id}
-            className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-          >
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-medium text-gray-900">{m.recipesStepN({ n: index + 1 })}</h3>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={index === 0}
-                  onClick={() => {
-                    void moveStep(index, -1);
-                  }}
-                >
-                  {m.recipesMoveUp()}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={index === props.recipe.steps.length - 1}
-                  onClick={() => {
-                    void moveStep(index, 1);
-                  }}
-                >
-                  {m.recipesMoveDown()}
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => {
-                    void deleteStep({ stepId: step._id }).catch(() => {
-                      props.onError(m.errorUpdateRecipe());
-                    });
-                  }}
-                >
-                  {m.recipesRemoveStep()}
-                </Button>
-              </div>
-            </div>
-            <div className="mb-4 flex flex-col gap-1.5">
-              <Label htmlFor={`step-text-${step._id}`}>{m.recipesStepText()}</Label>
-              <textarea
-                id={`step-text-${step._id}`}
-                className="min-h-24 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-base md:text-sm"
-                defaultValue={step.text}
-                placeholder={m.recipesStepTextPlaceholder()}
-                onBlur={(event) => {
-                  if (event.target.value !== step.text) {
-                    void updateStep({ stepId: step._id, text: event.target.value }).catch(() => {
-                      props.onError(m.errorUpdateRecipe());
-                    });
-                  }
-                }}
-              />
-            </div>
-            <h4 className="mb-2 text-sm font-medium text-gray-800">{m.recipesIngredients()}</h4>
-            {step.ingredients.length === 0 ? (
-              <p className="mb-3 text-sm text-gray-600">{m.recipesNoIngredients()}</p>
-            ) : (
-              <ul className="mb-3 flex flex-col gap-3">
-                {step.ingredients.map((ingredient) => (
-                  <li
-                    key={ingredient._id}
-                    className="flex flex-col gap-2 rounded-md border border-gray-100 p-2"
-                  >
-                    <p className="text-sm text-gray-700">
-                      {formatIngredientLine(ingredient.amount * props.scaleFactor, ingredient.name)}
-                    </p>
-                    <IngredientFields
-                      key={`${ingredient._id}-${formatAmount(ingredient.amount)}-${ingredient.name}`}
-                      amount={ingredient.amount}
-                      name={ingredient.name}
-                      catalogNames={props.catalogNames}
-                      onSave={(next) => {
-                        void updateStepIngredient({
-                          stepIngredientId: ingredient._id,
-                          name: next.name,
-                          amount: next.amount,
-                        }).catch(() => {
-                          props.onError(m.errorSaveIngredient());
-                        });
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        void removeStepIngredient({ stepIngredientId: ingredient._id }).catch(
-                          () => {
-                            props.onError(m.errorUpdateRecipe());
-                          },
-                        );
-                      }}
-                    >
-                      {m.remove()}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <AddIngredientForm
-              catalogNames={props.catalogNames}
-              onAdd={(next) => {
-                void addStepIngredient({
-                  stepId: step._id,
-                  name: next.name,
-                  amount: next.amount,
-                }).catch(() => {
-                  props.onError(m.errorAddIngredient());
-                });
-              }}
-            />
-          </article>
-        ))}
-      </div>
-    </section>
-  );
+        {addButton}
+      </li>
+    );
+  } else {
+    return (
+      <li className="flex items-center gap-1">
+        <button
+          type="button"
+          className="min-w-0 flex-1 text-left text-sm text-gray-800"
+          onClick={props.onRequestEdit}
+        >
+          {formatIngredientLine(props.ingredient.amount * props.scaleFactor, props.ingredient.name)}
+        </button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          className="shrink-0"
+          aria-label={m.recipesEdit()}
+          onClick={props.onRequestEdit}
+        >
+          <Pencil />
+        </Button>
+        {addButton}
+      </li>
+    );
+  }
 }
 
 function IngredientFields(props: {
@@ -350,48 +813,88 @@ function IngredientFields(props: {
   name: string;
   catalogNames: string[];
   onSave: (next: { amount: number; name: string }) => void;
+  onUnchanged: () => void;
+  onInvalid: () => void;
+  onCancel: () => void;
 }) {
   const [amount, setAmount] = React.useState(() => formatAmount(props.amount));
   const [name, setName] = React.useState(props.name);
   const listId = React.useId();
 
-  function saveIfValid() {
+  function commit() {
     const parsedAmount = parsePositiveNumber(amount);
     const trimmedName = name.trim();
-    if (
-      parsedAmount !== null &&
-      trimmedName !== "" &&
-      (parsedAmount !== props.amount || trimmedName !== props.name)
-    ) {
+    if (parsedAmount === null || trimmedName === "") {
+      props.onInvalid();
+    } else if (parsedAmount === props.amount && trimmedName === props.name) {
+      props.onUnchanged();
+    } else {
       props.onSave({ amount: parsedAmount, name: trimmedName });
     }
   }
 
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div
+      className="flex min-w-0 flex-1 items-center gap-1.5"
+      onBlur={(event) => {
+        if (event.currentTarget.contains(event.relatedTarget)) {
+          return;
+        } else {
+          commit();
+        }
+      }}
+    >
+      <div className="min-w-0 flex-1">
+        <Input
+          aria-label={m.recipesIngredientName()}
+          list={listId}
+          autoFocus
+          value={name}
+          onFocus={(event) => {
+            event.currentTarget.select();
+          }}
+          onChange={(event) => {
+            setName(event.target.value);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              event.currentTarget.blur();
+            } else if (event.key === "Escape") {
+              event.preventDefault();
+              setAmount(formatAmount(props.amount));
+              setName(props.name);
+              props.onCancel();
+            }
+          }}
+        />
+        <IngredientDatalist id={listId} names={props.catalogNames} />
+      </div>
       <Input
         aria-label={m.recipesAmount()}
         type="number"
         min="0"
         step="any"
+        className="w-24"
         value={amount}
+        onFocus={(event) => {
+          event.currentTarget.select();
+        }}
         onChange={(event) => {
           setAmount(event.target.value);
         }}
-        onBlur={saveIfValid}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.currentTarget.blur();
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            setAmount(formatAmount(props.amount));
+            setName(props.name);
+            props.onCancel();
+          }
+        }}
       />
-      <div>
-        <Input
-          aria-label={m.recipesIngredientName()}
-          list={listId}
-          value={name}
-          onChange={(event) => {
-            setName(event.target.value);
-          }}
-          onBlur={saveIfValid}
-        />
-        <IngredientDatalist id={listId} names={props.catalogNames} />
-      </div>
     </div>
   );
 }
@@ -399,40 +902,50 @@ function IngredientFields(props: {
 function AddIngredientForm(props: {
   catalogNames: string[];
   onAdd: (next: { amount: number; name: string }) => void;
+  onInvalid: () => void;
+  onCloseEmpty: () => void;
 }) {
+  const nameRef = React.useRef<HTMLInputElement>(null);
   const [amount, setAmount] = React.useState("");
   const [name, setName] = React.useState("");
   const listId = React.useId();
 
   return (
     <form
-      className="flex flex-col gap-2 md:flex-row md:items-end"
+      className="flex items-center gap-1.5"
       onSubmit={(event) => {
         event.preventDefault();
         const parsedAmount = parsePositiveNumber(amount);
         const trimmedName = name.trim();
-        if (parsedAmount !== null && trimmedName !== "") {
+        if (parsedAmount === null || trimmedName === "") {
+          props.onInvalid();
+        } else {
           props.onAdd({ amount: parsedAmount, name: trimmedName });
           setAmount("");
           setName("");
+          nameRef.current?.focus();
+        }
+      }}
+      onBlur={(event) => {
+        if (event.currentTarget.contains(event.relatedTarget)) {
+          return;
+        } else if (amount.trim() === "" && name.trim() === "") {
+          props.onCloseEmpty();
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          props.onCloseEmpty();
         }
       }}
     >
-      <Input
-        aria-label={m.recipesAmount()}
-        type="number"
-        min="0"
-        step="any"
-        placeholder={m.recipesAmount()}
-        value={amount}
-        onChange={(event) => {
-          setAmount(event.target.value);
-        }}
-      />
       <div className="min-w-0 flex-1">
         <Input
+          ref={nameRef}
           aria-label={m.recipesIngredientName()}
           list={listId}
+          autoFocus
           placeholder={m.recipesIngredientPlaceholder()}
           value={name}
           onChange={(event) => {
@@ -441,7 +954,21 @@ function AddIngredientForm(props: {
         />
         <IngredientDatalist id={listId} names={props.catalogNames} />
       </div>
-      <Button type="submit">{m.recipesAddIngredient()}</Button>
+      <Input
+        aria-label={m.recipesAmount()}
+        type="number"
+        min="0"
+        step="any"
+        className="w-24"
+        placeholder={m.recipesAmount()}
+        value={amount}
+        onChange={(event) => {
+          setAmount(event.target.value);
+        }}
+      />
+      <Button type="submit" size="icon-sm" aria-label={m.recipesAddIngredient()}>
+        <Plus />
+      </Button>
     </form>
   );
 }
@@ -454,4 +981,47 @@ function IngredientDatalist(props: { id: string; names: string[] }) {
       ))}
     </datalist>
   );
+}
+
+function resolveOrderedStepIds(
+  serverOrder: Id<"recipeSteps">[],
+  optimisticOrder: Id<"recipeSteps">[] | null,
+): Id<"recipeSteps">[] {
+  if (optimisticOrder === null) {
+    return serverOrder;
+  } else if (hasSameStepIds(serverOrder, optimisticOrder)) {
+    return optimisticOrder;
+  } else {
+    return serverOrder;
+  }
+}
+
+function hasSameStepIds(left: Id<"recipeSteps">[], right: Id<"recipeSteps">[]): boolean {
+  if (left.length !== right.length) {
+    return false;
+  } else {
+    const rightIds = new Set(right);
+    return left.every((id) => rightIds.has(id));
+  }
+}
+
+function isSameEditor(left: EditorTarget | null, right: EditorTarget | null): boolean {
+  if (left === null || right === null) {
+    return left === right;
+  } else {
+    switch (left.type) {
+      case "title":
+        return right.type === "title";
+      case "step":
+        return right.type === "step" && left.id === right.id;
+      case "ingredient":
+        return right.type === "ingredient" && left.id === right.id;
+      case "addIngredient":
+        return right.type === "addIngredient" && left.stepId === right.stepId;
+      default: {
+        const exhaustiveCheck: never = left;
+        throw new Error(`Unhandled editor: ${String(exhaustiveCheck)}`);
+      }
+    }
+  }
 }

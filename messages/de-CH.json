@@ -86,6 +86,7 @@
   "recipesCreateTitle": "Rezept hinzufügen",
   "recipesCreateDescription": "Benenne das Rezept, dann füge Schritte hinzu.",
   "recipesName": "Name",
+  "recipesEdit": "Bearbeiten",
   "recipesNamePlaceholder": "z. B. Mapo Tofu",
   "recipesArchive": "Archivieren",
   "recipesArchiving": "Wird archiviert...",
@@ -144,5 +145,6 @@
   "errorCategoryNameRequired": "Kategoriename ist erforderlich.",
   "errorCategoryNameTaken": "Eine Kategorie mit diesem Namen existiert bereits.",
   "errorRenameCategory": "Kategorie konnte nicht umbenannt werden.",
-  "errorReorderCategories": "Kategorien konnten nicht neu angeordnet werden."
+  "errorReorderCategories": "Kategorien konnten nicht neu angeordnet werden.",
+  "errorReorderSteps": "Schritte konnten nicht neu angeordnet werden."
 }

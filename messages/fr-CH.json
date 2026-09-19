@@ -86,6 +86,7 @@
   "recipesCreateTitle": "Ajouter une recette",
   "recipesCreateDescription": "Nommez la recette, puis ajoutez des étapes.",
   "recipesName": "Nom",
+  "recipesEdit": "Modifier",
   "recipesNamePlaceholder": "p. ex. Mapo tofu",
   "recipesArchive": "Archiver",
   "recipesArchiving": "Archivage...",
@@ -144,5 +145,6 @@
   "errorCategoryNameRequired": "Le nom de catégorie est requis.",
   "errorCategoryNameTaken": "Une catégorie avec ce nom existe déjà.",
   "errorRenameCategory": "Impossible de renommer la catégorie.",
-  "errorReorderCategories": "Impossible de réorganiser les catégories."
+  "errorReorderCategories": "Impossible de réorganiser les catégories.",
+  "errorReorderSteps": "Impossible de réorganiser les étapes."
 }
