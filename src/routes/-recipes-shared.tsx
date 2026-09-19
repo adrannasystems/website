@@ -15,7 +15,7 @@ export function formatAmount(amount: number): string {
 }
 
 export function formatIngredientLine(amount: number, name: string): string {
-  return `${formatAmount(amount)} ${name}`;
+  return `${name} (${formatAmount(amount)})`;
 }
 
 export function parsePositiveNumber(value: string): number | null {
