@@ -160,22 +160,22 @@ function ShoppingPage() {
         ) : (
           <div>
             <div className="sticky top-16 z-[1] border-b border-gray-200 bg-gray-50 px-3 py-1 text-xs font-medium text-gray-600">
-              <p className="sm:hidden">{`${m.shoppingExtra()} · ${m.shoppingPlanned()} · ${m.shoppingHave()} · ${m.shoppingToBuy()}`}</p>
+              <p className="sm:hidden">{`${m.shoppingToBuy()} · ${m.shoppingExtra()} · ${m.shoppingHave()} · ${m.shoppingPlanned()}`}</p>
               <div className="hidden grid-cols-[2rem_2rem_minmax(0,1fr)_4rem_4rem_4rem_4rem_minmax(8rem,9.5rem)] items-end gap-x-2 sm:grid">
                 <span />
                 <span />
                 <span className="min-w-0" />
+                <span className="truncate text-right" title={m.shoppingToBuy()}>
+                  {m.shoppingToBuy()}
+                </span>
                 <span className="truncate text-right" title={m.shoppingExtra()}>
                   {m.shoppingExtra()}
-                </span>
-                <span className="truncate text-right" title={m.shoppingPlanned()}>
-                  {m.shoppingPlanned()}
                 </span>
                 <span className="truncate text-right" title={m.shoppingHave()}>
                   {m.shoppingHave()}
                 </span>
-                <span className="truncate text-right" title={m.shoppingToBuy()}>
-                  {m.shoppingToBuy()}
+                <span className="truncate text-right" title={m.shoppingPlanned()}>
+                  {m.shoppingPlanned()}
                 </span>
                 <span />
               </div>
@@ -304,7 +304,16 @@ function ShoppingItemRow(props: {
         {item.name}
       </span>
       <div className="col-span-7 col-start-1 row-start-2 grid grid-cols-4 items-center gap-x-1.5 sm:contents">
-        <div className="sm:col-start-4 sm:row-start-1">
+        <span
+          className={
+            item.toBuy > 0
+              ? "h-8 text-right text-sm leading-8 font-medium text-gray-900 tabular-nums sm:col-start-4 sm:row-start-1"
+              : "h-8 text-right text-sm leading-8 text-gray-400 tabular-nums sm:col-start-4 sm:row-start-1"
+          }
+        >
+          {formatAmount(item.toBuy)}
+        </span>
+        <div className="sm:col-start-5 sm:row-start-1">
           <ShoppingAmountField
             key={`${item._id}-manual-${formatAmount(item.manualAmount)}`}
             label={m.shoppingExtra()}
@@ -314,9 +323,6 @@ function ShoppingItemRow(props: {
             onError={props.onError}
           />
         </div>
-        <span className="h-8 text-right text-sm leading-8 text-gray-600 tabular-nums sm:col-start-5 sm:row-start-1">
-          {formatAmount(item.plannedAmount)}
-        </span>
         <div className="sm:col-start-6 sm:row-start-1">
           <ShoppingAmountField
             key={`${item._id}-have-${formatAmount(item.haveAmount)}`}
@@ -327,14 +333,8 @@ function ShoppingItemRow(props: {
             onError={props.onError}
           />
         </div>
-        <span
-          className={
-            item.toBuy > 0
-              ? "h-8 text-right text-sm leading-8 font-medium text-gray-900 tabular-nums sm:col-start-7 sm:row-start-1"
-              : "h-8 text-right text-sm leading-8 text-gray-400 tabular-nums sm:col-start-7 sm:row-start-1"
-          }
-        >
-          {formatAmount(item.toBuy)}
+        <span className="h-8 text-right text-sm leading-8 text-gray-600 tabular-nums sm:col-start-7 sm:row-start-1">
+          {formatAmount(item.plannedAmount)}
         </span>
       </div>
       <select
