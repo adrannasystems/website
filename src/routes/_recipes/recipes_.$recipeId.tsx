@@ -718,7 +718,7 @@ function IngredientRow(props: {
   scaleFactor: number;
   catalogNames: string[];
   isEditing: boolean;
-  onRequestAdd?: () => void;
+  onRequestAdd?: (() => void) | undefined;
   onRequestEdit: () => void;
   onForceClose: () => void;
   onMarkCommitBlocked: () => void;
